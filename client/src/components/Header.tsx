@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import BackgroundPattern from "./ui/BackgroundPattern";
+import logoSvg from "../assets/logo.svg";
 
 export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -42,13 +43,13 @@ export default function Header() {
       {/* Main header */}
       <div className="container mx-auto px-4 py-4 flex flex-col md:flex-row items-center justify-between">
         <div className="flex items-center mb-4 md:mb-0">
-          {/* Logo placeholder */}
-          <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center mr-4">
-            <span className="material-icons text-white text-3xl">school</span>
+          {/* Logo */}
+          <div className="w-16 h-16 mr-4">
+            <img src={logoSvg} alt="Madrasah Abu Bakr As-Siddiq Logo" className="w-full h-full" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-primary font-amiri">Madrasah Abubakr As-Siddiq</h1>
-            <p className="text-sm text-neutral-text italic">Excellence in Islamic Education</p>
+            <h1 className="text-2xl font-bold text-primary font-belleza">Madrasah Abu Bakr As-Siddiq</h1>
+            <p className="text-sm text-neutral-text italic font-lato">Excellence in Islamic Education</p>
           </div>
         </div>
         
