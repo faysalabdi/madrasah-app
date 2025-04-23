@@ -24,7 +24,7 @@ export default function Admission() {
             <div className="bg-secondary text-white py-3 px-4 rounded-lg mb-8">
               <div className="flex items-center justify-center">
                 <span className="material-icons mr-2">campaign</span>
-                <p className="font-medium">Enrollment for Fall 2023 is now open! <Link href="#apply-now" className="underline font-bold hover:text-primary-dark">Apply today</Link></p>
+                <p className="font-medium">Enrollment for Fall 2023 is now open! <Link href="/apply" className="underline font-bold hover:text-primary-dark">Apply online</Link> or <Link href="#apply-now" className="underline font-bold hover:text-primary-dark">fill the form below</Link></p>
               </div>
             </div>
             
@@ -109,7 +109,18 @@ export default function Admission() {
       <section id="apply-now" className="py-16 bg-white scroll-mt-20">
         <div className="container mx-auto px-4">
           <div className="max-w-3xl mx-auto">
-            <h2 className="text-3xl font-bold text-primary mb-8 font-amiri text-center">Application Form</h2>
+            <h2 className="text-3xl font-bold text-primary mb-6 font-amiri text-center">Application Form</h2>
+            
+            <div className="bg-secondary-light text-primary-dark p-4 rounded-lg mb-8 text-center">
+              <p className="font-medium flex items-center justify-center">
+                <span className="material-icons mr-2">info</span>
+                Prefer to apply online? Use our 
+                <Link href="/apply" className="mx-1 font-bold underline hover:text-primary">
+                  Online Application Form
+                </Link>
+                for a quicker process.
+              </p>
+            </div>
             
             <form className="bg-neutral-light p-8 rounded-lg shadow-sm">
               <div className="mb-8">
