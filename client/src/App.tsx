@@ -7,6 +7,7 @@ import Programs from "@/pages/Programs";
 import Admission from "@/pages/Admission";
 import Faculty from "@/pages/Faculty";
 import Contact from "@/pages/Contact";
+import GoogleForm from "@/pages/GoogleForm";
 import NotFound from "@/pages/not-found";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -25,6 +26,7 @@ function App() {
             <Route path="/admission" component={Admission} />
             <Route path="/faculty" component={Faculty} />
             <Route path="/contact" component={Contact} />
+            <Route path="/apply" component={GoogleForm} />
             <Route component={NotFound} />
           </Switch>
         </main>

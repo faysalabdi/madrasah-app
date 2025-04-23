@@ -11,10 +11,16 @@ export default function Hero() {
             <p className="mb-6 text-lg">Nurturing young Muslims with knowledge, character, and spiritual growth in a supportive Islamic environment.</p>
             <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
               <Link 
+                href="/apply" 
+                className="bg-secondary hover:bg-secondary-dark text-white font-medium py-3 px-6 rounded shadow text-center transition duration-300"
+              >
+                Apply Online
+              </Link>
+              <Link 
                 href="/admission" 
                 className="bg-primary hover:bg-primary-dark text-white font-medium py-3 px-6 rounded shadow text-center transition duration-300"
               >
-                Apply for Admission
+                Admission Info
               </Link>
               <Link 
                 href="/programs" 
@@ -47,7 +53,7 @@ export default function Hero() {
       <div className="bg-secondary text-white py-3 px-4">
         <div className="container mx-auto flex items-center justify-center">
           <span className="material-icons mr-2">campaign</span>
-          <p className="font-medium">Enrollment for Fall 2023 is now open! <Link href="/admission" className="underline font-bold hover:text-primary-dark">Apply today</Link></p>
+          <p className="font-medium">Enrollment for Fall 2023 is now open! <Link href="/apply" className="underline font-bold hover:text-primary-dark">Apply online today</Link></p>
         </div>
       </div>
     </section>

@@ -61,8 +61,8 @@ export default function Header() {
         </button>
         
         {/* Navigation */}
-        <nav className={`${mobileMenuOpen ? 'block' : 'hidden'} md:block`}>
-          <ul className="flex flex-col md:flex-row md:space-x-8 font-medium">
+        <nav className={`${mobileMenuOpen ? 'block' : 'hidden'} md:flex md:items-center`}>
+          <ul className="flex flex-col md:flex-row md:space-x-6 font-medium">
             <li><Link href="/" className={`block py-2 ${isActive("/")}`}>Home</Link></li>
             <li><Link href="/about" className={`block py-2 ${isActive("/about")}`}>About Us</Link></li>
             <li><Link href="/programs" className={`block py-2 ${isActive("/programs")}`}>Programs</Link></li>
@@ -70,6 +70,12 @@ export default function Header() {
             <li><Link href="/faculty" className={`block py-2 ${isActive("/faculty")}`}>Faculty</Link></li>
             <li><Link href="/contact" className={`block py-2 ${isActive("/contact")}`}>Contact</Link></li>
           </ul>
+          <Link 
+            href="/apply" 
+            className="mt-4 md:mt-0 md:ml-6 inline-block bg-secondary hover:bg-secondary-dark text-white font-medium py-2 px-4 rounded shadow transition duration-300"
+          >
+            Apply Now
+          </Link>
         </nav>
       </div>
       
