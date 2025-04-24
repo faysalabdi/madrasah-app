@@ -28,7 +28,7 @@ export default function Home() {
           <div className="flex flex-col md:flex-row">
             <div className="md:w-1/2 md:pr-8 mb-8 md:mb-0">
               <h2 className="text-3xl font-bold text-primary mb-6 font-amiri">About Our Madrasah</h2>
-              <p className="mb-4">Madrasah Abubakr As-Siddiq was established in 2010 with a vision to provide quality Islamic education that nurtures the spiritual, moral, and intellectual growth of our students.</p>
+              <p className="mb-4">Madrasah Abubakr As-Siddiq was established in 2025 with a vision to provide quality Islamic education that nurtures the spiritual, moral, and intellectual growth of our students.</p>
               <p className="mb-4">Named after the first caliph of Islam, our madrasah aims to instill the values of truthfulness, integrity, and devotion that Abu Bakr As-Siddiq exemplified.</p>
               <p className="mb-6">Our mission is to develop confident young Muslims who are well-grounded in their faith and prepared to contribute positively to society.</p>
               
@@ -207,9 +207,9 @@ export default function Home() {
                 </div>
               </div>
               <div className="p-6">
-                <h3 className="text-xl font-bold text-primary mb-1 font-amiri">Sheikh Abdullah Rahman</h3>
-                <p className="text-secondary mb-3 font-medium">Principal & Quran Teacher</p>
-                <p className="mb-4 text-sm">Sheikh Abdullah has over 15 years of experience teaching Quran and Islamic studies. He holds an Ijazah in Quran recitation and has memorized the entire Quran.</p>
+                <h3 className="text-xl font-bold text-primary mb-1 font-amiri">Sheikh Abdul Qadir Jama</h3>
+                <p className="text-secondary mb-3 font-medium">Director & Imam - Islamic Studies Teacher</p>
+                <p className="mb-4 text-sm">Sheikh Abdul Qadir has over 10 years of experience teaching Quran and Islamic studies. He has a degree in Islamic Studies and 8 years of teaching experience.</p>
                 <div className="border-t border-neutral-border pt-4 mt-4">
                   <p className="text-sm italic">"My goal is to inspire a love for the Quran in every student's heart."</p>
                 </div>
@@ -224,9 +224,9 @@ export default function Home() {
                 </div>
               </div>
               <div className="p-6">
-                <h3 className="text-xl font-bold text-primary mb-1 font-amiri">Ustadha Aisha Malik</h3>
-                <p className="text-secondary mb-3 font-medium">Islamic Studies Teacher</p>
-                <p className="mb-4 text-sm">Ustadha Aisha specializes in teaching Islamic studies and Arabic to young children. She has a degree in Islamic Education and 8 years of teaching experience.</p>
+                <h3 className="text-xl font-bold text-primary mb-1 font-amiri">Ustadh Ahmed Hassan</h3>
+                <p className="text-secondary mb-3 font-medium">Quran Teacher</p>
+                <p className="mb-4 text-sm">Ustadh Ahmed has memorised the entire Quran and has been teaching it for years.</p>
                 <div className="border-t border-neutral-border pt-4 mt-4">
                   <p className="text-sm italic">"Children learn best when education is engaging and meaningful to their lives."</p>
                 </div>
@@ -241,11 +241,11 @@ export default function Home() {
                 </div>
               </div>
               <div className="p-6">
-                <h3 className="text-xl font-bold text-primary mb-1 font-amiri">Ustadh Mohammed Ali</h3>
-                <p className="text-secondary mb-3 font-medium">Arabic Language Teacher</p>
-                <p className="mb-4 text-sm">Ustadh Mohammed is a native Arabic speaker with a passion for teaching the language to young Muslims. He has 10 years of experience and a certificate in Arabic pedagogy.</p>
+                <h3 className="text-xl font-bold text-primary mb-1 font-amiri">Ustadh Sadiq Abdulle</h3>
+                <p className="text-secondary mb-3 font-medium">Quran Teacher</p>
+                <p className="mb-4 text-sm">Ustadh Sadiq is a hafidh and studying currently degree in teaching. He is very passionate about passing on the Quran to the next generation</p>
                 <div className="border-t border-neutral-border pt-4 mt-4">
-                  <p className="text-sm italic">"Understanding Arabic opens the door to a deeper connection with the Quran."</p>
+                  <p className="text-sm italic">"We must all strive to have a connection with the Quran."</p>
                 </div>
               </div>
             </div>
