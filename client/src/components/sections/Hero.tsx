@@ -1,4 +1,5 @@
 import { Link } from "wouter";
+import reading from "../assets/reading-quran.webp";
 
 export default function Hero() {
   return (
@@ -34,7 +35,7 @@ export default function Hero() {
             <div className="relative rounded-lg overflow-hidden shadow-lg h-72 md:h-96 bg-neutral-light">
               <img 
                 className="w-full h-full object-cover lazy-image" 
-                src="https://images.unsplash.com/photo-1621274147744-cfb5753934fe?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80" 
+                src={reading} 
                 alt="Students studying Quran"
                 loading="lazy"
               />

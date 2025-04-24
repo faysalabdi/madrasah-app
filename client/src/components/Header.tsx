@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import BackgroundPattern from "./ui/BackgroundPattern";
-import logoSvg from "../assets/logo.svg";
+import logoSvg from "../assets/logo.png";
 
 export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
