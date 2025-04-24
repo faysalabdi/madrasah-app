@@ -76,8 +76,8 @@ export default function Home() {
                       <div className="h-full w-0.5 bg-primary-light"></div>
                     </div>
                     <div className="pb-4">
-                      <h4 className="text-lg font-bold">2010: Foundation</h4>
-                      <p>Established with just 15 students and 2 teachers.</p>
+                      <h4 className="text-lg font-bold">2025: Foundation</h4>
+                      <p>Established with just 15 students and 3 teachers.</p>
                     </div>
                   </div>
                   
@@ -89,8 +89,8 @@ export default function Home() {
                       <div className="h-full w-0.5 bg-primary-light"></div>
                     </div>
                     <div className="pb-4">
-                      <h4 className="text-lg font-bold">2015: Growth</h4>
-                      <p>Expanded to 100+ students and moved to our current facility.</p>
+                      <h4 className="text-lg font-bold">2026: Growth</h4>
+                      <p>...</p>
                     </div>
                   </div>
                   
@@ -101,8 +101,8 @@ export default function Home() {
                       </div>
                     </div>
                     <div>
-                      <h4 className="text-lg font-bold">2023: Today</h4>
-                      <p>Now serving 250+ students with comprehensive Islamic education programs.</p>
+                      <h4 className="text-lg font-bold">2027</h4>
+                      <p>...</p>
                     </div>
                   </div>
                 </div>

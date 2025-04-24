@@ -67,7 +67,7 @@ export default function Header() {
             <li><Link href="/" className={`block py-2 ${isActive("/")}`}>Home</Link></li>
             <li><Link href="/about" className={`block py-2 ${isActive("/about")}`}>About Us</Link></li>
             <li><Link href="/programs" className={`block py-2 ${isActive("/programs")}`}>Programs</Link></li>
-            <li><Link href="/admission" className={`block py-2 ${isActive("/admission")}`}>Admission</Link></li>
+            <li><Link href="/admission" className={`block py-2 ${isActive("/admission")}`}>Enrolment</Link></li>
             <li><Link href="/faculty" className={`block py-2 ${isActive("/faculty")}`}>Faculty</Link></li>
             <li><Link href="/contact" className={`block py-2 ${isActive("/contact")}`}>Contact</Link></li>
           </ul>
