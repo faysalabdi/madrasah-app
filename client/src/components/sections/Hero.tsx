@@ -1,5 +1,5 @@
 import { Link } from "wouter";
-import reading from "../assets/reading-quran.webp";
+import reading from "../../assets/reading-quran.webp";
 
 export default function Hero() {
   return (
