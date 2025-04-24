@@ -122,145 +122,19 @@ export default function Admission() {
               </p>
             </div>
             
-            <form className="bg-neutral-light p-8 rounded-lg shadow-sm">
-              <div className="mb-8">
-                <h3 className="text-xl font-bold text-primary mb-4 font-amiri">Student Information</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label htmlFor="firstName" className="block mb-2 font-medium">First Name*</label>
-                    <input 
-                      type="text" 
-                      id="firstName" 
-                      className="w-full px-4 py-2 border border-neutral-border rounded focus:outline-none focus:ring-2 focus:ring-primary"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="lastName" className="block mb-2 font-medium">Last Name*</label>
-                    <input 
-                      type="text" 
-                      id="lastName" 
-                      className="w-full px-4 py-2 border border-neutral-border rounded focus:outline-none focus:ring-2 focus:ring-primary"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="dob" className="block mb-2 font-medium">Date of Birth*</label>
-                    <input 
-                      type="date" 
-                      id="dob" 
-                      className="w-full px-4 py-2 border border-neutral-border rounded focus:outline-none focus:ring-2 focus:ring-primary"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="gender" className="block mb-2 font-medium">Gender*</label>
-                    <select 
-                      id="gender" 
-                      className="w-full px-4 py-2 border border-neutral-border rounded focus:outline-none focus:ring-2 focus:ring-primary"
-                      required
-                    >
-                      <option value="">Select</option>
-                      <option value="male">Male</option>
-                      <option value="female">Female</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="mb-8">
-                <h3 className="text-xl font-bold text-primary mb-4 font-amiri">Program Selection</h3>
-                <div>
-                  <label htmlFor="program" className="block mb-2 font-medium">Select Program*</label>
-                  <select 
-                    id="program" 
-                    className="w-full px-4 py-2 border border-neutral-border rounded focus:outline-none focus:ring-2 focus:ring-primary"
-                    required
-                  >
-                    <option value="">Select a program</option>
-                    <option value="early-learners">Early Learners (Ages 4-6)</option>
-                    <option value="foundation">Foundation Program (Ages 7-12)</option>
-                    <option value="youth">Youth Program (Ages 13-18)</option>
-                    <option value="hifz">Hifz Program</option>
-                  </select>
-                </div>
-              </div>
-              
-              <div className="mb-8">
-                <h3 className="text-xl font-bold text-primary mb-4 font-amiri">Parent/Guardian Information</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label htmlFor="parentName" className="block mb-2 font-medium">Full Name*</label>
-                    <input 
-                      type="text" 
-                      id="parentName" 
-                      className="w-full px-4 py-2 border border-neutral-border rounded focus:outline-none focus:ring-2 focus:ring-primary"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="relationship" className="block mb-2 font-medium">Relationship to Student*</label>
-                    <input 
-                      type="text" 
-                      id="relationship" 
-                      className="w-full px-4 py-2 border border-neutral-border rounded focus:outline-none focus:ring-2 focus:ring-primary"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="email" className="block mb-2 font-medium">Email*</label>
-                    <input 
-                      type="email" 
-                      id="email" 
-                      className="w-full px-4 py-2 border border-neutral-border rounded focus:outline-none focus:ring-2 focus:ring-primary"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="phone" className="block mb-2 font-medium">Phone Number*</label>
-                    <input 
-                      type="tel" 
-                      id="phone" 
-                      className="w-full px-4 py-2 border border-neutral-border rounded focus:outline-none focus:ring-2 focus:ring-primary"
-                      required
-                    />
-                  </div>
-                </div>
-              </div>
-              
-              <div className="mb-8">
-                <h3 className="text-xl font-bold text-primary mb-4 font-amiri">Additional Information</h3>
-                <div>
-                  <label htmlFor="previousIslamic" className="block mb-2 font-medium">Previous Islamic Education (if any)</label>
-                  <textarea 
-                    id="previousIslamic" 
-                    rows={3}
-                    className="w-full px-4 py-2 border border-neutral-border rounded focus:outline-none focus:ring-2 focus:ring-primary"
-                  ></textarea>
-                </div>
-              </div>
-              
-              <div className="flex items-center mb-6">
-                <input 
-                  type="checkbox" 
-                  id="agreement" 
-                  className="w-4 h-4 text-primary rounded focus:ring-primary"
-                  required
-                />
-                <label htmlFor="agreement" className="ml-2 text-sm">
-                  I confirm that all information provided is accurate and I agree to follow the school's policies and procedures.
-                </label>
-              </div>
-              
-              <div className="text-center">
-                <button 
-                  type="submit" 
-                  className="bg-primary hover:bg-primary-dark text-white font-medium py-3 px-8 rounded shadow transition duration-300"
+            <div className="bg-neutral-light p-6 rounded-lg shadow-lg">
+              <div className="w-full h-[1200px] overflow-hidden rounded-lg">
+                <iframe 
+                  src="https://docs.google.com/forms/d/e/1FAIpQLSfE3a-8-BKwoSSfTVczKahEA9D8h-u1H-SjfcfPukZaHKW0JA/viewform?embedded=true" 
+                  width="100%" 
+                  height="100%" 
+                  style={{ border: "none" }}
+                  title="Application Form"
                 >
-                  Submit Application
-                </button>
+                  Loading Application Form...
+                </iframe>
               </div>
-            </form>
+            </div>
             
             <p className="text-center mt-6 text-sm">
               After submitting your application, our admissions team will contact you within 3-5 business days to schedule an assessment and interview.
