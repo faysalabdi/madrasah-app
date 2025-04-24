@@ -1,3 +1,4 @@
+
 import { Link } from "wouter";
 import reading from "../../assets/reading-quran.webp";
 
@@ -32,17 +33,16 @@ export default function Hero() {
             </div>
           </div>
           <div className="md:w-1/2">
-            <div className="relative rounded-lg overflow-hidden shadow-lg h-72 md:h-96 bg-neutral-light">
+            <div className="relative rounded-lg overflow-hidden shadow-xl h-[400px] bg-neutral-light transform hover:scale-[1.02] transition-transform duration-300">
               <img 
-                className="w-full h-full object-cover lazy-image" 
-                src={reading} 
+                src={reading}
                 alt="Students studying Quran"
-                loading="lazy"
+                className="w-full h-full object-cover"
               />
-              <div className="absolute inset-0 bg-black bg-opacity-30 flex items-end">
-                <div className="p-4 text-white">
-                  <span className="font-arabic text-xl">اقْرَأْ بِاسْمِ رَبِّكَ الَّذِي خَلَقَ</span>
-                  <p className="text-sm italic">"Read in the name of your Lord who created"</p>
+              <div className="absolute inset-0 bg-gradient-to-b from-black/30 to-black/60 flex items-end">
+                <div className="p-6 text-white w-full backdrop-blur-sm bg-black/20">
+                  <span className="font-arabic text-2xl block mb-2 text-center">اقْرَأْ بِاسْمِ رَبِّكَ الَّذِي خَلَقَ</span>
+                  <p className="text-sm italic text-center">"Read in the name of your Lord who created"</p>
                 </div>
               </div>
             </div>
@@ -50,7 +50,6 @@ export default function Hero() {
         </div>
       </div>
       
-      {/* Announcement banner */}
       <div className="bg-secondary text-white py-3 px-4">
         <div className="container mx-auto flex items-center justify-center">
           <span className="material-icons mr-2">campaign</span>
