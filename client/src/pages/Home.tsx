@@ -123,15 +123,15 @@ export default function Home() {
             <div className="bg-neutral-background rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow border border-neutral-border">
               <div className="h-48 bg-primary-light relative">
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="material-icons text-white text-6xl">child_care</span>
+                  <span className="material-icons text-white text-6xl">school</span>
                 </div>
               </div>
               <div className="p-6">
-                <h3 className="text-xl font-bold text-primary mb-2 font-amiri">Early Learners (Ages 4-6)</h3>
-                <p className="mb-4">A gentle introduction to Islam through stories, nasheeds, and basic Quranic letters.</p>
+                <h3 className="text-xl font-bold text-primary mb-2 font-amiri">Quran Studies</h3>
+                <p className="mb-4">Students are grouped by grade level for focused Quran reading and writing instruction.</p>
                 <div className="flex justify-between items-center">
-                  <span className="text-sm bg-primary-light text-white py-1 px-3 rounded-full">Weekdays: 9am-12pm</span>
-                  <Link href="/programs#early-learners" className="text-primary hover:text-primary-dark font-medium flex items-center">
+                  <span className="text-sm bg-primary-light text-white py-1 px-3 rounded-full">All Ages</span>
+                  <Link href="/programs#quran-studies" className="text-primary hover:text-primary-dark font-medium flex items-center">
                     Learn more
                     <span className="material-icons ml-1">arrow_forward</span>
                   </Link>
@@ -143,15 +143,15 @@ export default function Home() {
             <div className="bg-neutral-background rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow border border-neutral-border">
               <div className="h-48 bg-primary relative">
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="material-icons text-white text-6xl">school</span>
+                  <span className="material-icons text-white text-6xl">menu_book</span>
                 </div>
               </div>
               <div className="p-6">
-                <h3 className="text-xl font-bold text-primary mb-2 font-amiri">Foundation Program (Ages 7-12)</h3>
-                <p className="mb-4">Core program focusing on Quran memorization, understanding, and Islamic studies.</p>
+                <h3 className="text-xl font-bold text-primary mb-2 font-amiri">Foundational Islamic Studies</h3>
+                <p className="mb-4">Core Islamic studies program for intermediate students.</p>
                 <div className="flex justify-between items-center">
-                  <span className="text-sm bg-primary text-white py-1 px-3 rounded-full">Weekdays: 4pm-6pm</span>
-                  <Link href="/programs#foundation-program" className="text-primary hover:text-primary-dark font-medium flex items-center">
+                  <span className="text-sm bg-primary text-white py-1 px-3 rounded-full">Grade 3-4</span>
+                  <Link href="/programs#islamic-studies" className="text-primary hover:text-primary-dark font-medium flex items-center">
                     Learn more
                     <span className="material-icons ml-1">arrow_forward</span>
                   </Link>
@@ -163,15 +163,15 @@ export default function Home() {
             <div className="bg-neutral-background rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow border border-neutral-border">
               <div className="h-48 bg-primary-dark relative">
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="material-icons text-white text-6xl">menu_book</span>
+                  <span className="material-icons text-white text-6xl">auto_stories</span>
                 </div>
               </div>
               <div className="p-6">
-                <h3 className="text-xl font-bold text-primary mb-2 font-amiri">Youth Program (Ages 13-18)</h3>
-                <p className="mb-4">Advanced Islamic studies with a focus on application in contemporary life.</p>
+                <h3 className="text-xl font-bold text-primary mb-2 font-amiri">Shafii Fiqh</h3>
+                <p className="mb-4">Advanced Islamic jurisprudence studies for senior students.</p>
                 <div className="flex justify-between items-center">
-                  <span className="text-sm bg-primary-dark text-white py-1 px-3 rounded-full">Weekends: 10am-2pm</span>
-                  <Link href="/programs#youth-program" className="text-primary hover:text-primary-dark font-medium flex items-center">
+                  <span className="text-sm bg-primary-dark text-white py-1 px-3 rounded-full">Grade 5-6</span>
+                  <Link href="/programs#shafii-fiqh" className="text-primary hover:text-primary-dark font-medium flex items-center">
                     Learn more
                     <span className="material-icons ml-1">arrow_forward</span>
                   </Link>
@@ -276,15 +276,15 @@ export default function Home() {
           <div className="flex flex-col md:flex-row justify-center items-center space-y-4 md:space-y-0 md:space-x-6">
             <div className="flex items-center">
               <span className="material-icons text-primary text-2xl mr-2">call</span>
-              <span>(123) 456-7890</span>
+              <span>0411 510 201</span>
             </div>
             <div className="flex items-center">
               <span className="material-icons text-primary text-2xl mr-2">email</span>
-              <span>info@madrasa-abubakr.org</span>
+              <span>Contact: Sheikh Abdul Qadir Jama</span>
             </div>
             <div className="flex items-center">
               <span className="material-icons text-primary text-2xl mr-2">location_on</span>
-              <span>123 Islamic Education Street, Anytown</span>
+              <span>Shop 48 The Mall, Heidelberg West 3081</span>
             </div>
           </div>
           
