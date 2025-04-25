@@ -1,4 +1,3 @@
-
 import { Link } from "react-router-dom";
 
 export default function Programs() {
@@ -33,20 +32,6 @@ export default function Programs() {
           </div>
 
           <div className="bg-white rounded-lg shadow-sm p-6">
-            <h2 className="text-2xl font-bold text-primary mb-4 font-amiri">Daily Schedule</h2>
-            <div className="space-y-4">
-              <div>
-                <h3 className="font-bold text-primary">First Hour</h3>
-                <p>Quran reading and writing (Students must prepare their new lesson for each class)</p>
-              </div>
-              <div>
-                <h3 className="font-bold text-primary">Second Hour</h3>
-                <p>Separate program instruction based on grade level</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow-sm p-6">
             <h2 className="text-2xl font-bold text-primary mb-4 font-amiri">Programs Offered</h2>
             <div className="space-y-4">
               <div>
@@ -64,6 +49,20 @@ export default function Programs() {
               <div>
                 <h3 className="font-bold text-primary">Duas</h3>
                 <p>Grade 1-2</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <h2 className="text-2xl font-bold text-primary mb-4 font-amiri">Daily Schedule</h2>
+            <div className="space-y-4">
+              <div>
+                <h3 className="font-bold text-primary">First Hour</h3>
+                <p>Quran reading and writing (Students must prepare their new lesson for each class)</p>
+              </div>
+              <div>
+                <h3 className="font-bold text-primary">Second Hour</h3>
+                <p>Separate program instruction based on grade level</p>
               </div>
             </div>
           </div>
@@ -88,28 +87,6 @@ export default function Programs() {
                 <p>5 Children: $555</p>
               </div>
             </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <h2 className="text-2xl font-bold text-primary mb-4 font-amiri">Parent Responsibilities</h2>
-            <ul className="list-disc list-inside space-y-2">
-              <li>Drop students off on time 5:30pm on weekdays and 10am on Saturdays</li>
-              <li>Pick up students on time. Drive carefully</li>
-              <li>Ensure student is in clean, neat and correct uniform and clean socks</li>
-              <li>Student's Record Book is checked and signed daily</li>
-              <li>Student has eaten before coming to Madrassah</li>
-              <li>Student went to toilet before Madrassah</li>
-              <li>Student made wudhu before coming to Madrassah</li>
-              <li>Homework was completed the night before</li>
-              <li>Attend Parent Teacher Interviews</li>
-              <li>Submit Akhlaaq Project in Term 1 and Term 3</li>
-              <li>Prepare students for examination in Term 2 and Term 4</li>
-              <li>Send a water bottle in Term 1 and Term 4</li>
-              <li>Provide a safe Islamic Environment for students</li>
-              <li>Contact admin if parent will be collecting student early</li>
-              <li>Contact admin if student will be absent for an extended period</li>
-              <li>Toilet, vomiting or bleeding accidents to be cleaned by parents</li>
-            </ul>
           </div>
 
           <div className="bg-white rounded-lg shadow-sm p-6">
