@@ -115,38 +115,40 @@ export default function Admission() {
                 className={`md:w-1/2 md:pl-6 border-t md:border-t-0 md:border-l border-neutral-border pt-6 md:pt-0 md:pl-12 ${requirementsEntry?.isIntersecting ? "animate-fadeIn" : ""}`}
               >
                 <h3 className="text-xl font-bold text-primary mb-4 font-amiri">
-                  Required Documents
+                  Important Information for Parents
                 </h3>
                 <ul className="space-y-3 mb-6">
                   <li className="flex items-start">
-                    <span className="material-icons text-secondary mr-2">
-                      description
-                    </span>
-                    <span>Completed application form</span>
+                    <span className="material-icons text-secondary mr-2">check_circle</span>
+                    <span>Drop students off on time 5:30pm on weekdays and 10am on Saturdays</span>
                   </li>
                   <li className="flex items-start">
-                    <span className="material-icons text-secondary mr-2">
-                      description
-                    </span>
-                    <span>Birth certificate (copy)</span>
+                    <span className="material-icons text-secondary mr-2">check_circle</span>
+                    <span>Pick up students on time. Drive carefully</span>
                   </li>
                   <li className="flex items-start">
-                    <span className="material-icons text-secondary mr-2">
-                      description
-                    </span>
-                    <span>Recent photograph</span>
+                    <span className="material-icons text-secondary mr-2">check_circle</span>
+                    <span>Ensure student is in clean, neat and correct uniform and clean socks</span>
                   </li>
                   <li className="flex items-start">
-                    <span className="material-icons text-secondary mr-2">
-                      description
-                    </span>
-                    <span>Previous school records (if applicable)</span>
+                    <span className="material-icons text-secondary mr-2">check_circle</span>
+                    <span>Student's Record Book is checked and signed daily</span>
                   </li>
                   <li className="flex items-start">
-                    <span className="material-icons text-secondary mr-2">
-                      description
-                    </span>
-                    <span>Immunization records</span>
+                    <span className="material-icons text-secondary mr-2">check_circle</span>
+                    <span>Student has eaten before coming to Madrassah</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="material-icons text-secondary mr-2">check_circle</span>
+                    <span>Student went to toilet before Madrassah</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="material-icons text-secondary mr-2">check_circle</span>
+                    <span>Student made wudhu before coming to Madrassah</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="material-icons text-secondary mr-2">check_circle</span>
+                    <span>Homework was completed the night before</span>
                   </li>
                 </ul>
 
@@ -154,21 +156,14 @@ export default function Admission() {
                   ref={feesRef}
                   className={`bg-primary-light bg-opacity-10 p-4 rounded-lg border border-primary-light ${feesEntry?.isIntersecting ? "animate-fadeIn" : ""}`}
                 >
-                  <h4 className="font-bold text-primary mb-2">Tuition Fees</h4>
-                  <p className="text-sm mb-2">
-                    Our programs are affordably priced with options for
-                    financial aid:
-                  </p>
+                  <h4 className="font-bold text-primary mb-2">Fees Structure Per School Term – Due By Week 7</h4>
                   <ul className="text-sm space-y-1">
-                    <li>Early Learners: $75/month</li>
-                    <li>Foundation Program: $100/month</li>
-                    <li>Youth Program: $125/month</li>
-                    <li>Hifz Program: $150/month</li>
+                    <li>1 child: $180</li>
+                    <li>2 Children: $330</li>
+                    <li>3 Children: $450</li>
+                    <li>4 Children: $505</li>
+                    <li>5 Children: $555</li>
                   </ul>
-                  <p className="text-xs mt-3 italic">
-                    Registration fee: $50 (one-time, non-refundable). Discounts
-                    available for siblings.
-                  </p>
                 </div>
               </div>
             </div>
