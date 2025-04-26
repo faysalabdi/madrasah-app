@@ -19,7 +19,7 @@ export default function Features() {
             </h3>
             <p>
               Balanced approach to Quranic studies, Islamic knowledge, and
-              character development.
+              manners.
             </p>
           </div>
 
@@ -29,11 +29,11 @@ export default function Features() {
               <span className="material-icons text-white text-2xl">groups</span>
             </div>
             <h3 className="text-xl font-bold text-primary mb-3 font-amiri">
-              Qualified Teachers
+              Dedicated Teachers
             </h3>
             <p>
-              Experienced educators dedicated to nurturing young Muslims with
-              knowledge and wisdom.
+              Experienced educators with a passion to nurturing young Muslims
+              with knowledge and wisdom.
             </p>
           </div>
 

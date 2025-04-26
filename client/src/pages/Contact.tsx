@@ -33,7 +33,7 @@ export default function Contact() {
             </h2>
             <ul className="list-disc list-inside space-y-2">
               <li>
-                Drop students off on time (5:30pm weekdays, 10am Saturdays)
+                Drop students off on time (5:00pm weekdays, 10am Saturdays)
               </li>
               <li>Pick up students on time and drive carefully</li>
               <li>

@@ -16,16 +16,16 @@ export default function Header() {
   return (
     <header className="border-b border-neutral-border">
       {/* Top contact bar */}
-      <div className="bg-primary-dark text-white text-sm py-2">
+      {/* <div className="bg-primary-dark text-white text-sm py-2">
         <div className="container mx-auto px-4 flex justify-between">
           <div className="flex items-center space-x-4">
             <span className="flex items-center">
               <span className="material-icons text-sm mr-1">call</span>
-              <span>(123) 456-7890</span>
+              <span>(+61) 411-510-201</span>
             </span>
             <span className="flex items-center">
               <span className="material-icons text-sm mr-1">email</span>
-              <span>info@madrasa-abubakr.org</span>
+              <span>ayanlejama@gmail.com</span>
             </span>
           </div>
           <div className="hidden md:flex items-center space-x-2">
@@ -36,23 +36,9 @@ export default function Header() {
             >
               <span className="material-icons">facebook</span>
             </a>
-            <a
-              href="#"
-              className="hover:text-secondary px-2"
-              aria-label="Twitter"
-            >
-              <span className="material-icons">twitter</span>
-            </a>
-            <a
-              href="#"
-              className="hover:text-secondary px-2"
-              aria-label="Instagram"
-            >
-              <span className="material-icons">instagram</span>
-            </a>
           </div>
         </div>
-      </div>
+      </div> */}
 
       {/* Main header */}
       <div className="container mx-auto px-4 py-4 flex flex-col md:flex-row items-center justify-between">

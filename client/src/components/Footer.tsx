@@ -14,36 +14,6 @@ export default function Footer() {
               Providing quality Islamic education to nurture the next generation
               of Muslims.
             </p>
-            {/* <div className="flex space-x-3">
-              <a
-                href="#"
-                className="text-white hover:text-secondary"
-                aria-label="Facebook"
-              >
-                <span className="material-icons">facebook</span>
-              </a>
-              <a
-                href="#"
-                className="text-white hover:text-secondary"
-                aria-label="Twitter"
-              >
-                <span className="material-icons">twitter</span>
-              </a>
-              <a
-                href="#"
-                className="text-white hover:text-secondary"
-                aria-label="Instagram"
-              >
-                <span className="material-icons">instagram</span>
-              </a>
-              <a
-                href="#"
-                className="text-white hover:text-secondary"
-                aria-label="YouTube"
-              >
-                <span className="material-icons">play_arrow</span>
-              </a>
-            </div> */}
           </div>
 
           {/* Column 2 */}
