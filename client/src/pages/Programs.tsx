@@ -1,3 +1,4 @@
+
 import { Link } from "react-router-dom";
 
 export default function Programs() {
@@ -9,6 +10,94 @@ export default function Programs() {
         </h1>
 
         <div className="grid gap-8">
+          <div id="quran-studies" className="bg-white rounded-lg shadow-sm p-6">
+            <h2 className="text-2xl font-bold text-primary mb-4 font-amiri">
+              Quran Studies (All Ages)
+            </h2>
+            <div className="space-y-4">
+              <p className="text-lg">Students are grouped by grade level for focused Quran reading and writing instruction.</p>
+              <div className="pl-4">
+                <h3 className="font-bold text-primary mb-2">Program Features:</h3>
+                <ul className="list-disc pl-4 space-y-2">
+                  <li>Proper Quran recitation (Tajweed)</li>
+                  <li>Arabic letter recognition and writing</li>
+                  <li>Memorization techniques</li>
+                  <li>Understanding basic meanings</li>
+                  <li>Progressive learning path from beginners to advanced</li>
+                </ul>
+              </div>
+              <div className="bg-neutral-background p-4 rounded-lg mt-4">
+                <p className="italic">Our Quran studies program caters to all skill levels, ensuring each student progresses at their own pace while maintaining high standards of learning.</p>
+              </div>
+            </div>
+          </div>
+
+          <div id="foundation-program" className="bg-white rounded-lg shadow-sm p-6">
+            <h2 className="text-2xl font-bold text-primary mb-4 font-amiri">
+              Foundational Islamic Studies (Grade 3-4)
+            </h2>
+            <div className="space-y-4">
+              <p className="text-lg">Core Islamic studies program designed specifically for intermediate students.</p>
+              <div className="pl-4">
+                <h3 className="font-bold text-primary mb-2">Curriculum Includes:</h3>
+                <ul className="list-disc pl-4 space-y-2">
+                  <li>Basic Islamic beliefs (Aqeedah)</li>
+                  <li>Islamic manners and character building</li>
+                  <li>Introduction to Prophet's life (Seerah)</li>
+                  <li>Basic Islamic practices</li>
+                  <li>Interactive learning activities</li>
+                </ul>
+              </div>
+              <div className="bg-neutral-background p-4 rounded-lg mt-4">
+                <p className="italic">This program builds a strong foundation in Islamic knowledge, preparing students for advanced studies in later years.</p>
+              </div>
+            </div>
+          </div>
+
+          <div id="shafii-fiqh" className="bg-white rounded-lg shadow-sm p-6">
+            <h2 className="text-2xl font-bold text-primary mb-4 font-amiri">
+              Shafi'i Fiqh (Grade 5-6)
+            </h2>
+            <div className="space-y-4">
+              <p className="text-lg">Advanced Islamic jurisprudence studies following the Shafi'i school of thought.</p>
+              <div className="pl-4">
+                <h3 className="font-bold text-primary mb-2">Course Content:</h3>
+                <ul className="list-disc pl-4 space-y-2">
+                  <li>Fundamentals of Islamic worship</li>
+                  <li>Prayer and purification rules</li>
+                  <li>Fasting guidelines</li>
+                  <li>Basic transactions in Islam</li>
+                  <li>Family relations in Islam</li>
+                </ul>
+              </div>
+              <div className="bg-neutral-background p-4 rounded-lg mt-4">
+                <p className="italic">Students learn practical application of Islamic rulings in their daily lives according to the Shafi'i madhab.</p>
+              </div>
+            </div>
+          </div>
+
+          <div id="duas-program" className="bg-white rounded-lg shadow-sm p-6">
+            <h2 className="text-2xl font-bold text-primary mb-4 font-amiri">
+              Duas Program (Grade 1-2)
+            </h2>
+            <div className="space-y-4">
+              <p className="text-lg">Early education program focusing on essential Islamic supplications and their meanings.</p>
+              <div className="pl-4">
+                <h3 className="font-bold text-primary mb-2">Program Components:</h3>
+                <ul className="list-disc pl-4 space-y-2">
+                  <li>Daily prayers and supplications</li>
+                  <li>Morning and evening adhkar</li>
+                  <li>Etiquettes of dua</li>
+                  <li>Simple Arabic vocabulary</li>
+                  <li>Interactive learning methods</li>
+                </ul>
+              </div>
+              <div className="bg-neutral-background p-4 rounded-lg mt-4">
+                <p className="italic">A foundational program that helps young students develop a strong connection with Allah through daily remembrance and supplications.</p>
+              </div>
+            </div>
+          </div>
+
           <div className="bg-white rounded-lg shadow-sm p-6">
             <h2 className="text-2xl font-bold text-primary mb-4 font-amiri">
               Class Schedule
@@ -32,102 +121,6 @@ export default function Programs() {
                   </tr>
                 </tbody>
               </table>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <h2 className="text-2xl font-bold text-primary mb-4 font-amiri">
-              Programs Offered
-            </h2>
-            <div className="space-y-4">
-              <div>
-                <h3 className="font-bold text-primary">
-                  Quran Studies (All Ages)
-                </h3>
-                <p>
-                  Students are grouped by grade level for focused Quran reading
-                  and writing instruction.
-                </p>
-              </div>
-              <div>
-                <h3 className="font-bold text-primary">
-                  Foundational Islamic Studies
-                </h3>
-                <p>Grade 3-4</p>
-              </div>
-              <div>
-                <h3 className="font-bold text-primary">Shafii Fiqh</h3>
-                <p>Grade 5-6</p>
-              </div>
-              <div>
-                <h3 className="font-bold text-primary">Duas</h3>
-                <p>Grade 1-2</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <h2 className="text-2xl font-bold text-primary mb-4 font-amiri">
-              Daily Schedule
-            </h2>
-            <div className="space-y-4">
-              <div>
-                <h3 className="font-bold text-primary">First Hour</h3>
-                <p>
-                  Quran reading and writing (Students must prepare their new
-                  lesson for each class)
-                </p>
-              </div>
-              <div>
-                <h3 className="font-bold text-primary">Second Hour</h3>
-                <p>Separate program instruction based on grade level</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <h2 className="text-2xl font-bold text-primary mb-4 font-amiri">
-              Fee Structure (Per School Term)
-            </h2>
-            <p className="mb-4 font-bold">Due by Week 7</p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="p-4 bg-neutral-background rounded">
-                <p>1 child: $180</p>
-              </div>
-              <div className="p-4 bg-neutral-background rounded">
-                <p>2 Children: $330</p>
-              </div>
-              <div className="p-4 bg-neutral-background rounded">
-                <p>3 Children: $450</p>
-              </div>
-              <div className="p-4 bg-neutral-background rounded">
-                <p>4 Children: $505</p>
-              </div>
-              <div className="p-4 bg-neutral-background rounded">
-                <p>5 Children: $555</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <h2 className="text-2xl font-bold text-primary mb-4 font-amiri">
-              Uniform Policy
-            </h2>
-            <div className="grid md:grid-cols-2 gap-8">
-              <div>
-                <h3 className="font-bold text-primary mb-2">Girls</h3>
-                <ul className="list-disc list-inside space-y-2">
-                  <li>White/Black Jilbaab</li>
-                  <li>Black Abaya</li>
-                </ul>
-              </div>
-              <div>
-                <h3 className="font-bold text-primary mb-2">Boys</h3>
-                <ul className="list-disc list-inside space-y-2">
-                  <li>White Thobe</li>
-                  <li>White Sunnah Cap</li>
-                </ul>
-              </div>
             </div>
           </div>
         </div>

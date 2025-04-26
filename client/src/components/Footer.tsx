@@ -89,10 +89,10 @@ export default function Footer() {
             <ul className="space-y-2">
               <li>
                 <Link
-                  href="/programs#early-learners"
+                  href="/programs#quran-studies"
                   className="hover:text-secondary"
                 >
-                  Early Learners
+                  Quran Studies
                 </Link>
               </li>
               <li>
@@ -100,31 +100,23 @@ export default function Footer() {
                   href="/programs#foundation-program"
                   className="hover:text-secondary"
                 >
-                  Foundation Program
+                  Foundational Islamic Studies
                 </Link>
               </li>
               <li>
                 <Link
-                  href="/programs#youth-program"
+                  href="/programs#shafii-fiqh"
                   className="hover:text-secondary"
                 >
-                  Youth Program
+                  Shafi'i Fiqh
                 </Link>
               </li>
               <li>
                 <Link
-                  href="/programs#hifz-program"
+                  href="/programs#duas-program"
                   className="hover:text-secondary"
                 >
-                  Quran Program
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/programs#weekend-classes"
-                  className="hover:text-secondary"
-                >
-                  Weekend Classes
+                  Duas Program
                 </Link>
               </li>
               <li>
