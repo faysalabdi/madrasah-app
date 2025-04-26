@@ -158,7 +158,7 @@ export default function Home() {
               <div className="h-48 bg-primary-light relative">
                 <div className="absolute inset-0 flex items-center justify-center">
                   <span className="material-icons text-white text-6xl">
-                    school
+                    menu_book
                   </span>
                 </div>
               </div>
@@ -190,7 +190,7 @@ export default function Home() {
               <div className="h-48 bg-primary relative">
                 <div className="absolute inset-0 flex items-center justify-center">
                   <span className="material-icons text-white text-6xl">
-                    menu_book
+                    school
                   </span>
                 </div>
               </div>
@@ -227,7 +227,7 @@ export default function Home() {
               </div>
               <div className="p-6">
                 <h3 className="text-xl font-bold text-primary mb-2 font-amiri">
-                  Shafii Fiqh
+                  Shafi'i Fiqh
                 </h3>
                 <p className="mb-4">
                   Advanced Islamic jurisprudence studies for senior students.
@@ -362,13 +362,13 @@ export default function Home() {
           </div>
 
           <div className="text-center mt-12">
-            <Link
+            {/* <Link
               href="/faculty"
               className="text-primary hover:text-primary-dark font-medium flex items-center justify-center"
             >
               View all faculty members
               <span className="material-icons ml-1">arrow_forward</span>
-            </Link>
+            </Link> */}
           </div>
         </div>
       </section>

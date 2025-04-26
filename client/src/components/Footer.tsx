@@ -14,7 +14,7 @@ export default function Footer() {
               Providing quality Islamic education to nurture the next generation
               of Muslims.
             </p>
-            <div className="flex space-x-3">
+            {/* <div className="flex space-x-3">
               <a
                 href="#"
                 className="text-white hover:text-secondary"
@@ -43,7 +43,7 @@ export default function Footer() {
               >
                 <span className="material-icons">play_arrow</span>
               </a>
-            </div>
+            </div> */}
           </div>
 
           {/* Column 2 */}

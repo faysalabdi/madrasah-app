@@ -119,14 +119,14 @@ export default function Header() {
                 Enrolment
               </Link>
             </li>
-            <li>
+            {/* <li>
               <Link
                 href="/faculty"
                 className={`block py-2 ${isActive("/faculty")}`}
               >
                 Faculty
               </Link>
-            </li>
+            </li> */}
             <li>
               <Link
                 href="/contact"
