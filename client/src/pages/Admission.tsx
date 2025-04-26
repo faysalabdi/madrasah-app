@@ -119,35 +119,59 @@ export default function Admission() {
                 </h3>
                 <ul className="space-y-3 mb-6">
                   <li className="flex items-start">
-                    <span className="material-icons text-secondary mr-2">check_circle</span>
-                    <span>Drop students off on time 5:30pm on weekdays and 10am on Saturdays</span>
+                    <span className="material-icons text-secondary mr-2">
+                      check_circle
+                    </span>
+                    <span>
+                      Drop students off on time 5:30pm on weekdays and 10am on
+                      Saturdays
+                    </span>
                   </li>
                   <li className="flex items-start">
-                    <span className="material-icons text-secondary mr-2">check_circle</span>
+                    <span className="material-icons text-secondary mr-2">
+                      check_circle
+                    </span>
                     <span>Pick up students on time. Drive carefully</span>
                   </li>
                   <li className="flex items-start">
-                    <span className="material-icons text-secondary mr-2">check_circle</span>
-                    <span>Ensure student is in clean, neat and correct uniform and clean socks</span>
+                    <span className="material-icons text-secondary mr-2">
+                      check_circle
+                    </span>
+                    <span>
+                      Ensure student is in clean, neat and correct uniform and
+                      clean socks
+                    </span>
                   </li>
                   <li className="flex items-start">
-                    <span className="material-icons text-secondary mr-2">check_circle</span>
-                    <span>Student's Record Book is checked and signed daily</span>
+                    <span className="material-icons text-secondary mr-2">
+                      check_circle
+                    </span>
+                    <span>
+                      Student's Record Book is checked and signed daily
+                    </span>
                   </li>
                   <li className="flex items-start">
-                    <span className="material-icons text-secondary mr-2">check_circle</span>
+                    <span className="material-icons text-secondary mr-2">
+                      check_circle
+                    </span>
                     <span>Student has eaten before coming to Madrassah</span>
                   </li>
                   <li className="flex items-start">
-                    <span className="material-icons text-secondary mr-2">check_circle</span>
+                    <span className="material-icons text-secondary mr-2">
+                      check_circle
+                    </span>
                     <span>Student went to toilet before Madrassah</span>
                   </li>
                   <li className="flex items-start">
-                    <span className="material-icons text-secondary mr-2">check_circle</span>
+                    <span className="material-icons text-secondary mr-2">
+                      check_circle
+                    </span>
                     <span>Student made wudhu before coming to Madrassah</span>
                   </li>
                   <li className="flex items-start">
-                    <span className="material-icons text-secondary mr-2">check_circle</span>
+                    <span className="material-icons text-secondary mr-2">
+                      check_circle
+                    </span>
                     <span>Homework was completed the night before</span>
                   </li>
                 </ul>
@@ -156,7 +180,9 @@ export default function Admission() {
                   ref={feesRef}
                   className={`bg-primary-light bg-opacity-10 p-4 rounded-lg border border-primary-light ${feesEntry?.isIntersecting ? "animate-fadeIn" : ""}`}
                 >
-                  <h4 className="font-bold text-primary mb-2">Fees Structure Per School Term – Due By Week 7</h4>
+                  <h4 className="font-bold text-primary mb-2">
+                    Fees Structure Per School Term – Due By Week 7
+                  </h4>
                   <ul className="text-sm space-y-1">
                     <li>1 child: $180</li>
                     <li>2 Children: $330</li>

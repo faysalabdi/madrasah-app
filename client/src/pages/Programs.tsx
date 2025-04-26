@@ -4,11 +4,15 @@ export default function Programs() {
   return (
     <main className="min-h-screen py-16">
       <div className="container mx-auto px-4">
-        <h1 className="text-4xl font-bold text-primary mb-8 text-center font-amiri">Our Programs</h1>
+        <h1 className="text-4xl font-bold text-primary mb-8 text-center font-amiri">
+          Our Programs
+        </h1>
 
         <div className="grid gap-8">
           <div className="bg-white rounded-lg shadow-sm p-6">
-            <h2 className="text-2xl font-bold text-primary mb-4 font-amiri">Class Schedule</h2>
+            <h2 className="text-2xl font-bold text-primary mb-4 font-amiri">
+              Class Schedule
+            </h2>
             <div className="overflow-x-auto">
               <table className="w-full border-collapse">
                 <thead>
@@ -32,14 +36,23 @@ export default function Programs() {
           </div>
 
           <div className="bg-white rounded-lg shadow-sm p-6">
-            <h2 className="text-2xl font-bold text-primary mb-4 font-amiri">Programs Offered</h2>
+            <h2 className="text-2xl font-bold text-primary mb-4 font-amiri">
+              Programs Offered
+            </h2>
             <div className="space-y-4">
               <div>
-                <h3 className="font-bold text-primary">Quran Studies (All Ages)</h3>
-                <p>Students are grouped by grade level for focused Quran reading and writing instruction.</p>
+                <h3 className="font-bold text-primary">
+                  Quran Studies (All Ages)
+                </h3>
+                <p>
+                  Students are grouped by grade level for focused Quran reading
+                  and writing instruction.
+                </p>
               </div>
               <div>
-                <h3 className="font-bold text-primary">Foundational Islamic Studies</h3>
+                <h3 className="font-bold text-primary">
+                  Foundational Islamic Studies
+                </h3>
                 <p>Grade 3-4</p>
               </div>
               <div>
@@ -54,11 +67,16 @@ export default function Programs() {
           </div>
 
           <div className="bg-white rounded-lg shadow-sm p-6">
-            <h2 className="text-2xl font-bold text-primary mb-4 font-amiri">Daily Schedule</h2>
+            <h2 className="text-2xl font-bold text-primary mb-4 font-amiri">
+              Daily Schedule
+            </h2>
             <div className="space-y-4">
               <div>
                 <h3 className="font-bold text-primary">First Hour</h3>
-                <p>Quran reading and writing (Students must prepare their new lesson for each class)</p>
+                <p>
+                  Quran reading and writing (Students must prepare their new
+                  lesson for each class)
+                </p>
               </div>
               <div>
                 <h3 className="font-bold text-primary">Second Hour</h3>
@@ -68,7 +86,9 @@ export default function Programs() {
           </div>
 
           <div className="bg-white rounded-lg shadow-sm p-6">
-            <h2 className="text-2xl font-bold text-primary mb-4 font-amiri">Fee Structure (Per School Term)</h2>
+            <h2 className="text-2xl font-bold text-primary mb-4 font-amiri">
+              Fee Structure (Per School Term)
+            </h2>
             <p className="mb-4 font-bold">Due by Week 7</p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="p-4 bg-neutral-background rounded">
@@ -90,7 +110,9 @@ export default function Programs() {
           </div>
 
           <div className="bg-white rounded-lg shadow-sm p-6">
-            <h2 className="text-2xl font-bold text-primary mb-4 font-amiri">Uniform Policy</h2>
+            <h2 className="text-2xl font-bold text-primary mb-4 font-amiri">
+              Uniform Policy
+            </h2>
             <div className="grid md:grid-cols-2 gap-8">
               <div>
                 <h3 className="font-bold text-primary mb-2">Girls</h3>
