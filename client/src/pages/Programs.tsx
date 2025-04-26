@@ -2,6 +2,22 @@
 import { Link } from "react-router-dom";
 
 export default function Programs() {
+  // Add scroll into view behavior when component mounts
+  React.useEffect(() => {
+    // Get the hash from the URL
+    const hash = window.location.hash;
+    if (hash) {
+      // Remove the # from the hash
+      const element = document.getElementById(hash.slice(1));
+      if (element) {
+        // Wait a bit for the page to render and then scroll
+        setTimeout(() => {
+          element.scrollIntoView({ behavior: 'smooth' });
+        }, 100);
+      }
+    }
+  }, []);
+
   return (
     <main className="min-h-screen py-16">
       <div className="container mx-auto px-4">
