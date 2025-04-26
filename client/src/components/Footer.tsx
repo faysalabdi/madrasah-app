@@ -67,14 +67,14 @@ export default function Footer() {
               </li>
               <li>
                 <Link href="/admission" className="hover:text-secondary">
-                  Admission
+                  Enrolment
                 </Link>
               </li>
-              <li>
+              {/* <li>
                 <Link href="/faculty" className="hover:text-secondary">
                   Faculty
                 </Link>
-              </li>
+              </li> */}
               <li>
                 <Link href="/contact" className="hover:text-secondary">
                   Contact Us
@@ -116,7 +116,7 @@ export default function Footer() {
                   href="/programs#hifz-program"
                   className="hover:text-secondary"
                 >
-                  Hifz Program
+                  Quran Program
                 </Link>
               </li>
               <li>
@@ -147,22 +147,22 @@ export default function Footer() {
                   location_on
                 </span>
                 <span>
-                  123 Islamic Education Street
+                  46/48 The Mall
                   <br />
-                  Anytown, ST 12345
+                  Heidelberg West VIC 3081
                 </span>
               </p>
               <p className="flex items-start mb-2">
                 <span className="material-icons mr-2 text-secondary">
                   phone
                 </span>
-                <span>(123) 456-7890</span>
+                <span>0411 510 201</span>
               </p>
               <p className="flex items-start">
                 <span className="material-icons mr-2 text-secondary">
                   email
                 </span>
-                <span>info@madrasa-abubakr.org</span>
+                <span>ayanlejama@gmail.com</span>
               </p>
             </address>
           </div>
@@ -173,7 +173,7 @@ export default function Footer() {
             &copy; {new Date().getFullYear()} Madrasah Abubakr As-Siddiq. All
             rights reserved.
           </p>
-          <p className="mt-2">
+          {/* <p className="mt-2">
             <a href="#" className="hover:text-secondary">
               Privacy Policy
             </a>{" "}
@@ -181,7 +181,7 @@ export default function Footer() {
             <a href="#" className="hover:text-secondary">
               Terms of Service
             </a>
-          </p>
+          </p> */}
         </div>
       </div>
     </footer>
