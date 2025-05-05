@@ -18,11 +18,6 @@ export default function Contact() {
                 <h3 className="font-bold text-primary">Contact Person</h3>
                 <p>Sheikh Abdul Qadir Jama</p>
               </div>
-              <div>
-                <h3 className="font-bold text-primary">Location</h3>
-                <p>Shop 48, The Mall</p>
-                <p>Heidelberg West 3081</p>
-              </div>
             </div>
             <div className="mt-8 max-w-xl mx-auto">
               <form action="https://formspree.io/f/xjkwkdrl" method="POST" className="bg-neutral-light p-6 rounded-lg shadow-md space-y-4">
@@ -43,7 +38,18 @@ export default function Contact() {
               </form>
             </div>
           </div>
-          
+          <div className="rounded-lg overflow-hidden shadow-sm h-full min-h-[400px]">
+            <iframe
+              title="Madrasah Location"
+              src="https://www.google.com/maps?q=Shop+48+The+Mall,+Heidelberg+West+3081&output=embed"
+              width="100%"
+              height="100%"
+              style={{ minHeight: '400px', border: 0 }}
+              allowFullScreen
+              loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
+            ></iframe>
+          </div>
         </div>
       </div>
     </main>
