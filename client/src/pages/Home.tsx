@@ -82,7 +82,6 @@ export default function Home() {
                     className="w-full h-full object-cover lazy-image"
                     src={dugsiImg}
                     alt="Madrasah class in session"
-                    loading="lazy"
                   />
                 </div>
               </div>
