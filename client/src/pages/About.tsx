@@ -49,9 +49,8 @@ export default function About() {
                 </h3>
                 <p className="text-lg">
                   To provide comprehensive Islamic education that nurtures
-                  spiritual growth, cultivates moral character, and prepares
-                  students to thrive as confident Muslims in contemporary
-                  society.
+                  imaan, with a major focus on good manners, in order to prepare
+                  students to thrive as confident respectful Muslims in society.
                 </p>
               </div>
 
@@ -79,10 +78,7 @@ export default function About() {
                   Holistic Education
                 </h3>
                 <p>
-                  We focus on developing the whole person - intellectually,
-                  spiritually, morally, and socially - through a balanced
-                  curriculum that integrates Islamic knowledge with practical
-                  life skills.
+                  We focus on developing our students in various aspects, from proficiency in reading and writing, to good manners, to knowledge of the Quran and Islamic studies.
                 </p>
               </div>
 
@@ -114,7 +110,7 @@ export default function About() {
             className={`max-w-4xl mx-auto ${historyEntry?.isIntersecting ? "animate-fadeIn" : ""}`}
           >
             <h2 className="text-3xl font-bold text-primary mb-12 font-amiri text-center">
-              Our History
+              Our History and goals for the future inshaAllah.
             </h2>
 
             <div className="relative">
@@ -126,17 +122,16 @@ export default function About() {
                 <div className="flex flex-col md:flex-row items-center">
                   <div className="md:w-1/2 md:pr-12 mb-4 md:mb-0 md:text-right">
                     <h3 className="text-2xl font-bold text-primary mb-2 font-amiri">
-                      2010: Foundation
+                      2025: Foundation
                     </h3>
                     <p>
-                      Madrasah Abubakr As-Siddiq was established by a group of
-                      dedicated community members who recognized the need for
-                      quality Islamic education. Starting with just 15 students
-                      and 2 teachers in a small rented space.
+                      Madrasah Abubakr As-Siddiq was established in recognition of the need for
+                      quality Islamic education. Starting with just a handful of students
+                      and 3 teachers in a small rented space.
                     </p>
                   </div>
                   <div className="relative z-10 bg-primary rounded-full w-12 h-12 flex items-center justify-center text-white font-bold mb-4 md:mb-0">
-                    2010
+                    2025
                   </div>
                   <div className="md:w-1/2 md:pl-12 md:text-left"></div>
                 </div>
@@ -144,16 +139,15 @@ export default function About() {
                 <div className="flex flex-col md:flex-row items-center">
                   <div className="md:w-1/2 md:pr-12 mb-4 md:mb-0 md:text-right order-1 md:order-1"></div>
                   <div className="relative z-10 bg-primary rounded-full w-12 h-12 flex items-center justify-center text-white font-bold mb-4 md:mb-0 order-2 md:order-2">
-                    2013
+                    2027
                   </div>
                   <div className="md:w-1/2 md:pl-12 md:text-left order-3 md:order-3">
                     <h3 className="text-2xl font-bold text-primary mb-2 font-amiri">
-                      2013: Curriculum Development
+                      2027: Curriculum Development
                     </h3>
                     <p>
-                      Developed a comprehensive curriculum integrating Quranic
-                      studies, Islamic knowledge, Arabic language, and character
-                      development. Student enrollment grew to 50 students.
+                      Develop a comprehensive curriculum integrating Quranic
+                      studies, Islamic knowledge, Arabic language, and akhlaaq.
                     </p>
                   </div>
                 </div>
@@ -161,16 +155,16 @@ export default function About() {
                 <div className="flex flex-col md:flex-row items-center">
                   <div className="md:w-1/2 md:pr-12 mb-4 md:mb-0 md:text-right">
                     <h3 className="text-2xl font-bold text-primary mb-2 font-amiri">
-                      2015: New Facility
+                      2028: New Facility
                     </h3>
                     <p>
-                      Moved to our current purpose-built facility, allowing us
+                      Move to a purpose-built facility, allowing us
                       to expand our programs and accommodate more students.
-                      Introduced specialized programs for different age groups.
+                      Introduce specialised programs for different age groups.
                     </p>
                   </div>
                   <div className="relative z-10 bg-primary rounded-full w-12 h-12 flex items-center justify-center text-white font-bold mb-4 md:mb-0">
-                    2015
+                    2028
                   </div>
                   <div className="md:w-1/2 md:pl-12 md:text-left"></div>
                 </div>
@@ -178,16 +172,15 @@ export default function About() {
                 <div className="flex flex-col md:flex-row items-center">
                   <div className="md:w-1/2 md:pr-12 mb-4 md:mb-0 md:text-right order-1 md:order-1"></div>
                   <div className="relative z-10 bg-primary rounded-full w-12 h-12 flex items-center justify-center text-white font-bold mb-4 md:mb-0 order-2 md:order-2">
-                    2018
+                    2029
                   </div>
                   <div className="md:w-1/2 md:pl-12 md:text-left order-3 md:order-3">
                     <h3 className="text-2xl font-bold text-primary mb-2 font-amiri">
-                      2018: Hifz Program
+                      2029: More Teachers
                     </h3>
                     <p>
-                      Launched our dedicated Hifz program for students
-                      interested in memorizing the entire Quran. Celebrated our
-                      first group of students completing portions of the Quran.
+                      We aim to have more teachers to ensure that we can provide
+                      a more personalised and quality education to our students.
                     </p>
                   </div>
                 </div>
@@ -195,13 +188,11 @@ export default function About() {
                 <div className="flex flex-col md:flex-row items-center">
                   <div className="md:w-1/2 md:pr-12 mb-4 md:mb-0 md:text-right">
                     <h3 className="text-2xl font-bold text-primary mb-2 font-amiri">
-                      2023: Today
+                      And beyond...
                     </h3>
                     <p>
-                      Now serving 250+ students with a team of 15 dedicated
-                      teachers. Continuing to expand our programs and enhance
-                      the quality of Islamic education we provide to our
-                      community.
+                      We aim to expand our programs and enhance the quality of Islamic education we provide to our
+                      community. Come with us on this journey inshaAllah.
                     </p>
                   </div>
                   <div className="relative z-10 bg-primary rounded-full w-12 h-12 flex items-center justify-center text-white font-bold mb-4 md:mb-0">
@@ -251,12 +242,11 @@ export default function About() {
                     <span className="material-icons text-white">favorite</span>
                   </div>
                   <h3 className="text-xl font-bold text-primary font-amiri">
-                    Character Development
+                    Good Manners
                   </h3>
                 </div>
                 <p>
-                  We emphasize the development of Islamic character and moral
-                  integrity in all our students, teaching them to embody Islamic
+                  We emphasize the development of good manners and akhlaaq in all our students, teaching them to embody Islamic
                   values.
                 </p>
               </div>
@@ -269,13 +259,12 @@ export default function About() {
                     </span>
                   </div>
                   <h3 className="text-xl font-bold text-primary font-amiri">
-                    Respect for Diversity
+                    Love for the Quran
                   </h3>
                 </div>
                 <p>
-                  We respect diversity within the Islamic tradition and teach
-                  students to appreciate different perspectives while remaining
-                  grounded in authentic knowledge.
+                  We love the Quran and teach our students the importance of
+                  learning it, memorising it and reciting it.
                 </p>
               </div>
 
