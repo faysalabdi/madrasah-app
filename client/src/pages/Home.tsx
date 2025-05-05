@@ -80,7 +80,7 @@ export default function Home() {
                 <div className="w-full h-full relative">
                   <img
                     className="w-full h-full object-cover lazy-image"
-                    src={dugsiImg}
+                    src="/src/assets/dugsi.jpg"
                     alt="Madrasah class in session"
                   />
                 </div>
