@@ -172,11 +172,11 @@ export default function Admission() {
                     Fees Structure Per School Term – Due By Week 7
                   </h4>
                   <ul className="text-sm space-y-1">
-                    <li>Fiqh book: $20 $</li>
+                    <li>Fiqh book: $20</li>
                     <li>Surahs and dua: $20</li>
                     <li>Islamic studies book: $40</li>
                     <li>Term fees: $200</li>
-                    <li>Total for 1 child: $280</li>
+                    <li> <b>Total for 1 child: $280</b></li>
                   </ul>
                 </div>
               </div>
