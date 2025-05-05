@@ -216,9 +216,8 @@ export default function Admission() {
             </div>
 
             <p className="text-center mt-6 text-sm">
-              After submitting your application, our admissions team will
-              contact you within 3-5 business days to schedule an assessment and
-              interview.
+              After submitting your application, our team will
+              contact you within 3-5 business days to schedule an assessment.
             </p>
           </div>
         </div>
@@ -238,23 +237,7 @@ export default function Admission() {
                   Is there an age requirement for admission?
                 </h3>
                 <p>
-                  Yes, our programs have specific age requirements. The Early
-                  Learners program accepts children aged 4-6, the Foundation
-                  Program is for ages 7-12, and the Youth Program is for ages
-                  13-18. The Hifz Program accepts qualified students from all
-                  age groups.
-                </p>
-              </div>
-
-              <div className="bg-white p-6 rounded-lg shadow-sm">
-                <h3 className="text-lg font-bold text-primary mb-2">
-                  Do you offer financial aid?
-                </h3>
-                <p>
-                  Yes, we offer financial aid for families who demonstrate need.
-                  We believe that Islamic education should be accessible to all
-                  members of our community. Please contact our administrative
-                  office for details on how to apply for financial assistance.
+                  Yes, we only accept students in prep to grade 6.
                 </p>
               </div>
 
@@ -276,10 +259,7 @@ export default function Admission() {
                 </h3>
                 <p>
                   We maintain small class sizes to ensure quality instruction.
-                  Our typical student-to-teacher ratio is 10:1 for Early
-                  Learners, 15:1 for the Foundation Program, and 12:1 for the
-                  Youth Program. The Hifz Program offers more personalized
-                  attention with a ratio of 6:1.
+                  Our typical student-to-teacher ratio is 15:1.
                 </p>
               </div>
 
@@ -306,13 +286,13 @@ export default function Admission() {
             Questions About Admission?
           </h2>
           <p className="mb-6 max-w-2xl mx-auto">
-            Our admissions team is here to help. Contact us for more information
+            Our team is here to help. Contact us for more information
             about our programs and the application process.
           </p>
           <div className="flex flex-col sm:flex-row justify-center items-center space-y-4 sm:space-y-0 sm:space-x-8">
             <div className="flex items-center">
               <span className="material-icons mr-2">email</span>
-              <span>admissions@madrasa-abubakr.org</span>
+              <span>info@madrasahabubakrasiddiq.org</span>
             </div>
           </div>
         </div>
