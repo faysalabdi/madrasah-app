@@ -293,7 +293,7 @@ export default function Admission() {
             <div className="flex items-center">
               <span className="material-icons mr-2">email</span>
               <Link 
-                href="/contact" 
+                href="/contact#contact-form" 
                 className="text-white hover:text-gray-200 underline transition-colors"
               >
                 info@madrasahabubakrasiddiq.org

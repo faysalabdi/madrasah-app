@@ -28,7 +28,7 @@ export default function Contact() {
               </div>
             </div>
             <div className="mt-8 max-w-xl mx-auto">
-              <form action="https://formspree.io/f/xjkwkdrl" method="POST" className="bg-neutral-light p-6 rounded-lg shadow-md space-y-4">
+              <form id="contact-form" action="https://formspree.io/f/xjkwkdrl" method="POST" className="bg-neutral-light p-6 rounded-lg shadow-md space-y-4">
                 <h3 className="text-xl font-bold text-primary mb-4 font-amiri">Send us a message</h3>
                 <div>
                   <label htmlFor="name" className="block text-left font-medium mb-1">Name</label>
