@@ -77,14 +77,12 @@ export default function Home() {
             <div className="md:w-1/2">
               {/* Quran class image */}
               <div className="rounded-lg overflow-hidden shadow-lg mb-6 bg-neutral-light h-64">
-                <div className="w-full h-full relative">
-                  <img
-                    className="w-full h-full object-cover lazy-image"
-                    src="/src/assets/dugsi.jpg"
-                    alt="Madrasah class in session"
-                  />
-                </div>
-              </div>
+  <img
+    className="w-full h-full object-cover"
+    src={dugsiImg}
+    alt="Madrasah class in session"
+  />
+</div>
 
               {/* Timeline */}
               <div className="bg-white p-6 rounded-lg shadow-sm border border-neutral-border">
