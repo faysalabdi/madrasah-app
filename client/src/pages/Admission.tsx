@@ -292,7 +292,12 @@ export default function Admission() {
           <div className="flex flex-col sm:flex-row justify-center items-center space-y-4 sm:space-y-0 sm:space-x-8">
             <div className="flex items-center">
               <span className="material-icons mr-2">email</span>
-              <span>info@madrasahabubakrasiddiq.org</span>
+              <Link 
+                href="/contact" 
+                className="text-white hover:text-gray-200 underline transition-colors"
+              >
+                info@madrasahabubakrasiddiq.org
+              </Link>
             </div>
           </div>
         </div>
