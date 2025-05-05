@@ -18,6 +18,14 @@ export default function Contact() {
                 <h3 className="font-bold text-primary">Contact Person</h3>
                 <p>Sheikh Abdul Qadir Jama</p>
               </div>
+              <div>
+                <h3 className="font-bold text-primary">Visiting Hours</h3>
+                <p>
+                  Monday - Tuesday: 5:00pm - 7:00pm
+                  <br />
+                  Saturday: 10:00am - 12:00pm
+                </p>
+              </div>
             </div>
             <div className="mt-8 max-w-xl mx-auto">
               <form action="https://formspree.io/f/xjkwkdrl" method="POST" className="bg-neutral-light p-6 rounded-lg shadow-md space-y-4">
