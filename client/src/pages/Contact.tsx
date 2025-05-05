@@ -19,7 +19,7 @@ export default function Contact() {
                 <p>Sheikh Abdul Qadir Jama</p>
               </div>
               <div>
-                <h3 className="font-bold text-primary">Visiting Hours</h3>
+                <h3 className="font-bold text-primary">Contact Hours</h3>
                 <p>
                   Monday - Tuesday: 5:00pm - 7:00pm
                   <br />
