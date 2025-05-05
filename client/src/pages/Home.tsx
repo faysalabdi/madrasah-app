@@ -6,6 +6,7 @@ import FAQ from "@/components/sections/FAQ";
 import BackgroundPattern from "@/components/ui/BackgroundPattern";
 import { useIntersectionObserver } from "@/hooks/use-intersection-observer";
 import { useRef } from "react";
+import dugsiImg from "@/assets/dugsi.jpg";
 
 export default function Home() {
   const aboutRef = useRef<HTMLElement>(null);
@@ -79,7 +80,7 @@ export default function Home() {
                 <div className="w-full h-full relative">
                   <img
                     className="w-full h-full object-cover lazy-image"
-                    src= "src/assets/dugsi.jpg"
+                    src={dugsiImg}
                     alt="Madrasah class in session"
                     loading="lazy"
                   />
