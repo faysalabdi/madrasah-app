@@ -44,21 +44,25 @@ export default function Header() {
       <div className="container mx-auto px-4 py-4 flex flex-col md:flex-row items-center justify-between">
         <div className="flex items-center mb-4 md:mb-0">
           {/* Logo */}
-          <div className="w-16 h-16 mr-4">
-            <img
-              src={logoSvg}
-              alt="Madrasah Abu Bakr As-Siddiq Logo"
-              className="w-full h-full"
-            />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-primary font-belleza">
-              Madrasah Abu Bakr As-Siddiq
-            </h1>
-            <p className="text-sm text-neutral-text italic font-lato">
-              Excellence in Islamic Education
-            </p>
-          </div>
+          <Link href="/">
+            <div className="flex items-center">
+              <div className="w-16 h-16 mr-4">
+                <img
+                  src={logoSvg}
+                  alt="Madrasah Abu Bakr As-Siddiq Logo"
+                  className="w-full h-full"
+                />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-primary font-belleza">
+                  Madrasah Abu Bakr As-Siddiq
+                </h1>
+                <p className="text-sm text-neutral-text italic font-lato">
+                  Excellence in Islamic Education
+                </p>
+              </div>
+            </div>
+          </Link>
         </div>
 
         {/* Mobile menu button */}
