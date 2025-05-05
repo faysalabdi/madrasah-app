@@ -6,7 +6,7 @@ import FAQ from "@/components/sections/FAQ";
 import BackgroundPattern from "@/components/ui/BackgroundPattern";
 import { useIntersectionObserver } from "@/hooks/use-intersection-observer";
 import { useRef } from "react";
-import dugsiImg from "@/assets/dugsi.jpg";
+import dugsiImg from "../assets/dugsi.jpg";
 
 export default function Home() {
   const aboutRef = useRef<HTMLElement>(null);
