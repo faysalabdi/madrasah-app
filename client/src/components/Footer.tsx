@@ -110,7 +110,7 @@ export default function Footer() {
                 <span className="material-icons mr-2 text-secondary">
                   email
                 </span>
-                <span>ayanlejama@gmail.com</span>
+                <span>info@madrasahabubakrasiddiq.com.au</span>
               </p>
             </address>
           </div>
@@ -119,7 +119,10 @@ export default function Footer() {
         <div className="pt-6 border-t border-white border-opacity-20 text-center text-sm">
           <p>
             &copy; {new Date().getFullYear()} Madrasah Abubakr As-Siddiq. All
-            rights reserved.
+            rights reserved. Website built by
+            <a href="https://inclusibly.com.au" className="hover:text-secondary">
+              Inclusivly
+            </a>
           </p>
           {/* <p className="mt-2">
             <a href="#" className="hover:text-secondary">
