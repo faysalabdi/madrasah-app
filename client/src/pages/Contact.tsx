@@ -17,13 +17,30 @@ export default function Contact() {
               <div>
                 <h3 className="font-bold text-primary">Contact Person</h3>
                 <p>Sheikh Abdul Qadir Jama</p>
-                <p className="text-primary">0411 510 201</p>
               </div>
               <div>
                 <h3 className="font-bold text-primary">Location</h3>
                 <p>Shop 48, The Mall</p>
                 <p>Heidelberg West 3081</p>
               </div>
+            </div>
+            <div className="mt-8 max-w-xl mx-auto">
+              <form action="https://formspree.io/f/xjkwkdrl" method="POST" className="bg-neutral-light p-6 rounded-lg shadow-md space-y-4">
+                <h3 className="text-xl font-bold text-primary mb-4 font-amiri">Send us a message</h3>
+                <div>
+                  <label htmlFor="name" className="block text-left font-medium mb-1">Name</label>
+                  <input type="text" id="name" name="name" required className="w-full border border-neutral-border rounded px-3 py-2" />
+                </div>
+                <div>
+                  <label htmlFor="email" className="block text-left font-medium mb-1">Email</label>
+                  <input type="email" id="email" name="email" required className="w-full border border-neutral-border rounded px-3 py-2" />
+                </div>
+                <div>
+                  <label htmlFor="message" className="block text-left font-medium mb-1">Message</label>
+                  <textarea id="message" name="message" rows={5} required className="w-full border border-neutral-border rounded px-3 py-2"></textarea>
+                </div>
+                <button type="submit" className="bg-primary hover:bg-primary-dark text-white font-medium py-2 px-6 rounded shadow transition duration-300">Send</button>
+              </form>
             </div>
           </div>
           

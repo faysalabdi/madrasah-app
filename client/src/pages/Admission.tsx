@@ -314,10 +314,6 @@ export default function Admission() {
               <span className="material-icons mr-2">email</span>
               <span>admissions@madrasa-abubakr.org</span>
             </div>
-            <div className="flex items-center">
-              <span className="material-icons mr-2">call</span>
-              <span>(123) 456-7890 ext. 2</span>
-            </div>
           </div>
         </div>
       </section>

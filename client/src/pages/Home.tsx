@@ -391,12 +391,6 @@ export default function Home() {
           <div className="flex flex-col md:flex-row justify-center items-center space-y-4 md:space-y-0 md:space-x-6">
             <div className="flex items-center">
               <span className="material-icons text-primary text-2xl mr-2">
-                call
-              </span>
-              <span>0411 510 201</span>
-            </div>
-            <div className="flex items-center">
-              <span className="material-icons text-primary text-2xl mr-2">
                 email
               </span>
               <span>Contact: Sheikh Abdul Qadir Jama</span>
@@ -409,14 +403,23 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="mt-8">
-            <Link
-              href="/contact"
-              className="bg-secondary hover:bg-secondary-dark text-white font-medium py-3 px-8 rounded shadow transition duration-300 inline-flex items-center"
-            >
-              Contact Us
-              <span className="material-icons ml-2">arrow_forward</span>
-            </Link>
+          <div className="mt-8 max-w-xl mx-auto">
+            <form action="https://formspree.io/f/xjkwkdrl" method="POST" className="bg-white p-6 rounded-lg shadow-md space-y-4">
+              <h3 className="text-xl font-bold text-primary mb-4 font-amiri">Send us a message</h3>
+              <div>
+                <label htmlFor="name" className="block text-left font-medium mb-1">Name</label>
+                <input type="text" id="name" name="name" required className="w-full border border-neutral-border rounded px-3 py-2" />
+              </div>
+              <div>
+                <label htmlFor="email" className="block text-left font-medium mb-1">Email</label>
+                <input type="email" id="email" name="email" required className="w-full border border-neutral-border rounded px-3 py-2" />
+              </div>
+              <div>
+                <label htmlFor="message" className="block text-left font-medium mb-1">Message</label>
+                <textarea id="message" name="message" rows={5} required className="w-full border border-neutral-border rounded px-3 py-2"></textarea>
+              </div>
+              <button type="submit" className="bg-primary hover:bg-primary-dark text-white font-medium py-2 px-6 rounded shadow transition duration-300">Send</button>
+            </form>
           </div>
         </div>
       </section>

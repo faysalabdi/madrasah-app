@@ -106,12 +106,6 @@ export default function Footer() {
                   Heidelberg West VIC 3081
                 </span>
               </p>
-              <p className="flex items-start mb-2">
-                <span className="material-icons mr-2 text-secondary">
-                  phone
-                </span>
-                <span>0411 510 201</span>
-              </p>
               <p className="flex items-start">
                 <span className="material-icons mr-2 text-secondary">
                   email
