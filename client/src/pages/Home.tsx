@@ -40,13 +40,13 @@ export default function Home() {
                 spiritual, moral, and intellectual growth of our students.
               </p>
               <p className="mb-4">
-                Named after the first caliph of Islam, our madrasah aims to
+                Named after the first khalifah of Islam, our madrasah aims to
                 instill the values of truthfulness, integrity, and devotion that
                 Abu Bakr As-Siddiq exemplified.
               </p>
               <p className="mb-6">
-                Our mission is to develop confident young Muslims who are
-                well-grounded in their faith and prepared to contribute
+                Our mission is to develop well mannered young Muslims who are
+                grounded in their faith and prepared to contribute
                 positively to society.
               </p>
 
@@ -55,10 +55,9 @@ export default function Home() {
                   Our Core Values
                 </h3>
                 <ul className="list-disc pl-5 space-y-2">
-                  <li>Excellence in Islamic education</li>
-                  <li>Character development and moral integrity</li>
-                  <li>Respect for diversity within the Islamic tradition</li>
-                  <li>Community service and social responsibility</li>
+                  <li>Excellence in Islamic education and quran recitation</li>
+                  <li>Good manners and akhlaaq</li>
+                  <li>Love for the Quran</li>
                   <li>Partnership with parents and the wider community</li>
                 </ul>
               </div>
@@ -80,8 +79,8 @@ export default function Home() {
                 <div className="w-full h-full relative">
                   <img
                     className="w-full h-full object-cover lazy-image"
-                    src="https://images.unsplash.com/photo-1577000348675-67f220eafa82?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80"
-                    alt="Students learning Quran"
+                    src={require("@/assets/dugsi.jpg")}
+                    alt="Madrasah class in session"
                     loading="lazy"
                   />
                 </div>
