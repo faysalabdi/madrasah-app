@@ -26,13 +26,40 @@ export default function Programs() {
         </h1>
 
         <div className="grid gap-8">
+
+        <div className="bg-white rounded-lg shadow-sm p-6">
+            <h2 className="text-2xl font-bold text-primary mb-4 font-amiri">
+              Class Schedule
+            </h2>
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse">
+                <thead>
+                  <tr className="bg-primary text-white">
+                    <th className="py-3 px-4 text-left">Day</th>
+                    <th className="py-3 px-4 text-left">Time</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr className="border-b">
+                    <td className="py-3 px-4">Tuesday & Thursday</td>
+                    <td className="py-3 px-4">5:00 PM - 7:00 PM</td>
+                  </tr>
+                  <tr className="border-b">
+                    <td className="py-3 px-4">Saturday</td>
+                    <td className="py-3 px-4">10:00 AM - 12:00 PM</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          
           <div id="quran-studies" className="bg-white rounded-lg shadow-sm p-6">
             <h2 className="text-2xl font-bold text-primary mb-4 font-amiri">
               Quran Studies (All Ages)
             </h2>
             <div className="space-y-4">
               <p className="text-lg">
-                Students are grouped by grade level for focused Quran reading
+                Students are grouped by proficiency level for focused Quran and iqra reading
                 and writing instruction.
               </p>
               <div className="pl-4">
@@ -42,7 +69,6 @@ export default function Programs() {
                 <ul className="list-disc pl-4 space-y-2">
                   <li>Proper Quran recitation (Tajweed)</li>
                   <li>Arabic letter recognition and writing</li>
-                  <li>Memorization techniques</li>
                   <li>Understanding basic meanings</li>
                   <li>Progressive learning path from beginners to advanced</li>
                 </ul>
@@ -66,8 +92,7 @@ export default function Programs() {
             </h2>
             <div className="space-y-4">
               <p className="text-lg">
-                Core Islamic studies program designed specifically for
-                intermediate students.
+                Core Islamic studies program.
               </p>
               <div className="pl-4">
                 <h3 className="font-bold text-primary mb-2">
@@ -76,7 +101,6 @@ export default function Programs() {
                 <ul className="list-disc pl-4 space-y-2">
                   <li>Basic Islamic beliefs (Aqeedah)</li>
                   <li>Islamic manners and character building</li>
-                  <li>Introduction to Prophet's life (Seerah)</li>
                   <li>Basic Islamic practices</li>
                   <li>Interactive learning activities</li>
                 </ul>
@@ -105,7 +129,6 @@ export default function Programs() {
                   <li>Fundamentals of Islamic worship</li>
                   <li>Prayer and purification rules</li>
                   <li>Fasting guidelines</li>
-                  <li>Basic transactions in Islam</li>
                   <li>Family relations in Islam</li>
                 </ul>
               </div>
@@ -149,31 +172,6 @@ export default function Programs() {
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <h2 className="text-2xl font-bold text-primary mb-4 font-amiri">
-              Class Schedule
-            </h2>
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse">
-                <thead>
-                  <tr className="bg-primary text-white">
-                    <th className="py-3 px-4 text-left">Day</th>
-                    <th className="py-3 px-4 text-left">Time</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr className="border-b">
-                    <td className="py-3 px-4">Tuesday & Thursday</td>
-                    <td className="py-3 px-4">5:00 PM - 7:00 PM</td>
-                  </tr>
-                  <tr className="border-b">
-                    <td className="py-3 px-4">Saturday</td>
-                    <td className="py-3 px-4">10:00 AM - 12:00 PM</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
         </div>
       </div>
     </main>
