@@ -25,6 +25,32 @@ export default function Programs() {
           Our Programs
         </h1>
 
+        <div className="bg-white rounded-lg shadow-sm p-6">
+            <h2 className="text-2xl font-bold text-primary mb-4 font-amiri">
+              Class Schedule
+            </h2>
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse">
+                <thead>
+                  <tr className="bg-primary text-white">
+                    <th className="py-3 px-4 text-left">Day</th>
+                    <th className="py-3 px-4 text-left">Time</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr className="border-b">
+                    <td className="py-3 px-4">Tuesday & Thursday</td>
+                    <td className="py-3 px-4">5:00 PM - 7:00 PM</td>
+                  </tr>
+                  <tr className="border-b">
+                    <td className="py-3 px-4">Saturday</td>
+                    <td className="py-3 px-4">10:00 AM - 12:00 PM</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
         <div className="grid gap-8">
           <div id="quran-studies" className="bg-white rounded-lg shadow-sm p-6">
             <h2 className="text-2xl font-bold text-primary mb-4 font-amiri">
@@ -149,31 +175,6 @@ export default function Programs() {
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <h2 className="text-2xl font-bold text-primary mb-4 font-amiri">
-              Class Schedule
-            </h2>
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse">
-                <thead>
-                  <tr className="bg-primary text-white">
-                    <th className="py-3 px-4 text-left">Day</th>
-                    <th className="py-3 px-4 text-left">Time</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr className="border-b">
-                    <td className="py-3 px-4">Tuesday & Thursday</td>
-                    <td className="py-3 px-4">5:00 PM - 7:00 PM</td>
-                  </tr>
-                  <tr className="border-b">
-                    <td className="py-3 px-4">Saturday</td>
-                    <td className="py-3 px-4">10:00 AM - 12:00 PM</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
         </div>
       </div>
     </main>
