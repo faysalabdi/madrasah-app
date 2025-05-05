@@ -119,8 +119,10 @@ export default function Footer() {
         <div className="pt-6 border-t border-white border-opacity-20 text-center text-sm">
           <p>
             &copy; {new Date().getFullYear()} Madrasah Abubakr As-Siddiq. All
-            rights reserved. Website built by
-            <a href="https://inclusibly.com.au" className="hover:text-secondary">
+            rights reserved.
+            <br />
+            Website built by
+            <a href="https://inclusivly.com.au" className="hover:text-secondary">
               Inclusivly
             </a>
           </p>
