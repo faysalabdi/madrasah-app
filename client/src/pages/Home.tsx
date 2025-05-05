@@ -79,7 +79,7 @@ export default function Home() {
                 <div className="w-full h-full relative">
                   <img
                     className="w-full h-full object-cover lazy-image"
-                    src={require("@/assets/dugsi.jpg")}
+                    src= "src/assets/dugsi.jpg"
                     alt="Madrasah class in session"
                     loading="lazy"
                   />
