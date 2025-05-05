@@ -64,7 +64,7 @@ export default function Hero() {
         <div className="container mx-auto flex items-center justify-center">
           <span className="material-icons mr-2">campaign</span>
           <p className="font-medium">
-            Enrollment for Fall 2023 is now open!{" "}
+            Enrollment for Term 2 2025 is now open!{" "}
             <Link
               href="/apply"
               className="underline font-bold hover:text-primary-dark"

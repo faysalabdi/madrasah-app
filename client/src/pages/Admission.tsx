@@ -30,7 +30,7 @@ export default function Admission() {
               <div className="flex items-center justify-center">
                 <span className="material-icons mr-2">campaign</span>
                 <p className="font-medium">
-                  Enrollment for Fall 2023 is now open!{" "}
+                  Enrollment for Term 2 2025 is now open!{" "}
                   <Link
                     href="/apply"
                     className="underline font-bold hover:text-primary-dark"
@@ -86,18 +86,6 @@ export default function Admission() {
                   <li className="flex">
                     <span className="bg-primary text-white rounded-full w-8 h-8 flex items-center justify-center mr-3 flex-shrink-0">
                       3
-                    </span>
-                    <div>
-                      <h4 className="font-bold mb-1">Interview</h4>
-                      <p className="text-sm">
-                        Parents and students meet with our administration for a
-                        brief interview.
-                      </p>
-                    </div>
-                  </li>
-                  <li className="flex">
-                    <span className="bg-primary text-white rounded-full w-8 h-8 flex items-center justify-center mr-3 flex-shrink-0">
-                      4
                     </span>
                     <div>
                       <h4 className="font-bold mb-1">Enrollment</h4>

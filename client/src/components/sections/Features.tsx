@@ -32,8 +32,8 @@ export default function Features() {
               Dedicated Teachers
             </h3>
             <p>
-              Experienced educators with a passion to nurturing young Muslims
-              with knowledge and wisdom.
+              Teachers with a passion to nurture young Muslims with
+              knowledge and wisdom.
             </p>
           </div>
 
