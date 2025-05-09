@@ -19,10 +19,10 @@ export default function Hero() {
             </p>
             <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
               <Link
-                href="/apply"
+                href="/admission#apply-now"
                 className="bg-secondary hover:bg-secondary-dark text-white font-medium py-3 px-6 rounded shadow text-center transition duration-300"
               >
-                Apply Online
+                Apply Now (Recommended)
               </Link>
               <Link
                 href="/admission"
@@ -66,10 +66,10 @@ export default function Hero() {
           <p className="font-medium">
             Enrollment for Term 2 2025 is now open!{" "}
             <Link
-              href="/apply"
+              href="/admission#apply-now"
               className="underline font-bold hover:text-primary-dark"
             >
-              Apply online today
+              Apply online today (Recommended)
             </Link>
           </p>
         </div>
