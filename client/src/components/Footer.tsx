@@ -58,36 +58,36 @@ export default function Footer() {
             <h4 className="text-lg font-bold mb-4 font-amiri">Programs</h4>
             <ul className="space-y-2">
               <li>
-                <a
+                <Link
                   href="/programs#quran-studies"
                   className="hover:text-secondary"
                 >
                   Quran Studies
-                </a>
+                </Link>
               </li>
               <li>
-                <a
+                <Link
                   href="/programs#foundation-program"
                   className="hover:text-secondary"
                 >
                   Foundational Islamic Studies
-                </a>
+                </Link>
               </li>
               <li>
-                <a
+                <Link
                   href="/programs#shafii-fiqh"
                   className="hover:text-secondary"
                 >
                   Shafi'i Fiqh
-                </a>
+                </Link>
               </li>
               <li>
-                <a
+                <Link
                   href="/programs#duas-program"
                   className="hover:text-secondary"
                 >
                   Surahs & Dua Memorisation
-                </a>
+                </Link>
               </li>
             </ul>
           </div>

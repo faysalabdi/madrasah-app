@@ -1,7 +1,7 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useIntersectionObserver } from "@/hooks/use-intersection-observer";
 import BackgroundPattern from "@/components/ui/BackgroundPattern";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import ApplicationForm from "@/components/forms/ApplicationForm";
 import PaymentInformation from "@/components/sections/PaymentInformation";
 
@@ -11,12 +11,25 @@ export default function Admission() {
   const feesRef = useRef<HTMLDivElement>(null);
   const paymentRef = useRef<HTMLDivElement>(null);
   const [showPaymentInfo, setShowPaymentInfo] = useState(false);
+  const [location] = useLocation();
 
-  console.log("Admission component render - showPaymentInfo:", showPaymentInfo);
+  console.log("Admission component render - showPaymentInfo:", showPaymentInfo, "Hash:", location.hash);
 
   const stepsEntry = useIntersectionObserver(stepsRef, {});
   const requirementsEntry = useIntersectionObserver(requirementsRef, {});
   const feesEntry = useIntersectionObserver(feesRef, {});
+
+  useEffect(() => {
+    if (location.hash === "#apply-now" && !showPaymentInfo) {
+      const element = document.getElementById("apply-now");
+      if (element) {
+        console.log("Scrolling to #apply-now section");
+        setTimeout(() => {
+          element.scrollIntoView({ behavior: "smooth", block: "start" });
+        }, 150);
+      }
+    }
+  }, [location.hash, showPaymentInfo]);
 
   const handleFormSuccess = () => {
     console.log("handleFormSuccess called! Setting showPaymentInfo to true.");

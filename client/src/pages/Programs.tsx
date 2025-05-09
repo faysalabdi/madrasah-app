@@ -1,22 +1,22 @@
-import React from "react";
-import { Link } from "react-router-dom";
+import React, { useEffect } from "react";
+import { Link as WouterLink, useLocation } from "wouter";
 
 export default function Programs() {
-  // Add scroll into view behavior when component mounts
-  React.useEffect(() => {
-    // Get the hash from the URL
-    const hash = window.location.hash;
+  const [location] = useLocation();
+
+  useEffect(() => {
+    const hash = location.hash;
     if (hash) {
-      // Remove the # from the hash
-      const element = document.getElementById(hash.slice(1));
+      const id = hash.replace('#', '');
+      const element = document.getElementById(id);
       if (element) {
-        // Wait a bit for the page to render and then scroll
+        console.log(`Scrolling to element: ${id}`);
         setTimeout(() => {
-          element.scrollIntoView({ behavior: "smooth" });
-        }, 100);
+          element.scrollIntoView({ behavior: "smooth", block: "start" });
+        }, 150);
       }
     }
-  }, []);
+  }, [location.hash]);
 
   return (
     <main className="min-h-screen py-16">
