@@ -12,9 +12,20 @@ export default function Admission() {
   const paymentRef = useRef<HTMLDivElement>(null);
   const [showPaymentInfo, setShowPaymentInfo] = useState(false);
 
+  console.log("Admission component render - showPaymentInfo:", showPaymentInfo);
+
   const stepsEntry = useIntersectionObserver(stepsRef, {});
   const requirementsEntry = useIntersectionObserver(requirementsRef, {});
   const feesEntry = useIntersectionObserver(feesRef, {});
+
+  const handleFormSuccess = () => {
+    console.log("handleFormSuccess called! Setting showPaymentInfo to true.");
+    setShowPaymentInfo(true);
+    setTimeout(() => {
+      console.log("Scrolling to paymentRef, element:", paymentRef.current);
+      paymentRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 100);
+  };
 
   return (
     <>
@@ -70,8 +81,7 @@ export default function Admission() {
                         Complete Application Form
                       </h4>
                       <p className="text-sm">
-                        Fill out our online application form or visit our office
-                        to collect a physical copy.
+                        Fill out the application form below or the alternative Google Form linked above.
                       </p>
                     </div>
                   </li>
@@ -82,8 +92,7 @@ export default function Admission() {
                     <div>
                       <h4 className="font-bold mb-1">Assessment</h4>
                       <p className="text-sm">
-                        Students undergo a basic assessment to determine their
-                        current level of knowledge.
+                        Students undergo a basic assessment to determine their current level and suitable class placement.
                       </p>
                     </div>
                   </li>
@@ -92,10 +101,20 @@ export default function Admission() {
                       3
                     </span>
                     <div>
-                      <h4 className="font-bold mb-1">Enrollment</h4>
+                      <h4 className="font-bold mb-1">Make Payment</h4>
                       <p className="text-sm">
-                        Upon acceptance, complete the enrollment process and fee
-                        payment.
+                        Upon successful assessment, proceed with the term fee payment using the details provided in the payment section below. Please email the receipt to ensure enrolment.
+                      </p>
+                    </div>
+                  </li>
+                  <li className="flex">
+                    <span className="bg-primary text-white rounded-full w-8 h-8 flex items-center justify-center mr-3 flex-shrink-0">
+                      4
+                    </span>
+                    <div>
+                      <h4 className="font-bold mb-1">Confirmation</h4>
+                      <p className="text-sm">
+                        Once the application, assessment, and payment are confirmed, enrollment is finalized and you will be notified.
                       </p>
                     </div>
                   </li>
@@ -228,17 +247,14 @@ export default function Admission() {
             {!showPaymentInfo ? (
               <>
                 <h2 className="text-3xl font-bold text-primary mb-6 font-amiri text-center">
-                  Apply Below (Recommended Method)
+                  Apply Below
                 </h2>
                 <p className="text-center text-neutral-text mb-8">
                   Please complete the form below to submit your application directly through our website.
                 </p>
                 <ApplicationForm
                   formspreeEndpoint="xanojrar"
-                  onSubmitSuccess={() => {
-                    setShowPaymentInfo(true);
-                    setTimeout(() => paymentRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
-                  }}
+                  onSubmitSuccess={handleFormSuccess}
                 />
               </>
             ) : (
