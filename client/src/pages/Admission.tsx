@@ -23,10 +23,11 @@ export default function Admission() {
     if (location.hash === "#apply-now" && !showPaymentInfo) {
       const element = document.getElementById("apply-now");
       if (element) {
-        console.log("Scrolling to #apply-now section");
+        console.log("[Admission.tsx] Found #apply-now element. Attempting scroll shortly.");
         setTimeout(() => {
+          console.log("[Admission.tsx] Executing scrollIntoView for #apply-now.");
           element.scrollIntoView({ behavior: "smooth", block: "start" });
-        }, 150);
+        }, 500);
       }
     }
   }, [location.hash, showPaymentInfo]);
