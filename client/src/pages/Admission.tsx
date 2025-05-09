@@ -185,6 +185,38 @@ export default function Admission() {
         </div>
       </section>
 
+      {/* Madrasah Operating Hours Section */}
+      <section className="py-12 bg-neutral-light">
+        <div className="container mx-auto px-4">
+          <div className="max-w-3xl mx-auto text-center">
+            <h2 className="text-3xl font-bold text-primary mb-6 font-amiri">
+              Madrasah Operating Hours
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 text-left">
+              <div className="bg-white p-6 rounded-lg shadow-sm">
+                <h3 className="font-bold text-lg text-primary mb-2">Tuesday</h3>
+                <p>5:00 PM - 7:00 PM</p>
+              </div>
+              <div className="bg-white p-6 rounded-lg shadow-sm">
+                <h3 className="font-bold text-lg text-primary mb-2">Thursday</h3>
+                <p>5:00 PM - 7:00 PM</p>
+              </div>
+              <div className="bg-white p-6 rounded-lg shadow-sm">
+                <h3 className="font-bold text-lg text-primary mb-2">Saturday</h3>
+                <p>10:00 AM - 12:00 PM</p>
+              </div>
+            </div>
+            <p className="text-sm">
+              For a detailed breakdown of subjects per session, please visit our{" "}
+              <Link href="/programs" className="text-primary hover:underline">
+                Programs page
+              </Link>
+              .
+            </p>
+          </div>
+        </div>
+      </section>
+
       {/* Application Form Section */}
       <section id="apply-now" className="py-16 bg-white scroll-mt-20">
         <div className="container mx-auto px-4">
@@ -219,6 +251,35 @@ export default function Admission() {
               After submitting your application, our team will
               contact you within 3-5 business days to schedule an assessment.
             </p>
+
+            {/* Payment Information Section */}
+            <div className="mt-12 pt-8 border-t border-neutral-border">
+              <h3 className="text-2xl font-bold text-primary mb-4 font-amiri text-center">
+                Payment Information
+              </h3>
+              <div className="bg-secondary-light text-primary-dark p-6 rounded-lg shadow-sm text-center">
+                <p className="mb-4">
+                  Once your application is assessed and enrolment is confirmed, please proceed with the payment.
+                </p>
+                <p className="font-semibold">Payment Details:</p>
+                <ul className="list-none mb-4 space-y-1">
+                  <li><strong>BSB:</strong> [Your BSB Number]</li>
+                  <li><strong>Account Number:</strong> [Your Account Number]</li>
+                  <li><strong>Account Name:</strong> Madrasah Abubakr As-Siddiq</li>
+                </ul>
+                <p>
+                  Please use your child's full name as the payment reference.
+                </p>
+                <p className="mt-4">
+                  After making the payment, please send a copy of the receipt to:
+                  <br />
+                  <a href="mailto:payments@madrasahabubakr.com.au" className="font-medium text-primary hover:underline">
+                    payments@madrasahabubakr.com.au
+                  </a>
+                </p>
+              </div>
+            </div>
+
           </div>
         </div>
       </section>

@@ -29,24 +29,57 @@ export default function Programs() {
 
         <div className="bg-white rounded-lg shadow-sm p-6">
             <h2 className="text-2xl font-bold text-primary mb-4 font-amiri">
-              Class Schedule
+              Madrasah Timetable
             </h2>
             <div className="overflow-x-auto">
-              <table className="w-full border-collapse">
-                <thead>
-                  <tr className="bg-primary text-white">
-                    <th className="py-3 px-4 text-left">Day</th>
-                    <th className="py-3 px-4 text-left">Time</th>
+              <table className="w-full border-collapse text-left">
+                <thead className="bg-primary text-white">
+                  <tr>
+                    <th className="py-3 px-4 font-semibold">Day</th>
+                    <th className="py-3 px-4 font-semibold">Time</th>
+                    <th className="py-3 px-4 font-semibold">Subject</th>
+                    <th className="py-3 px-4 font-semibold">Grouping</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr className="border-b">
-                    <td className="py-3 px-4">Tuesday & Thursday</td>
-                    <td className="py-3 px-4">5:00 PM - 7:00 PM</td>
+                    <td rowSpan={2} className="py-3 px-4 border-r align-top">Tuesday</td>
+                    <td className="py-3 px-4">5:00 PM - 6:00 PM</td>
+                    <td className="py-3 px-4">Quran/Iqra</td>
+                    <td className="py-3 px-4">By Level</td>
                   </tr>
                   <tr className="border-b">
-                    <td className="py-3 px-4">Saturday</td>
-                    <td className="py-3 px-4">10:00 AM - 12:00 PM</td>
+                    <td className="py-3 px-4">6:00 PM - 7:00 PM</td>
+                    <td className="py-3 px-4">Surahs/Dua Memorisation</td>
+                    <td className="py-3 px-4">By Grade</td>
+                  </tr>
+                  <tr className="border-b bg-neutral-background">
+                    <td colSpan={4} className="py-1 px-4"></td>
+                  </tr>
+                  <tr className="border-b">
+                    <td rowSpan={2} className="py-3 px-4 border-r align-top">Thursday</td>
+                    <td className="py-3 px-4">5:00 PM - 6:00 PM</td>
+                    <td className="py-3 px-4">Quran/Iqra</td>
+                    <td className="py-3 px-4">By Level</td>
+                  </tr>
+                  <tr className="border-b">
+                    <td className="py-3 px-4">6:00 PM - 7:00 PM</td>
+                    <td className="py-3 px-4">Fiqh</td>
+                    <td className="py-3 px-4">By Grade</td>
+                  </tr>
+                  <tr className="border-b bg-neutral-background">
+                    <td colSpan={4} className="py-1 px-4"></td>
+                  </tr>
+                  <tr className="border-b">
+                    <td rowSpan={2} className="py-3 px-4 border-r align-top">Saturday</td>
+                    <td className="py-3 px-4">10:00 AM - 11:00 AM</td>
+                    <td className="py-3 px-4">Quran/Iqra</td>
+                    <td className="py-3 px-4">By Level</td>
+                  </tr>
+                  <tr>
+                    <td className="py-3 px-4">11:00 AM - 12:00 PM</td>
+                    <td className="py-3 px-4">Islamic Studies (Course Book & Workbook)</td>
+                    <td className="py-3 px-4">By Grade</td>
                   </tr>
                 </tbody>
               </table>
@@ -63,6 +96,16 @@ export default function Programs() {
                 and writing instruction.
               </p>
               <div className="pl-4">
+                <h3 className="font-bold text-primary mb-2">
+                  Schedule:
+                </h3>
+                <ul className="list-disc pl-4 space-y-1 text-sm">
+                  <li>Tuesday: 5:00 PM - 6:00 PM (By Level)</li>
+                  <li>Thursday: 5:00 PM - 6:00 PM (By Level)</li>
+                  <li>Saturday: 10:00 AM - 11:00 AM (By Level)</li>
+                </ul>
+              </div>
+              <div className="pl-4 mt-4">
                 <h3 className="font-bold text-primary mb-2">
                   Program Features:
                 </h3>
@@ -88,13 +131,21 @@ export default function Programs() {
             className="bg-white rounded-lg shadow-sm p-6"
           >
             <h2 className="text-2xl font-bold text-primary mb-4 font-amiri">
-              Foundational Islamic Studies (Grade 3-4)
+              Foundational Islamic Studies
             </h2>
             <div className="space-y-4">
               <p className="text-lg">
-                Core Islamic studies program.
+                Core Islamic studies program using course books and workbooks.
               </p>
               <div className="pl-4">
+                <h3 className="font-bold text-primary mb-2">
+                  Schedule:
+                </h3>
+                <ul className="list-disc pl-4 space-y-1 text-sm">
+                  <li>Saturday: 11:00 AM - 12:00 PM (Grouped by Grade)</li>
+                </ul>
+              </div>
+              <div className="pl-4 mt-4">
                 <h3 className="font-bold text-primary mb-2">
                   Curriculum Includes:
                 </h3>
@@ -116,7 +167,7 @@ export default function Programs() {
 
           <div id="shafii-fiqh" className="bg-white rounded-lg shadow-sm p-6">
             <h2 className="text-2xl font-bold text-primary mb-4 font-amiri">
-              Shafi'i Fiqh (Grade 5-6)
+              Shafi'i Fiqh
             </h2>
             <div className="space-y-4">
               <p className="text-lg">
@@ -124,6 +175,14 @@ export default function Programs() {
                 school of thought.
               </p>
               <div className="pl-4">
+                <h3 className="font-bold text-primary mb-2">
+                  Schedule:
+                </h3>
+                <ul className="list-disc pl-4 space-y-1 text-sm">
+                  <li>Thursday: 6:00 PM - 7:00 PM (Grouped by Grade)</li>
+                </ul>
+              </div>
+              <div className="pl-4 mt-4">
                 <h3 className="font-bold text-primary mb-2">Course Content:</h3>
                 <ul className="list-disc pl-4 space-y-2">
                   <li>Fundamentals of Islamic worship</li>
@@ -143,30 +202,36 @@ export default function Programs() {
 
           <div id="duas-program" className="bg-white rounded-lg shadow-sm p-6">
             <h2 className="text-2xl font-bold text-primary mb-4 font-amiri">
-              Duas Program (Grade 1-2)
+              Surahs & Dua Memorisation
             </h2>
             <div className="space-y-4">
               <p className="text-lg">
-                Early education program focusing on essential Islamic
-                supplications and their meanings.
+                Program focusing on memorising essential Surahs and Islamic supplications (Duas) with their meanings.
               </p>
               <div className="pl-4">
+                <h3 className="font-bold text-primary mb-2">
+                  Schedule:
+                </h3>
+                <ul className="list-disc pl-4 space-y-1 text-sm">
+                  <li>Tuesday: 6:00 PM - 7:00 PM (Grouped by Grade)</li>
+                </ul>
+              </div>
+              <div className="pl-4 mt-4">
                 <h3 className="font-bold text-primary mb-2">
                   Program Components:
                 </h3>
                 <ul className="list-disc pl-4 space-y-2">
+                  <li>Memorisation of selected Surahs</li>
                   <li>Daily prayers and supplications</li>
                   <li>Morning and evening adhkar</li>
+                  <li>Understanding the virtues and meanings of Duas</li>
                   <li>Etiquettes of dua</li>
-                  <li>Simple Arabic vocabulary</li>
                   <li>Interactive learning methods</li>
                 </ul>
               </div>
               <div className="bg-neutral-background p-4 rounded-lg mt-4">
                 <p className="italic">
-                  A foundational program that helps young students develop a
-                  strong connection with Allah through daily remembrance and
-                  supplications.
+                  This program helps students develop a strong connection with Allah through memorising the Quran and daily remembrance.
                 </p>
               </div>
             </div>
