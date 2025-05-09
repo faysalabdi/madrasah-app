@@ -1,4 +1,4 @@
-import React, { useState, ChangeEvent, FormEvent } from 'react';
+import React, { useState, ChangeEvent, FormEvent, useEffect } from 'react';
 import { useForm, ValidationError } from '@formspree/react';
 
 interface ChildInfo {
@@ -93,20 +93,18 @@ const ApplicationForm: React.FC<ApplicationFormProps> = ({ formspreeEndpoint, on
     const fullFormData = {
       ...formData,
       numberOfChildren,
-      children: childrenData,
+      children: JSON.stringify(childrenData, null, 2),
     };
-    // console.log('Submitting:', fullFormData); // For debugging
-    const result = await handleSubmitToFormspree(fullFormData);
-    if (result && result.response && result.response.ok) {
-      // console.log('Formspree submission successful', result); // For debugging
-      onSubmitSuccess();
-    }
+    console.log('[ApplicationForm] Attempting submission...');
+    await handleSubmitToFormspree(fullFormData);
   };
 
-  if (state.succeeded) {
-    // This state is managed by the parent component now via onSubmitSuccess
-    return null; 
-  }
+  useEffect(() => {
+    if (state.succeeded) {
+      console.log('[ApplicationForm] Formspree state.succeeded is true. Calling onSubmitSuccess.');
+      onSubmitSuccess();
+    }
+  }, [state.succeeded, onSubmitSuccess]);
 
   const renderChildForms = () => {
     return childrenData.map((child, index) => (
