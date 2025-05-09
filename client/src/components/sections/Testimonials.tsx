@@ -23,7 +23,7 @@ export default function Testimonials() {
                   <span className="text-white font-bold">SM</span>
                 </div>
                 <div>
-                  <h4 className="font-bold">Sarah Mohammad</h4>
+                  <h4 className="font-bold">Sahra Mohamed</h4>
                   <p className="text-sm text-neutral-text">Parent of two students</p>
                 </div>
               </div>
@@ -36,14 +36,14 @@ export default function Testimonials() {
               <span className="material-icons text-6xl">format_quote</span>
             </div>
             <div className="relative z-10">
-              <p className="mb-6 italic">What impresses me most about this madrasah is how they make Islamic learning engaging and relevant for today's youth. My teenage son actually looks forward to attending classes, and I've noticed positive changes in his character and daily practices.</p>
+              <p className="mb-6 italic">What impresses me most about this madrasah is how they make Islamic learning engaging and relevant for today's youth. My son actually looks forward to attending classes, and I've noticed positive changes in his character and daily practices.</p>
               <div className="flex items-center">
                 <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center mr-4">
                   <span className="text-white font-bold">AK</span>
                 </div>
                 <div>
-                  <h4 className="font-bold">Ahmed Khan</h4>
-                  <p className="text-sm text-neutral-text">Parent of a high school student</p>
+                  <h4 className="font-bold">Ahmed Abdi</h4>
+                  <p className="text-sm text-neutral-text">Parent of a prep student</p>
                 </div>
               </div>
             </div>
