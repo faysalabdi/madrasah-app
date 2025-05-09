@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useIntersectionObserver } from "@/hooks/use-intersection-observer";
 import BackgroundPattern from "@/components/ui/BackgroundPattern";
 import { Link, useLocation } from "wouter";
@@ -11,7 +11,7 @@ export default function Admission() {
   const feesRef = useRef<HTMLDivElement>(null);
   const paymentRef = useRef<HTMLDivElement>(null);
   const [showPaymentInfo, setShowPaymentInfo] = useState(false);
-  // const [location] = useLocation(); // Remove if only used for scrolling effect
+  const [location] = useLocation(); // Remove if only used for scrolling effect
 
   // console.log("Admission component render - showPaymentInfo:", showPaymentInfo, "Hash:", location?.hash); // Adjusted for potential removal of location
 
@@ -28,6 +28,30 @@ export default function Admission() {
       paymentRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     }, 100); // Keep this scroll for after form submission
   };
+
+  // Effect to scroll to #apply-now if present in URL on load/hash change
+  useEffect(() => {
+    console.log(`[Admission.tsx] Scroll useEffect. Path: ${location.pathname}, Hash: ${location.hash}, showPaymentInfo: ${showPaymentInfo}`);
+    if (location.pathname === '/admission' && location.hash === "#apply-now" && !showPaymentInfo) {
+      const attemptScroll = (attemptsLeft = 5) => {
+        if (attemptsLeft === 0) {
+          console.error("[Admission.tsx] Exhausted attempts to scroll to #apply-now. Element not found or not visible.");
+          return;
+        }
+        const element = document.getElementById("apply-now");
+        if (element) {
+          console.log(`[Admission.tsx] Element #apply-now FOUND (attempt: ${6 - attemptsLeft}). Scrolling...`);
+          element.scrollIntoView({ behavior: "auto", block: "start" }); // Changed to auto for more immediate jump
+        } else {
+          console.warn(`[Admission.tsx] Element #apply-now NOT FOUND on attempt ${6 - attemptsLeft}. Retrying in 100ms...`);
+          setTimeout(() => attemptScroll(attemptsLeft - 1), 100); // Retry shortly
+        }
+      };
+      attemptScroll();
+    } else {
+      console.log("[Admission.tsx] Scroll condition for #apply-now not met or form already submitted.");
+    }
+  }, [location.pathname, location.hash, showPaymentInfo]); // Dependencies
 
   return (
     <>
