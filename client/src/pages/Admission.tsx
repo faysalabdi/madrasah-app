@@ -234,7 +234,7 @@ export default function Admission() {
                   Please complete the form below to submit your application directly through our website.
                 </p>
                 <ApplicationForm
-                  formspreeEndpoint="https://formspree.io/f/xanojrar"
+                  formspreeEndpoint="xanojrar"
                   onSubmitSuccess={() => {
                     setShowPaymentInfo(true);
                     setTimeout(() => paymentRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
