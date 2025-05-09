@@ -58,32 +58,36 @@ export default function Footer() {
             <h4 className="text-lg font-bold mb-4 font-amiri">Programs</h4>
             <ul className="space-y-2">
               <li>
-                <Link
-                  href="/programs#quran-studies"
+                <Link 
+                  href="/programs"
+                  state={{ scrollToHash: "quran-studies" }}
                   className="hover:text-secondary"
                 >
                   Quran Studies
                 </Link>
               </li>
               <li>
-                <Link
-                  href="/programs#foundation-program"
+                <Link 
+                  href="/programs"
+                  state={{ scrollToHash: "foundation-program" }}
                   className="hover:text-secondary"
                 >
                   Foundational Islamic Studies
                 </Link>
               </li>
               <li>
-                <Link
-                  href="/programs#shafii-fiqh"
+                <Link 
+                  href="/programs"
+                  state={{ scrollToHash: "shafii-fiqh" }}
                   className="hover:text-secondary"
                 >
                   Shafi'i Fiqh
                 </Link>
               </li>
               <li>
-                <Link
-                  href="/programs#duas-program"
+                <Link 
+                  href="/programs"
+                  state={{ scrollToHash: "duas-program" }}
                   className="hover:text-secondary"
                 >
                   Surahs & Dua Memorisation
