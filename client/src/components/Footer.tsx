@@ -86,7 +86,7 @@ export default function Footer() {
                   href="/programs#duas-program"
                   className="hover:text-secondary"
                 >
-                  Duas Program
+                  Surahs & Dua Memorisation
                 </a>
               </li>
             </ul>

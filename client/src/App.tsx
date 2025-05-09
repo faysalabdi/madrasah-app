@@ -1,4 +1,5 @@
-import { Route, Switch } from "wouter";
+import React, { useEffect } from "react";
+import { Route, Switch, useLocation } from "wouter";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/toaster";
 import Home from "@/pages/Home";
@@ -14,6 +15,12 @@ import Footer from "@/components/Footer";
 import Newsletter from "@/components/Newsletter";
 
 function App() {
+  const [location] = useLocation();
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [location]);
+
   return (
     <TooltipProvider>
       <div className="min-h-screen flex flex-col">
