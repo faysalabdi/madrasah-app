@@ -20,23 +20,22 @@ export default function Admission() {
   const feesEntry = useIntersectionObserver(feesRef, {});
 
   useEffect(() => {
-    console.log(`[Admission.tsx] useEffect for #apply-now. Hash: ${location.hash}, showPaymentInfo: ${showPaymentInfo}`);
-    if (location.hash === "#apply-now" && !showPaymentInfo) {
-      console.log("[Admission.tsx] Condition met. Attempting to find element with ID: apply-now");
+    console.log(`[Admission.tsx] Scroll useEffect. Path: ${location.pathname}, Hash: ${location.hash}, showPaymentInfo: ${showPaymentInfo}`);
+    if (location.pathname === '/admission' && location.hash === "#apply-now" && !showPaymentInfo) {
+      console.log("[Admission.tsx] Condition met for #apply-now. Attempting to find element...");
       const element = document.getElementById("apply-now");
       if (element) {
-        console.log("[Admission.tsx] Element FOUND: apply-now. Attempting scroll...");
+        console.log("[Admission.tsx] Element #apply-now FOUND. Scrolling...");
         setTimeout(() => {
-          console.log("[Admission.tsx] Executing scrollIntoView for #apply-now.");
           element.scrollIntoView({ behavior: "smooth", block: "start" });
-        }, 300);
+        }, 300); // Keep a delay for rendering
       } else {
-        console.error("[Admission.tsx] Element NOT FOUND with ID: apply-now");
+        console.error("[Admission.tsx] Element #apply-now NOT FOUND.");
       }
     } else {
-      console.log("[Admission.tsx] Scroll condition not met or no #apply-now hash.");
+      console.log("[Admission.tsx] Scroll condition for #apply-now not met.");
     }
-  }, [location.hash, showPaymentInfo]);
+  }, [location.pathname, location.hash, showPaymentInfo]);
 
   const handleFormSuccess = () => {
     console.log("handleFormSuccess called! Setting showPaymentInfo to true.");
