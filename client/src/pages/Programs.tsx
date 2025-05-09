@@ -2,26 +2,21 @@ import React, { useEffect } from "react";
 import { Link as WouterLink, useLocation } from "wouter";
 
 export default function Programs() {
-  const [location, navigate] = useLocation();
-  const routerState = (navigate as any).state as { scrollToHash?: string } | undefined;
+  const [location] = useLocation();
 
   useEffect(() => {
-    let hashToScroll = routerState?.scrollToHash;
-
-    if (!hashToScroll && location.hash) {
-      hashToScroll = location.hash.replace('#', '');
-    }
-
-    if (hashToScroll) {
-      const element = document.getElementById(hashToScroll);
+    const hash = location.hash;
+    if (hash) {
+      const id = hash.replace('#', '');
+      const element = document.getElementById(id);
       if (element) {
-        console.log(`[Programs.tsx] Scrolling to element: ${hashToScroll}`);
+        console.log(`[Programs.tsx] Attempting to scroll to element: ${id}`);
         setTimeout(() => {
           element.scrollIntoView({ behavior: "smooth", block: "start" });
         }, 150);
       }
     }
-  }, [location.pathname, location.hash, routerState]);
+  }, [location.hash]);
 
   return (
     <main className="min-h-screen py-16">

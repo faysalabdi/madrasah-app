@@ -59,8 +59,7 @@ export default function Footer() {
             <ul className="space-y-2">
               <li>
                 <Link 
-                  href="/programs"
-                  state={{ scrollToHash: "quran-studies" }}
+                  href="/programs#quran-studies"
                   className="hover:text-secondary"
                 >
                   Quran Studies
@@ -68,8 +67,7 @@ export default function Footer() {
               </li>
               <li>
                 <Link 
-                  href="/programs"
-                  state={{ scrollToHash: "foundation-program" }}
+                  href="/programs#foundation-program"
                   className="hover:text-secondary"
                 >
                   Foundational Islamic Studies
@@ -77,8 +75,7 @@ export default function Footer() {
               </li>
               <li>
                 <Link 
-                  href="/programs"
-                  state={{ scrollToHash: "shafii-fiqh" }}
+                  href="/programs#shafii-fiqh"
                   className="hover:text-secondary"
                 >
                   Shafi'i Fiqh
@@ -86,8 +83,7 @@ export default function Footer() {
               </li>
               <li>
                 <Link 
-                  href="/programs"
-                  state={{ scrollToHash: "duas-program" }}
+                  href="/programs#duas-program"
                   className="hover:text-secondary"
                 >
                   Surahs & Dua Memorisation
