@@ -20,15 +20,21 @@ export default function Admission() {
   const feesEntry = useIntersectionObserver(feesRef, {});
 
   useEffect(() => {
+    console.log(`[Admission.tsx] useEffect for #apply-now. Hash: ${location.hash}, showPaymentInfo: ${showPaymentInfo}`);
     if (location.hash === "#apply-now" && !showPaymentInfo) {
+      console.log("[Admission.tsx] Condition met. Attempting to find element with ID: apply-now");
       const element = document.getElementById("apply-now");
       if (element) {
-        console.log("[Admission.tsx] Found #apply-now element. Attempting scroll shortly.");
+        console.log("[Admission.tsx] Element FOUND: apply-now. Attempting scroll...");
         setTimeout(() => {
           console.log("[Admission.tsx] Executing scrollIntoView for #apply-now.");
           element.scrollIntoView({ behavior: "smooth", block: "start" });
-        }, 500);
+        }, 300);
+      } else {
+        console.error("[Admission.tsx] Element NOT FOUND with ID: apply-now");
       }
+    } else {
+      console.log("[Admission.tsx] Scroll condition not met or no #apply-now hash.");
     }
   }, [location.hash, showPaymentInfo]);
 

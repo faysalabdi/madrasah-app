@@ -6,15 +6,22 @@ export default function Programs() {
 
   useEffect(() => {
     const hash = location.hash;
+    console.log(`[Programs.tsx] useEffect triggered. Hash: ${hash}`);
     if (hash) {
       const id = hash.replace('#', '');
+      console.log(`[Programs.tsx] Attempting to find element with ID: ${id}`);
       const element = document.getElementById(id);
       if (element) {
-        console.log(`[Programs.tsx] Attempting to scroll to element: ${id}`);
+        console.log(`[Programs.tsx] Element FOUND: ${id}. Attempting scroll...`);
         setTimeout(() => {
+          console.log(`[Programs.tsx] Executing scrollIntoView for #${id}`);
           element.scrollIntoView({ behavior: "smooth", block: "start" });
-        }, 150);
+        }, 300); // Adjusted delay slightly for testing
+      } else {
+        console.error(`[Programs.tsx] Element NOT FOUND with ID: ${id}`);
       }
+    } else {
+      console.log("[Programs.tsx] No hash in location.");
     }
   }, [location.hash]);
 
