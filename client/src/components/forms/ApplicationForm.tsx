@@ -139,7 +139,16 @@ const ApplicationForm: React.FC<ApplicationFormProps> = ({ formspreeEndpoint, on
           </div>
           <div>
             <label htmlFor={`child${index}_yearLevel`} className="block text-sm font-medium text-gray-700 mb-1">Year Level (Required)</label>
-            <input type="text" name="yearLevel" id={`child${index}_yearLevel`} value={child.yearLevel} onChange={(e) => handleChildInputChange(index, e)} required className="w-full border border-neutral-border rounded px-3 py-2" />
+            <select name="yearLevel" id={`child${index}_yearLevel`} value={child.yearLevel} onChange={(e) => handleChildInputChange(index, e)} required className="w-full border border-neutral-border rounded px-3 py-2 bg-white">
+              <option value="" disabled>Select Year Level</option>
+              <option value="Prep">Prep</option>
+              <option value="Grade 1">Grade 1</option>
+              <option value="Grade 2">Grade 2</option>
+              <option value="Grade 3">Grade 3</option>
+              <option value="Grade 4">Grade 4</option>
+              <option value="Grade 5">Grade 5</option>
+              <option value="Grade 6">Grade 6</option>
+            </select>
           </div>
           <div className="md:col-span-2">
             <label htmlFor={`child${index}_medicalIssues`} className="block text-sm font-medium text-gray-700 mb-1">Does the student have any medical issues? (Required)</label>

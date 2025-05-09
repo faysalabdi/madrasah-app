@@ -22,7 +22,7 @@ export default function Hero() {
                 href="/admission#apply-now"
                 className="bg-secondary hover:bg-secondary-dark text-white font-medium py-3 px-6 rounded shadow text-center transition duration-300"
               >
-                Apply Now (Recommended)
+                Apply Now!
               </Link>
               <Link
                 href="/admission"

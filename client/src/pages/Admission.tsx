@@ -42,12 +42,12 @@ export default function Admission() {
                     Apply online
                   </Link>{" "}
                   or{" "}
-                  <Link
+                  <a
                     href="#apply-now"
                     className="underline font-bold hover:text-primary-dark"
                   >
                     fill the form below
-                  </Link>
+                  </a>
                 </p>
               </div>
             </div>
