@@ -18,7 +18,9 @@ function App() {
   const [location] = useLocation();
 
   useEffect(() => {
-    window.scrollTo(0, 0);
+    if (!(location.pathname === '/admission' && location.hash === '#apply-now')) {
+      window.scrollTo(0, 0);
+    }
   }, [location]);
 
   return (
