@@ -8,6 +8,11 @@ import { useIntersectionObserver } from "@/hooks/use-intersection-observer";
 import { useRef } from "react";
 import dugsiImg from "../assets/dugsi.jpg";
 
+// Import faculty images
+import abdulqadirJama from "@/assets/abdulqadir-jama.jpg";
+import ahmedHassan from "@/assets/ahmed-hassan.jpg";
+import sadiqAbdulle from "@/assets/sadiq-abdulle.jpg";
+
 export default function Home() {
   const aboutRef = useRef<HTMLElement>(null);
   const programsRef = useRef<HTMLElement>(null);
@@ -275,12 +280,12 @@ export default function Home() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {/* Teacher 1 */}
             <div className="bg-neutral-background rounded-lg overflow-hidden shadow-md border border-neutral-border text-center">
-              <div className="h-56 bg-neutral-light relative">
-                <div className="w-32 h-32 rounded-full bg-primary-light mx-auto mt-8 flex items-center justify-center">
-                  <span className="material-icons text-white text-5xl">
-                    person
-                  </span>
-                </div>
+              <div className="h-56 bg-neutral-light flex items-center justify-center p-4">
+                <img 
+                  src={abdulqadirJama}
+                  alt="Sheikh Abdul Qadir Jama"
+                  className="w-40 h-40 rounded-full object-cover border-4 border-white shadow-md"
+                />
               </div>
               <div className="p-6">
                 <h3 className="text-xl font-bold text-primary mb-1 font-amiri">
@@ -305,12 +310,12 @@ export default function Home() {
 
             {/* Teacher 2 */}
             <div className="bg-neutral-background rounded-lg overflow-hidden shadow-md border border-neutral-border text-center">
-              <div className="h-56 bg-neutral-light relative">
-                <div className="w-32 h-32 rounded-full bg-primary-light mx-auto mt-8 flex items-center justify-center">
-                  <span className="material-icons text-white text-5xl">
-                    person
-                  </span>
-                </div>
+              <div className="h-56 bg-neutral-light flex items-center justify-center p-4">
+                <img 
+                  src={ahmedHassan}
+                  alt="Ustadh Ahmed Hassan"
+                  className="w-40 h-40 rounded-full object-cover border-4 border-white shadow-md"
+                />
               </div>
               <div className="p-6">
                 <h3 className="text-xl font-bold text-primary mb-1 font-amiri">
@@ -332,12 +337,12 @@ export default function Home() {
 
             {/* Teacher 3 */}
             <div className="bg-neutral-background rounded-lg overflow-hidden shadow-md border border-neutral-border text-center">
-              <div className="h-56 bg-neutral-light relative">
-                <div className="w-32 h-32 rounded-full bg-primary-light mx-auto mt-8 flex items-center justify-center">
-                  <span className="material-icons text-white text-5xl">
-                    person
-                  </span>
-                </div>
+              <div className="h-56 bg-neutral-light flex items-center justify-center p-4">
+                <img 
+                  src={sadiqAbdulle}
+                  alt="Ustadh Sadiq Abdulle"
+                  className="w-40 h-40 rounded-full object-cover border-4 border-white shadow-md"
+                />
               </div>
               <div className="p-6">
                 <h3 className="text-xl font-bold text-primary mb-1 font-amiri">
