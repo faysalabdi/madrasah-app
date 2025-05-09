@@ -18,12 +18,12 @@ export default function Hero() {
               growth in a supportive Islamic environment.
             </p>
             <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
-              <Link
+              <a
                 href="/admission#apply-now"
                 className="bg-secondary hover:bg-secondary-dark text-white font-medium py-3 px-6 rounded shadow text-center transition duration-300"
               >
                 Apply Now
-              </Link>
+              </a>
               <Link
                 href="/admission"
                 className="bg-primary hover:bg-primary-dark text-white font-medium py-3 px-6 rounded shadow text-center transition duration-300"
