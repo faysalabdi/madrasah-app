@@ -1,7 +1,12 @@
-import { useRef } from "react";
+import React, { useRef } from "react";
 import { useIntersectionObserver } from "@/hooks/use-intersection-observer";
 import { Link } from "wouter";
 import BackgroundPattern from "@/components/ui/BackgroundPattern";
+
+// Import faculty images
+import abdulqadirJama from "@/assets/abdulqadir-jama.jpg";
+import ahmedHassan from "@/assets/ahmed-hassan.jpg";
+import sadiqAbdulle from "@/assets/sadiq-abdulle.jpg";
 
 export default function Faculty() {
   const teachersRef = useRef<HTMLDivElement>(null);
@@ -162,23 +167,23 @@ export default function Faculty() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
             {/* Teacher 1 */}
-            <div className="bg-neutral-background rounded-lg overflow-hidden shadow-md border border-neutral-border text-center">
-              <div className="h-56 bg-neutral-light relative">
-                <div className="w-32 h-32 rounded-full bg-primary-light mx-auto mt-8 flex items-center justify-center">
-                  <span className="material-icons text-white text-5xl">
-                    person
-                  </span>
-                </div>
+            <div className="bg-white rounded-lg shadow-lg overflow-hidden">
+              <div className="h-56 bg-neutral-light flex items-center justify-center p-4">
+                <img 
+                  src={abdulqadirJama}
+                  alt="Sheikh Abdul Qadir Jama"
+                  className="w-40 h-40 rounded-full object-cover border-4 border-white shadow-md"
+                />
               </div>
-              <div className="p-6">
+              <div className="p-6 text-center">
                 <h3 className="text-xl font-bold text-primary mb-1 font-amiri">
-                  Sheikh Abdullah Rahman
+                  Sheikh Abdul Qadir Jama
                 </h3>
                 <p className="text-secondary mb-3 font-medium">
                   Principal & Quran Teacher
                 </p>
                 <p className="mb-4 text-sm">
-                  Sheikh Abdullah has over 15 years of experience teaching Quran
+                  Sheikh Abdul Qadir has over 15 years of experience teaching Quran
                   and Islamic studies. He holds an Ijazah in Quran recitation
                   and has memorized the entire Quran.
                 </p>
@@ -192,24 +197,24 @@ export default function Faculty() {
             </div>
 
             {/* Teacher 2 */}
-            <div className="bg-neutral-background rounded-lg overflow-hidden shadow-md border border-neutral-border text-center">
-              <div className="h-56 bg-neutral-light relative">
-                <div className="w-32 h-32 rounded-full bg-primary-light mx-auto mt-8 flex items-center justify-center">
-                  <span className="material-icons text-white text-5xl">
-                    person
-                  </span>
-                </div>
+            <div className="bg-white rounded-lg shadow-lg overflow-hidden">
+              <div className="h-56 bg-neutral-light flex items-center justify-center p-4">
+                <img 
+                  src={ahmedHassan}
+                  alt="Ustadh Ahmed Hassan"
+                  className="w-40 h-40 rounded-full object-cover border-4 border-white shadow-md"
+                />
               </div>
-              <div className="p-6">
+              <div className="p-6 text-center">
                 <h3 className="text-xl font-bold text-primary mb-1 font-amiri">
-                  Ustadha Aisha Malik
+                  Ustadh Ahmed Hassan
                 </h3>
                 <p className="text-secondary mb-3 font-medium">
                   Islamic Studies Teacher
                 </p>
                 <p className="mb-4 text-sm">
-                  Ustadha Aisha specializes in teaching Islamic studies and
-                  Arabic to young children. She has a degree in Islamic
+                  Ustadh Ahmed specializes in teaching Islamic studies and
+                  Arabic to young children. He has a degree in Islamic
                   Education and 8 years of teaching experience.
                 </p>
                 <div className="border-t border-neutral-border pt-4 mt-4">
@@ -222,23 +227,23 @@ export default function Faculty() {
             </div>
 
             {/* Teacher 3 */}
-            <div className="bg-neutral-background rounded-lg overflow-hidden shadow-md border border-neutral-border text-center">
-              <div className="h-56 bg-neutral-light relative">
-                <div className="w-32 h-32 rounded-full bg-primary-light mx-auto mt-8 flex items-center justify-center">
-                  <span className="material-icons text-white text-5xl">
-                    person
-                  </span>
-                </div>
+            <div className="bg-white rounded-lg shadow-lg overflow-hidden">
+              <div className="h-56 bg-neutral-light flex items-center justify-center p-4">
+                <img 
+                  src={sadiqAbdulle}
+                  alt="Ustadh Sadiq Abdulle"
+                  className="w-40 h-40 rounded-full object-cover border-4 border-white shadow-md"
+                />
               </div>
-              <div className="p-6">
+              <div className="p-6 text-center">
                 <h3 className="text-xl font-bold text-primary mb-1 font-amiri">
-                  Ustadh Mohammed Ali
+                  Ustadh Sadiq Abdulle
                 </h3>
                 <p className="text-secondary mb-3 font-medium">
                   Arabic Language Teacher
                 </p>
                 <p className="mb-4 text-sm">
-                  Ustadh Mohammed is a native Arabic speaker with a passion for
+                  Ustadh Sadiq is a native Arabic speaker with a passion for
                   teaching the language to young Muslims. He has 10 years of
                   experience and a certificate in Arabic pedagogy.
                 </p>
