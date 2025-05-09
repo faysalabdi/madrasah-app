@@ -7,6 +7,8 @@ export default function Admission() {
   const stepsRef = useRef<HTMLDivElement>(null);
   const requirementsRef = useRef<HTMLDivElement>(null);
   const feesRef = useRef<HTMLDivElement>(null);
+  const paymentRef = useRef<HTMLDivElement>(null);
+  const [formSubmitted, setFormSubmitted] = useState(false);
 
   const stepsEntry = useIntersectionObserver(stepsRef, {});
   const requirementsEntry = useIntersectionObserver(requirementsRef, {});
@@ -221,65 +223,78 @@ export default function Admission() {
       <section id="apply-now" className="py-16 bg-white scroll-mt-20">
         <div className="container mx-auto px-4">
           <div className="max-w-3xl mx-auto">
-            <h2 className="text-3xl font-bold text-primary mb-6 font-amiri text-center">
-              Application Form
-            </h2>
-
-            <div className="bg-secondary-light text-primary-dark p-4 rounded-lg mb-8 text-center">
-              <p className="font-medium flex items-center justify-center">
-                <span className="material-icons mr-2">info</span>
-                Our admissions team is available to assist you with the
-                application process
-              </p>
-            </div>
-
-            <div className="bg-neutral-light p-6 rounded-lg shadow-lg">
-              <div className="w-full h-[1200px] overflow-hidden rounded-lg">
-                <iframe
-                  src="https://docs.google.com/forms/d/e/1FAIpQLSfE3a-8-BKwoSSfTVczKahEA9D8h-u1H-SjfcfPukZaHKW0JA/viewform?embedded=true"
-                  width="100%"
-                  height="100%"
-                  style={{ border: "none" }}
-                  title="Application Form"
-                >
-                  Loading Application Form...
-                </iframe>
+            {!formSubmitted ? (
+              <>
+                <h2 className="text-3xl font-bold text-primary mb-6 font-amiri text-center">
+                  Application Form
+                </h2>
+                <div className="bg-secondary-light text-primary-dark p-4 rounded-lg mb-8 text-center">
+                  <p className="font-medium flex items-center justify-center">
+                    <span className="material-icons mr-2">info</span>
+                    Our admissions team is available to assist you with the
+                    application process
+                  </p>
+                </div>
+                <div className="bg-neutral-light p-6 rounded-lg shadow-lg">
+                  <div className="w-full h-[1000px] md:h-[1200px] overflow-hidden rounded-lg">
+                    <iframe
+                      src="https://docs.google.com/forms/d/e/1FAIpQLSfE3a-8-BKwoSSfTVczKahEA9D8h-u1H-SjfcfPukZaHKW0JA/viewform?embedded=true"
+                      width="100%"
+                      height="100%"
+                      style={{ border: "none" }}
+                      title="Application Form"
+                    >
+                      Loading Application Form...
+                    </iframe>
+                  </div>
+                </div>
+                <p className="text-center mt-6 text-sm">
+                  After submitting the form above, please click the button below to proceed to payment.
+                </p>
+                <div className="text-center mt-6">
+                  <button
+                    onClick={() => {
+                      setFormSubmitted(true);
+                      setTimeout(() => paymentRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
+                    }}
+                    className="bg-primary hover:bg-primary-dark text-white font-medium py-3 px-8 rounded shadow transition duration-300 inline-flex items-center"
+                  >
+                    Proceed to Payment Information
+                    <span className="material-icons ml-2">arrow_forward</span>
+                  </button>
+                </div>
+              </>
+            ) : (
+              <div ref={paymentRef} className="mt-12 pt-8">
+                <h2 className="text-3xl font-bold text-primary mb-6 font-amiri text-center">
+                  Step 2: Payment Information
+                </h2>
+                <div className="bg-secondary-light text-primary-dark p-6 rounded-lg shadow-sm text-center">
+                  <p className="mb-4">
+                    Thank you for submitting your application! Please proceed with the payment to complete the enrolment process.
+                  </p>
+                  <p className="font-semibold">Payment Details:</p>
+                  <ul className="list-none mb-4 space-y-1">
+                    <li><strong>BSB:</strong> [Your BSB Number]</li>
+                    <li><strong>Account Number:</strong> [Your Account Number]</li>
+                    <li><strong>Account Name:</strong> Madrasah Abubakr As-Siddiq</li>
+                  </ul>
+                  <p>
+                    Please use your child's full name as the payment reference.
+                  </p>
+                  <p className="mt-4">
+                    After making the payment, please send a copy of the receipt to:
+                    <br />
+                    <a href="mailto:payments@madrasahabubakr.com.au" className="font-medium text-primary hover:underline">
+                      payments@madrasahabubakr.com.au
+                    </a>
+                  </p>
+                  <p className="mt-6 text-sm">
+                    Our team will contact you within 3-5 business days after confirming your application and payment.
+                  </p>
+                </div>
               </div>
-            </div>
-
-            <p className="text-center mt-6 text-sm">
-              After submitting your application, our team will
-              contact you within 3-5 business days to schedule an assessment.
-            </p>
-
-            {/* Payment Information Section */}
-            <div className="mt-12 pt-8 border-t border-neutral-border">
-              <h3 className="text-2xl font-bold text-primary mb-4 font-amiri text-center">
-                Payment Information
-              </h3>
-              <div className="bg-secondary-light text-primary-dark p-6 rounded-lg shadow-sm text-center">
-                <p className="mb-4">
-                  Once your application is assessed and enrolment is confirmed, please proceed with the payment.
-                </p>
-                <p className="font-semibold">Payment Details:</p>
-                <ul className="list-none mb-4 space-y-1">
-                  <li><strong>BSB:</strong> [Your BSB Number]</li>
-                  <li><strong>Account Number:</strong> [Your Account Number]</li>
-                  <li><strong>Account Name:</strong> Madrasah Abubakr As-Siddiq</li>
-                </ul>
-                <p>
-                  Please use your child's full name as the payment reference.
-                </p>
-                <p className="mt-4">
-                  After making the payment, please send a copy of the receipt to:
-                  <br />
-                  <a href="mailto:payments@madrasahabubakr.com.au" className="font-medium text-primary hover:underline">
-                    payments@madrasahabubakr.com.au
-                  </a>
-                </p>
-              </div>
-            </div>
-
+            )}
           </div>
         </div>
       </section>
