@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef } from "react";
 import { useIntersectionObserver } from "@/hooks/use-intersection-observer";
 import BackgroundPattern from "@/components/ui/BackgroundPattern";
 import { Link, useLocation } from "wouter";
@@ -11,39 +11,22 @@ export default function Admission() {
   const feesRef = useRef<HTMLDivElement>(null);
   const paymentRef = useRef<HTMLDivElement>(null);
   const [showPaymentInfo, setShowPaymentInfo] = useState(false);
-  const [location] = useLocation();
+  // const [location] = useLocation(); // Remove if only used for scrolling effect
 
-  console.log("Admission component render - showPaymentInfo:", showPaymentInfo, "Hash:", location.hash);
+  // console.log("Admission component render - showPaymentInfo:", showPaymentInfo, "Hash:", location?.hash); // Adjusted for potential removal of location
 
   const stepsEntry = useIntersectionObserver(stepsRef, {});
   const requirementsEntry = useIntersectionObserver(requirementsRef, {});
   const feesEntry = useIntersectionObserver(feesRef, {});
 
-  useEffect(() => {
-    console.log(`[Admission.tsx] Scroll useEffect. Path: ${location.pathname}, Hash: ${location.hash}, showPaymentInfo: ${showPaymentInfo}`);
-    if (location.pathname === '/admission' && location.hash === "#apply-now" && !showPaymentInfo) {
-      console.log("[Admission.tsx] Condition met for #apply-now. Attempting to find element...");
-      const element = document.getElementById("apply-now");
-      if (element) {
-        console.log("[Admission.tsx] Element #apply-now FOUND. Scrolling...");
-        setTimeout(() => {
-          element.scrollIntoView({ behavior: "smooth", block: "start" });
-        }, 300); // Keep a delay for rendering
-      } else {
-        console.error("[Admission.tsx] Element #apply-now NOT FOUND.");
-      }
-    } else {
-      console.log("[Admission.tsx] Scroll condition for #apply-now not met.");
-    }
-  }, [location.pathname, location.hash, showPaymentInfo]);
-
   const handleFormSuccess = () => {
     console.log("handleFormSuccess called! Setting showPaymentInfo to true.");
     setShowPaymentInfo(true);
+    // Scroll to payment info after state updates
     setTimeout(() => {
-      console.log("Scrolling to paymentRef, element:", paymentRef.current);
+      // console.log("Scrolling to paymentRef, element:", paymentRef.current);
       paymentRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 100);
+    }, 100); // Keep this scroll for after form submission
   };
 
   return (
