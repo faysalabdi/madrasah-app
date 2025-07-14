@@ -279,7 +279,6 @@ export default function Admission() {
                   Please complete the form below to submit your application directly through our website.
                 </p>
                 <ApplicationForm
-                  formspreeEndpoint="xanojrar"
                   onSubmitSuccess={handleFormSuccess}
                 />
               </>

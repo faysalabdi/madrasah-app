@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { apiRequest } from "@/lib/queryClient";
 import { toast } from "@/hooks/use-toast";
 
 export default function Newsletter() {
@@ -19,16 +18,40 @@ export default function Newsletter() {
     
     try {
       setIsSubmitting(true);
-      // In a real implementation, this would send the email to the server
-      // await apiRequest("POST", "/api/newsletter", { email });
       
-      toast({
-        title: "Success!",
-        description: "Thank you for subscribing to our newsletter.",
+      const formData = {
+        access_key: '0d1a51cf-4e51-4254-adcf-0cd9af908071',
+        email: email,
+        subject: 'Newsletter Subscription',
+        from_name: 'Newsletter Subscriber',
+        message: `New newsletter subscription from: ${email}`,
+      };
+
+      const response = await fetch('https://api.web3forms.com/submit', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
       });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
       
-      setEmail("");
+      if (result.success) {
+        toast({
+          title: "Success!",
+          description: "Thank you for subscribing to our newsletter.",
+        });
+        setEmail("");
+      } else {
+        throw new Error(result.message || 'Subscription failed');
+      }
     } catch (error) {
+      console.error('Newsletter subscription error:', error);
       toast({
         title: "Error",
         description: "There was an error subscribing to the newsletter. Please try again.",
@@ -56,6 +79,7 @@ export default function Newsletter() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 disabled={isSubmitting}
+                required
               />
               <button 
                 type="submit" 

@@ -1,5 +1,4 @@
-import React, { useState, ChangeEvent, FormEvent, useEffect } from 'react';
-import { useForm, ValidationError } from '@formspree/react';
+import React, { useState, ChangeEvent, FormEvent } from 'react';
 
 interface ChildInfo {
   firstName: string;
@@ -31,7 +30,6 @@ interface FormData {
 }
 
 interface ApplicationFormProps {
-  formspreeEndpoint: string;
   onSubmitSuccess: () => void;
 }
 
@@ -46,8 +44,10 @@ const initialChildState: ChildInfo = {
   medicalDetails: '',
 };
 
-const ApplicationForm: React.FC<ApplicationFormProps> = ({ formspreeEndpoint, onSubmitSuccess }) => {
-  const [state, handleSubmitToFormspree] = useForm(formspreeEndpoint);
+const ApplicationForm: React.FC<ApplicationFormProps> = ({ onSubmitSuccess }) => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitSuccess, setSubmitSuccess] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [numberOfChildren, setNumberOfChildren] = useState(1);
   const [childrenData, setChildrenData] = useState<ChildInfo[]>([initialChildState]);
   const [formData, setFormData] = useState<Omit<FormData, 'children' | 'numberOfChildren'>>({
@@ -90,21 +90,50 @@ const ApplicationForm: React.FC<ApplicationFormProps> = ({ formspreeEndpoint, on
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const fullFormData = {
-      ...formData,
-      numberOfChildren,
-      children: JSON.stringify(childrenData, null, 2),
-    };
-    console.log('[ApplicationForm] Attempting submission...');
-    await handleSubmitToFormspree(fullFormData);
-  };
+    setIsSubmitting(true);
+    setSubmitError(null);
+    
+    try {
+      const fullFormData = {
+        ...formData,
+        numberOfChildren,
+        children: JSON.stringify(childrenData, null, 2),
+        access_key: '0d1a51cf-4e51-4254-adcf-0cd9af908071',
+        subject: 'New School Application Submission',
+        from_name: `${formData.parent1FirstName} ${formData.parent1LastName}`,
+        to_email: formData.parent1Email,
+      };
 
-  useEffect(() => {
-    if (state.succeeded) {
-      console.log('[ApplicationForm] Formspree state.succeeded is true. Calling onSubmitSuccess.');
-      onSubmitSuccess();
+      console.log('[ApplicationForm] Attempting submission...');
+      
+      const response = await fetch('https://api.web3forms.com/submit', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(fullFormData),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      
+      if (result.success) {
+        setSubmitSuccess(true);
+        console.log('[ApplicationForm] Web3Forms submission successful. Calling onSubmitSuccess.');
+        onSubmitSuccess();
+      } else {
+        throw new Error(result.message || 'Form submission failed');
+      }
+    } catch (error) {
+      console.error('[ApplicationForm] Submission error:', error);
+      setSubmitError(error instanceof Error ? error.message : 'An error occurred during submission');
+    } finally {
+      setIsSubmitting(false);
     }
-  }, [state.succeeded, onSubmitSuccess]);
+  };
 
   const renderChildForms = () => {
     return childrenData.map((child, index) => (
@@ -174,37 +203,31 @@ const ApplicationForm: React.FC<ApplicationFormProps> = ({ formspreeEndpoint, on
           <div>
             <label htmlFor="parent1FirstName" className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
             <input type="text" name="parent1FirstName" id="parent1FirstName" value={formData.parent1FirstName} onChange={handleInputChange} required className="w-full border border-neutral-border rounded px-3 py-2" />
-            <ValidationError prefix="Parent 1 First Name" field="parent1FirstName" errors={state.errors} className="text-red-500 text-xs" />
+            {submitError && <div className="text-red-500 text-xs">{submitError}</div>}
           </div>
           <div>
             <label htmlFor="parent1LastName" className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
             <input type="text" name="parent1LastName" id="parent1LastName" value={formData.parent1LastName} onChange={handleInputChange} required className="w-full border border-neutral-border rounded px-3 py-2" />
-            <ValidationError prefix="Parent 1 Last Name" field="parent1LastName" errors={state.errors} className="text-red-500 text-xs" />
           </div>
           <div>
             <label htmlFor="parent1Email" className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
             <input type="email" name="parent1Email" id="parent1Email" value={formData.parent1Email} onChange={handleInputChange} required className="w-full border border-neutral-border rounded px-3 py-2" />
-            <ValidationError prefix="Parent 1 Email" field="parent1Email" errors={state.errors} className="text-red-500 text-xs" />
           </div>
           <div>
             <label htmlFor="parent1Mobile" className="block text-sm font-medium text-gray-700 mb-1">Mobile Number</label>
             <input type="tel" name="parent1Mobile" id="parent1Mobile" value={formData.parent1Mobile} onChange={handleInputChange} required className="w-full border border-neutral-border rounded px-3 py-2" />
-            <ValidationError prefix="Parent 1 Mobile" field="parent1Mobile" errors={state.errors} className="text-red-500 text-xs" />
           </div>
           <div className="md:col-span-2">
             <label htmlFor="parent1Address" className="block text-sm font-medium text-gray-700 mb-1">Address</label>
             <input type="text" name="parent1Address" id="parent1Address" value={formData.parent1Address} onChange={handleInputChange} required className="w-full border border-neutral-border rounded px-3 py-2" />
-            <ValidationError prefix="Parent 1 Address" field="parent1Address" errors={state.errors} className="text-red-500 text-xs" />
           </div>
           <div>
             <label htmlFor="parent1Postcode" className="block text-sm font-medium text-gray-700 mb-1">Postcode</label>
             <input type="text" name="parent1Postcode" id="parent1Postcode" value={formData.parent1Postcode} onChange={handleInputChange} required className="w-full border border-neutral-border rounded px-3 py-2" />
-            <ValidationError prefix="Parent 1 Postcode" field="parent1Postcode" errors={state.errors} className="text-red-500 text-xs" />
           </div>
           <div>
             <label htmlFor="parent1Relationship" className="block text-sm font-medium text-gray-700 mb-1">Relationship to Child/ren</label>
             <input type="text" name="parent1Relationship" id="parent1Relationship" value={formData.parent1Relationship} onChange={handleInputChange} required className="w-full border border-neutral-border rounded px-3 py-2" />
-            <ValidationError prefix="Parent 1 Relationship" field="parent1Relationship" errors={state.errors} className="text-red-500 text-xs" />
           </div>
         </div>
       </div>
@@ -251,11 +274,11 @@ const ApplicationForm: React.FC<ApplicationFormProps> = ({ formspreeEndpoint, on
       {renderChildForms()}
 
       <div className="mt-8 text-center">
-        <button type="submit" disabled={state.submitting} className="bg-secondary hover:bg-secondary-dark text-white font-medium py-3 px-10 rounded shadow transition duration-300 inline-flex items-center text-lg">
-          {state.submitting ? 'Submitting Application...' : 'Submit Application & Proceed to Payment'}
-          {!state.submitting && <span className="material-icons ml-2">arrow_forward</span>}
+        <button type="submit" disabled={isSubmitting} className="bg-secondary hover:bg-secondary-dark text-white font-medium py-3 px-10 rounded shadow transition duration-300 inline-flex items-center text-lg">
+          {isSubmitting ? 'Submitting Application...' : 'Submit Application & Proceed to Payment'}
+          {!isSubmitting && <span className="material-icons ml-2">arrow_forward</span>}
         </button>
-        <ValidationError errors={state.errors} className="text-red-500 mt-2 block" />
+        {submitError && <div className="text-red-500 mt-2 block">{submitError}</div>}
       </div>
     </form>
   );
