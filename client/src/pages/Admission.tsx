@@ -364,7 +364,7 @@ export default function Admission() {
                 href="/contact#contact-form" 
                 className="text-white hover:text-gray-200 underline transition-colors"
               >
-                info@madrasahabubakrasiddiq.org
+                madrasahabubakr1@gmail.com
               </Link>
             </div>
           </div>

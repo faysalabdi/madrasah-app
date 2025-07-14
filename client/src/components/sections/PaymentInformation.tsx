@@ -12,9 +12,7 @@ const PaymentInformation = () => {
         </p>
         <p className="font-semibold">Payment Details:</p>
         <ul className="list-none mb-4 space-y-1">
-          <li><strong>BSB:</strong> [Your BSB Number]</li>
-          <li><strong>Account Number:</strong> [Your Account Number]</li>
-          <li><strong>Account Name:</strong> Madrasah Abubakr As-Siddiq</li>
+          <li><strong>PayID:</strong> [0411510201]</li>
         </ul>
         <p>
           Please use your child's full name as the payment reference.
@@ -22,8 +20,8 @@ const PaymentInformation = () => {
         <p className="mt-4">
           After making the payment, please send a copy of the receipt to:
           <br />
-          <a href="mailto:payments@madrasahabubakr.com.au" className="font-medium text-primary hover:underline">
-            payments@madrasahabubakr.com.au
+          <a href="mailto:madrasahabubakr1@gmail.com" className="font-medium text-primary hover:underline">
+          madrasahabubakr1@gmail.com
           </a>
         </p>
         <p className="mt-6 text-sm">

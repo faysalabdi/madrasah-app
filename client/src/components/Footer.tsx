@@ -110,7 +110,7 @@ export default function Footer() {
                 <span className="material-icons mr-2 text-secondary">
                   email
                 </span>
-                <span>info@madrasahabubakrasiddiq.com.au</span>
+                <span>madrasahabubakr1@gmail.com</span>
               </p>
             </address>
           </div>
