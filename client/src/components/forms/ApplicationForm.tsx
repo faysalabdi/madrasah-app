@@ -94,17 +94,17 @@ const ApplicationForm: React.FC<ApplicationFormProps> = ({ onSubmitSuccess }) =>
     setSubmitError(null);
     
     try {
-      const fullFormData = {
-        ...formData,
-        numberOfChildren,
-        children: JSON.stringify(childrenData, null, 2),
+    const fullFormData = {
+      ...formData,
+      numberOfChildren,
+      children: JSON.stringify(childrenData, null, 2),
         access_key: '0d1a51cf-4e51-4254-adcf-0cd9af908071',
         subject: 'New School Application Submission',
         from_name: `${formData.parent1FirstName} ${formData.parent1LastName}`,
         to_email: formData.parent1Email,
-      };
+    };
 
-      console.log('[ApplicationForm] Attempting submission...');
+    console.log('[ApplicationForm] Attempting submission...');
       
       const response = await fetch('https://api.web3forms.com/submit', {
         method: 'POST',
@@ -123,10 +123,10 @@ const ApplicationForm: React.FC<ApplicationFormProps> = ({ onSubmitSuccess }) =>
       if (result.success) {
         setSubmitSuccess(true);
         console.log('[ApplicationForm] Web3Forms submission successful. Calling onSubmitSuccess.');
-        onSubmitSuccess();
+      onSubmitSuccess();
       } else {
         throw new Error(result.message || 'Form submission failed');
-      }
+    }
     } catch (error) {
       console.error('[ApplicationForm] Submission error:', error);
       setSubmitError(error instanceof Error ? error.message : 'An error occurred during submission');

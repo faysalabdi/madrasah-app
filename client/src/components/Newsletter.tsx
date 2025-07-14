@@ -42,11 +42,11 @@ export default function Newsletter() {
       const result = await response.json();
       
       if (result.success) {
-        toast({
-          title: "Success!",
-          description: "Thank you for subscribing to our newsletter.",
-        });
-        setEmail("");
+      toast({
+        title: "Success!",
+        description: "Thank you for subscribing to our newsletter.",
+      });
+      setEmail("");
       } else {
         throw new Error(result.message || 'Subscription failed');
       }
