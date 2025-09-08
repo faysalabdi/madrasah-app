@@ -178,7 +178,7 @@ const ApplicationForm: React.FC<ApplicationFormProps> = ({ onSubmitSuccess }) =>
             </select>
           </div>
           <div className="md:col-span-2">
-            <label htmlFor={`child${index}_medicalIssues`} className="block text-sm font-medium text-gray-700 mb-1">Does the student have any medical issues? (Required)</label>
+            <label htmlFor={`child${index}_medicalIssues`} className="block text-sm font-medium text-gray-700 mb-1">Does the student have any medical concerns / special needs? (Required)</label>
             <select name="medicalIssues" id={`child${index}_medicalIssues`} value={child.medicalIssues} onChange={(e) => handleChildInputChange(index, e)} required className="w-full border border-neutral-border rounded px-3 py-2">
               <option value="no">No</option>
               <option value="yes">Yes</option>
