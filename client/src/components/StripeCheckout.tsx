@@ -1,5 +1,6 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useStripeCheckout } from '@/hooks/useStripeCheckout'
+import { useSupabaseFunction } from '@/hooks/useSupabaseFunction'
 
 interface StripeCheckoutProps {
   formData?: {
@@ -12,50 +13,93 @@ interface StripeCheckoutProps {
   onSuccess?: () => void
 }
 
-interface ProductSelection {
-  fiqhBook: boolean
-  surahsDua: boolean
-  islamicStudies: boolean
-  termFees: boolean // Always true, but included for consistency
+interface StripeProduct {
+  id: string
+  name: string
+  description: string | null
+  priceId: string | null
+  price: number
+  metadata: Record<string, string>
 }
 
-const PRODUCT_PRICES = {
-  fiqhBook: 20,
-  surahsDua: 20,
-  islamicStudies: 40,
-  termFees: 200, // Always included
+interface ProductSelection {
+  [productId: string]: boolean
 }
 
 const StripeCheckout: React.FC<StripeCheckoutProps> = ({ formData, onSuccess }) => {
   const { createCheckout, loading, error } = useStripeCheckout()
+  const { callFunction: getProducts } = useSupabaseFunction<{ products: StripeProduct[] }>('get-products')
   const numberOfChildren = formData?.numberOfChildren || 1
   
-  // Default: all products selected (term fees always included)
-  const [productSelection, setProductSelection] = useState<ProductSelection>({
-    fiqhBook: true,
-    surahsDua: true,
-    islamicStudies: true,
-    termFees: true, // Always true - term fees are mandatory
-  })
-  
+  const [products, setProducts] = useState<StripeProduct[]>([])
+  const [productsLoading, setProductsLoading] = useState(true)
+  const [productSelection, setProductSelection] = useState<ProductSelection>({})
   const [useTrial, setUseTrial] = useState(true) // Default to 14-day trial
 
+  // Fetch products from Stripe on mount
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        setProductsLoading(true)
+        const response = await getProducts()
+        const fetchedProducts = response.products || []
+        setProducts(fetchedProducts)
+        
+        // Initialize selection: all products selected by default
+        const initialSelection: ProductSelection = {}
+        fetchedProducts.forEach((product) => {
+          initialSelection[product.id] = true // All products selected by default
+        })
+        setProductSelection(initialSelection)
+      } catch (err) {
+        console.error('Error fetching products:', err)
+      } finally {
+        setProductsLoading(false)
+      }
+    }
+    
+    fetchProducts()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Find term fees product (always required)
+  const termFeesProduct = products.find(
+    (p) => p.name.toLowerCase().includes('term') || 
+           p.metadata?.type === 'term_fees' ||
+           p.metadata?.required === 'true'
+  )
+
+  // Other products (books)
+  const bookProducts = products.filter(
+    (p) => p.id !== termFeesProduct?.id
+  )
+
   const calculateTotal = () => {
-    let total = PRODUCT_PRICES.termFees // Term fees are always included
-    if (productSelection.fiqhBook) total += PRODUCT_PRICES.fiqhBook
-    if (productSelection.surahsDua) total += PRODUCT_PRICES.surahsDua
-    if (productSelection.islamicStudies) total += PRODUCT_PRICES.islamicStudies
+    let total = 0
+    products.forEach((product) => {
+      if (productSelection[product.id]) {
+        total += product.price
+      }
+    })
     return total * numberOfChildren
   }
 
   const handleCheckout = async () => {
     try {
-      const selectedProducts = {
-        fiqhBook: productSelection.fiqhBook,
-        surahsDua: productSelection.surahsDua,
-        islamicStudies: productSelection.islamicStudies,
-        termFees: true, // Always true - term fees are mandatory
+      // Ensure term fees are always included
+      if (termFeesProduct) {
+        productSelection[termFeesProduct.id] = true
       }
+
+      // Build product selection with price IDs
+      const selectedProducts = products
+        .filter((p) => productSelection[p.id] && p.priceId)
+        .map((p) => ({
+          priceId: p.priceId!,
+          productId: p.id,
+          name: p.name,
+          price: p.price,
+        }))
 
       await createCheckout({
         numberOfChildren,
@@ -64,7 +108,7 @@ const StripeCheckout: React.FC<StripeCheckoutProps> = ({ formData, onSuccess }) 
           ? `${formData.parent1FirstName} ${formData.parent1LastName}`
           : undefined,
         formData: formData,
-        productSelection: selectedProducts,
+        products: selectedProducts, // Pass selected products with price IDs
         useTrial: useTrial,
       })
       onSuccess?.()
@@ -74,6 +118,26 @@ const StripeCheckout: React.FC<StripeCheckoutProps> = ({ formData, onSuccess }) 
   }
 
   const total = calculateTotal()
+
+  if (productsLoading) {
+    return (
+      <div className="mt-12 pt-8">
+        <div className="text-center">
+          <p className="text-lg">Loading products...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (products.length === 0) {
+    return (
+      <div className="mt-12 pt-8">
+        <div className="text-center">
+          <p className="text-lg text-red-600">No products available. Please contact support.</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="mt-12 pt-8">
@@ -102,56 +166,47 @@ const StripeCheckout: React.FC<StripeCheckoutProps> = ({ formData, onSuccess }) 
 
         {/* Product Selection */}
         <div className="mb-6">
-          <h3 className="text-xl font-semibold mb-4">Select Books (Per Child)</h3>
-          <p className="text-sm text-gray-600 mb-4">Term fees ($200) are included automatically</p>
+          <h3 className="text-xl font-semibold mb-4">Select Products (Per Child)</h3>
+          {termFeesProduct && (
+            <p className="text-sm text-gray-600 mb-4">
+              {termFeesProduct.name} (${termFeesProduct.price.toFixed(2)}) is included automatically
+            </p>
+          )}
           <div className="space-y-3">
-            <label className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
-              <div className="flex items-center">
-                <input
-                  type="checkbox"
-                  checked={productSelection.fiqhBook}
-                  onChange={(e) => setProductSelection({ ...productSelection, fiqhBook: e.target.checked })}
-                  className="mr-3 w-5 h-5"
-                />
-                <span>Fiqh Book</span>
-              </div>
-              <span className="font-semibold">${PRODUCT_PRICES.fiqhBook.toFixed(2)}</span>
-            </label>
-
-            <label className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
-              <div className="flex items-center">
-                <input
-                  type="checkbox"
-                  checked={productSelection.surahsDua}
-                  onChange={(e) => setProductSelection({ ...productSelection, surahsDua: e.target.checked })}
-                  className="mr-3 w-5 h-5"
-                />
-                <span>Surahs and Dua Book</span>
-              </div>
-              <span className="font-semibold">${PRODUCT_PRICES.surahsDua.toFixed(2)}</span>
-            </label>
-
-            <label className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
-              <div className="flex items-center">
-                <input
-                  type="checkbox"
-                  checked={productSelection.islamicStudies}
-                  onChange={(e) => setProductSelection({ ...productSelection, islamicStudies: e.target.checked })}
-                  className="mr-3 w-5 h-5"
-                />
-                <span>Islamic Studies Book</span>
-              </div>
-              <span className="font-semibold">${PRODUCT_PRICES.islamicStudies.toFixed(2)}</span>
-            </label>
+            {/* Book Products (selectable) */}
+            {bookProducts.map((product) => (
+              <label
+                key={product.id}
+                className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 cursor-pointer"
+              >
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={productSelection[product.id] || false}
+                    onChange={(e) => {
+                      setProductSelection({
+                        ...productSelection,
+                        [product.id]: e.target.checked,
+                      })
+                    }}
+                    className="mr-3 w-5 h-5"
+                  />
+                  <span>{product.name}</span>
+                </div>
+                <span className="font-semibold">${product.price.toFixed(2)}</span>
+              </label>
+            ))}
 
             {/* Term Fees - Always included, shown as info */}
-            <div className="flex items-center justify-between p-3 border rounded-lg bg-gray-50">
-              <div className="flex items-center">
-                <span className="material-icons text-gray-500 mr-3 text-xl">check_circle</span>
-                <span className="font-medium">Term Fees (Required)</span>
+            {termFeesProduct && (
+              <div className="flex items-center justify-between p-3 border rounded-lg bg-gray-50">
+                <div className="flex items-center">
+                  <span className="material-icons text-gray-500 mr-3 text-xl">check_circle</span>
+                  <span className="font-medium">{termFeesProduct.name} (Required)</span>
+                </div>
+                <span className="font-semibold">${termFeesProduct.price.toFixed(2)}</span>
               </div>
-              <span className="font-semibold">${PRODUCT_PRICES.termFees.toFixed(2)}</span>
-            </div>
+            )}
           </div>
         </div>
 
