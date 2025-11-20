@@ -259,7 +259,8 @@ serve(async (req) => {
       trialEndDate = trialEnd.toISOString()
 
       // Create Setup Intent session (to save payment method)
-      session = await stripe.checkout.sessions.create({
+      // Note: customer_email is not needed when customer is specified
+      const sessionConfig: any = {
         customer: customer.id,
         payment_method_types: ["card"],
         mode: "setup", // Setup mode - saves payment method without charging
@@ -283,7 +284,14 @@ serve(async (req) => {
             trialEndDate: trialEndDate,
           },
         },
-      })
+      }
+      
+      // Only add customer_email if customer doesn't have email set
+      if (!customer.email) {
+        sessionConfig.customer_email = email
+      }
+      
+      session = await stripe.checkout.sessions.create(sessionConfig)
 
       // Store trial information in database
       if (parentId && trialEndDate) {
@@ -311,6 +319,8 @@ serve(async (req) => {
         quantity: numberOfChildren,
       }))
 
+      // Note: customer_email is not needed when customer is specified
+      // receipt_email in payment_intent_data will ensure email is sent
       session = await stripe.checkout.sessions.create({
         customer: customer.id,
         payment_method_types: ["card"],
@@ -318,6 +328,9 @@ serve(async (req) => {
         mode: "payment",
         success_url: `${frontendUrl}/admission?success=true&session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${frontendUrl}/admission?canceled=true`,
+        payment_intent_data: {
+          receipt_email: email, // Explicitly set receipt email
+        },
         metadata: {
           parent_id: parentId?.toString() || "",
           numberOfChildren: numberOfChildren.toString(),
