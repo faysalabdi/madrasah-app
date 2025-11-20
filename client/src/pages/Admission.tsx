@@ -54,8 +54,15 @@ export default function Admission() {
       // Clean up URL params
       window.history.replaceState({}, '', '/admission');
       
-      // Scroll to top
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      // Scroll to thank you section after a brief delay to ensure it's rendered
+      setTimeout(() => {
+        const thankYouSection = document.getElementById('thank-you-section') || document.querySelector('[id*="apply-now"]');
+        if (thankYouSection) {
+          thankYouSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        } else {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+      }, 100);
     } else if (canceled === 'true') {
       // Payment canceled - keep form data, just go back to form
       setShowPaymentInfo(false);
@@ -311,7 +318,7 @@ export default function Admission() {
         <div className="container mx-auto px-4">
           <div className="max-w-3xl mx-auto">
             {showThankYou ? (
-              <div className="text-center py-12">
+              <div id="thank-you-section" className="text-center py-12">
                 <div className="mb-6">
                   <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-green-100 mb-4">
                     <span className="material-icons text-5xl text-green-600">check_circle</span>
