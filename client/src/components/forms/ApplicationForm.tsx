@@ -1,4 +1,4 @@
-import React, { useState, ChangeEvent, FormEvent } from 'react';
+import React, { useState, ChangeEvent, FormEvent, useEffect } from 'react';
 
 interface ChildInfo {
   firstName: string;
@@ -30,7 +30,7 @@ interface FormData {
 }
 
 interface ApplicationFormProps {
-  onSubmitSuccess: () => void;
+  onSubmitSuccess: (formData: FormData & { children: ChildInfo[]; numberOfChildren: number }) => void;
 }
 
 const initialChildState: ChildInfo = {
@@ -44,27 +44,90 @@ const initialChildState: ChildInfo = {
   medicalDetails: '',
 };
 
+const FORM_STORAGE_KEY = 'madrasah_application_form';
+
 const ApplicationForm: React.FC<ApplicationFormProps> = ({ onSubmitSuccess }) => {
+  // Load saved form data from localStorage
+  const loadSavedFormData = (): Omit<FormData, 'children' | 'numberOfChildren'> => {
+    try {
+      const saved = localStorage.getItem(FORM_STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return parsed.formData || {
+          parent1FirstName: '',
+          parent1LastName: '',
+          parent1Relationship: '',
+          parent1Address: '',
+          parent1Postcode: '',
+          parent1Mobile: '',
+          parent1Email: '',
+          parent2FirstName: '',
+          parent2LastName: '',
+          parent2Relationship: '',
+          parent2Address: '',
+          parent2Postcode: '',
+          parent2Mobile: '',
+        };
+      }
+    } catch (e) {
+      console.error('Error loading saved form data:', e);
+    }
+    return {
+      parent1FirstName: '',
+      parent1LastName: '',
+      parent1Relationship: '',
+      parent1Address: '',
+      parent1Postcode: '',
+      parent1Mobile: '',
+      parent1Email: '',
+      parent2FirstName: '',
+      parent2LastName: '',
+      parent2Relationship: '',
+      parent2Address: '',
+      parent2Postcode: '',
+      parent2Mobile: '',
+    };
+  };
+
+  const loadSavedChildrenData = (): { numberOfChildren: number; childrenData: ChildInfo[] } => {
+    try {
+      const saved = localStorage.getItem(FORM_STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return {
+          numberOfChildren: parsed.numberOfChildren || 1,
+          childrenData: parsed.childrenData || [initialChildState],
+        };
+      }
+    } catch (e) {
+      console.error('Error loading saved children data:', e);
+    }
+    return {
+      numberOfChildren: 1,
+      childrenData: [initialChildState],
+    };
+  };
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [numberOfChildren, setNumberOfChildren] = useState(1);
-  const [childrenData, setChildrenData] = useState<ChildInfo[]>([initialChildState]);
-  const [formData, setFormData] = useState<Omit<FormData, 'children' | 'numberOfChildren'>>({
-    parent1FirstName: '',
-    parent1LastName: '',
-    parent1Relationship: '',
-    parent1Address: '',
-    parent1Postcode: '',
-    parent1Mobile: '',
-    parent1Email: '',
-    parent2FirstName: '',
-    parent2LastName: '',
-    parent2Relationship: '',
-    parent2Address: '',
-    parent2Postcode: '',
-    parent2Mobile: '',
-  });
+  const savedChildren = loadSavedChildrenData();
+  const [numberOfChildren, setNumberOfChildren] = useState(savedChildren.numberOfChildren);
+  const [childrenData, setChildrenData] = useState<ChildInfo[]>(savedChildren.childrenData);
+  const [formData, setFormData] = useState<Omit<FormData, 'children' | 'numberOfChildren'>>(loadSavedFormData());
+
+  // Save form data to localStorage whenever it changes
+  useEffect(() => {
+    try {
+      localStorage.setItem(FORM_STORAGE_KEY, JSON.stringify({
+        formData,
+        numberOfChildren,
+        childrenData,
+      }));
+    } catch (e) {
+      console.error('Error saving form data:', e);
+    }
+  }, [formData, numberOfChildren, childrenData]);
 
   const handleInputChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -123,7 +186,13 @@ const ApplicationForm: React.FC<ApplicationFormProps> = ({ onSubmitSuccess }) =>
       if (result.success) {
         setSubmitSuccess(true);
         console.log('[ApplicationForm] Web3Forms submission successful. Calling onSubmitSuccess.');
-      onSubmitSuccess();
+        // Clear saved form data after successful submission
+        localStorage.removeItem(FORM_STORAGE_KEY);
+        onSubmitSuccess({
+          ...formData,
+          children: childrenData,
+          numberOfChildren,
+        });
       } else {
         throw new Error(result.message || 'Form submission failed');
     }

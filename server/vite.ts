@@ -1,10 +1,9 @@
 import express, { type Express } from "express";
 import fs from "fs";
 import path from "path";
-import { createServer as createViteServer, createLogger } from "vite";
+import { createServer as createViteServer, createLogger, loadEnv } from "vite";
 import { type Server } from "http";
 import viteConfig from "../vite.config";
-import { nanoid } from "nanoid";
 
 const viteLogger = createLogger();
 
@@ -23,11 +22,20 @@ export async function setupVite(app: Express, server: Server) {
   const serverOptions = {
     middlewareMode: true,
     hmr: { server },
-    allowedHosts: true,
+    allowedHosts: true as const,
   };
 
+  // Load env vars from root directory
+  const rootDir = path.resolve(import.meta.dirname, "..");
+  const env = loadEnv(process.env.NODE_ENV || "development", rootDir, "");
+
+  // Get the resolved config (viteConfig might be a function)
+  const resolvedConfig = typeof viteConfig === 'function' 
+    ? await viteConfig({ mode: process.env.NODE_ENV || "development", command: 'serve' })
+    : viteConfig;
+
   const vite = await createViteServer({
-    ...viteConfig,
+    ...resolvedConfig,
     configFile: false,
     customLogger: {
       ...viteLogger,
@@ -38,10 +46,33 @@ export async function setupVite(app: Express, server: Server) {
     },
     server: serverOptions,
     appType: "custom",
+    define: {
+      ...resolvedConfig.define,
+      'import.meta.env.VITE_SUPABASE_URL': JSON.stringify(env.VITE_SUPABASE_URL || ''),
+      'import.meta.env.VITE_SUPABASE_ANON_KEY': JSON.stringify(env.VITE_SUPABASE_ANON_KEY || ''),
+      'import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY': JSON.stringify(env.VITE_STRIPE_PUBLISHABLE_KEY || ''),
+    },
   });
 
   app.use(vite.middlewares);
+  
+  // Catch-all handler: serve index.html for non-API routes
   app.use("*", async (req, res, next) => {
+    // Skip API routes - let them be handled by the API routes
+    if (req.path.startsWith("/api")) {
+      return next();
+    }
+
+    // Skip Supabase function calls - these should go directly to Supabase
+    if (req.path.startsWith("/functions/v1/")) {
+      return next();
+    }
+
+    // Skip static assets - let Vite handle them
+    if (req.path.startsWith("/@") || req.path.includes(".")) {
+      return next();
+    }
+
     const url = req.originalUrl;
 
     try {
@@ -53,11 +84,7 @@ export async function setupVite(app: Express, server: Server) {
       );
 
       // always reload the index.html file from disk incase it changes
-      let template = await fs.promises.readFile(clientTemplate, "utf-8");
-      template = template.replace(
-        `src="/src/main.tsx"`,
-        `src="/src/main.tsx?v=${nanoid()}"`,
-      );
+      const template = await fs.promises.readFile(clientTemplate, "utf-8");
       const page = await vite.transformIndexHtml(url, template);
       res.status(200).set({ "Content-Type": "text/html" }).end(page);
     } catch (e) {

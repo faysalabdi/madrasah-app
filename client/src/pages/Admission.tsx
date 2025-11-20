@@ -3,7 +3,7 @@ import { useIntersectionObserver } from "@/hooks/use-intersection-observer";
 import BackgroundPattern from "@/components/ui/BackgroundPattern";
 import { Link, useLocation } from "wouter";
 import ApplicationForm from "@/components/forms/ApplicationForm";
-import PaymentInformation from "@/components/sections/PaymentInformation";
+import StripeCheckout from "@/components/StripeCheckout";
 
 export default function Admission() {
   const stepsRef = useRef<HTMLDivElement>(null);
@@ -11,6 +11,7 @@ export default function Admission() {
   const feesRef = useRef<HTMLDivElement>(null);
   const paymentRef = useRef<HTMLDivElement>(null);
   const [showPaymentInfo, setShowPaymentInfo] = useState(false);
+  const [formData, setFormData] = useState<any>(null);
   const [location] = useLocation(); // Remove if only used for scrolling effect
 
   // console.log("Admission component render - showPaymentInfo:", showPaymentInfo, "Hash:", location?.hash); // Adjusted for potential removal of location
@@ -19,8 +20,9 @@ export default function Admission() {
   const requirementsEntry = useIntersectionObserver(requirementsRef, {});
   const feesEntry = useIntersectionObserver(feesRef, {});
 
-  const handleFormSuccess = () => {
+  const handleFormSuccess = (data: any) => {
     console.log("handleFormSuccess called! Setting showPaymentInfo to true.");
+    setFormData(data);
     setShowPaymentInfo(true);
     // Scroll to payment info after state updates
     setTimeout(() => {
@@ -31,8 +33,13 @@ export default function Admission() {
 
   // Effect to scroll to #apply-now if present in URL on load/hash change
   useEffect(() => {
-    console.log(`[Admission.tsx] Scroll useEffect. Path: ${location.pathname}, Hash: ${location.hash}, showPaymentInfo: ${showPaymentInfo}`);
-    if (location.pathname === '/admission' && location.hash === "#apply-now" && !showPaymentInfo) {
+    // 'location' from wouter is a string (the current path), not an object.
+    // To get the hash, use window.location.hash
+    // To check path, use location directly.
+    const hash = window.location.hash || "";
+    const pathname = location; // location from useLocation() is just a string path
+    console.log(`[Admission.tsx] Scroll useEffect. Path: ${pathname}, Hash: ${hash}, showPaymentInfo: ${showPaymentInfo}`);
+    if (pathname === '/admission' && hash === "#apply-now" && !showPaymentInfo) {
       const attemptScroll = (attemptsLeft = 5) => {
         if (attemptsLeft === 0) {
           console.error("[Admission.tsx] Exhausted attempts to scroll to #apply-now. Element not found or not visible.");
@@ -51,7 +58,7 @@ export default function Admission() {
     } else {
       console.log("[Admission.tsx] Scroll condition for #apply-now not met or form already submitted.");
     }
-  }, [location.pathname, location.hash, showPaymentInfo]); // Dependencies
+  }, [location, showPaymentInfo]); // Fixed dependencies: location is string, not object
 
   return (
     <>
@@ -284,7 +291,23 @@ export default function Admission() {
               </>
             ) : (
               <div ref={paymentRef}>
-                <PaymentInformation />
+                <div className="mb-4">
+                  <button
+                    onClick={() => {
+                      setShowPaymentInfo(false);
+                      setFormData(null);
+                      // Scroll back to form
+                      setTimeout(() => {
+                        document.getElementById("apply-now")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                      }, 100);
+                    }}
+                    className="text-primary hover:text-primary-dark underline flex items-center gap-2"
+                  >
+                    <span className="material-icons text-sm">arrow_back</span>
+                    Back to Edit Application
+                  </button>
+                </div>
+                <StripeCheckout formData={formData} />
               </div>
             )}
           </div>
