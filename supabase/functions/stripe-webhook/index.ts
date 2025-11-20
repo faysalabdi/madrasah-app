@@ -1,30 +1,58 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import Stripe from "https://esm.sh/stripe@14.21.0?target=deno"
+import Stripe from "https://esm.sh/stripe@14?target=denonext"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.0"
 
-const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
+const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") as string, {
   apiVersion: "2024-12-18.acacia",
-  httpClient: Stripe.createFetchHttpClient(),
 })
 
-const webhookSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET") || ""
+// This is needed in order to use the Web Crypto API in Deno.
+const cryptoProvider = Stripe.createSubtleCryptoProvider()
 
-serve(async (req) => {
-  const signature = req.headers.get("stripe-signature")
+const webhookSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET") as string
+
+Deno.serve(async (request) => {
+  // Handle CORS preflight
+  if (request.method === "OPTIONS") {
+    return new Response(null, {
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "POST",
+        "Access-Control-Allow-Headers": "stripe-signature",
+      },
+    })
+  }
+
+  const signature = request.headers.get("Stripe-Signature") || request.headers.get("stripe-signature")
 
   if (!signature) {
     return new Response("No signature", { status: 400 })
   }
 
-  const body = await req.text()
+  // First step is to verify the event. The .text() method must be used as the
+  // verification relies on the raw request body rather than the parsed JSON.
+  const body = await request.text()
   let event: Stripe.Event
 
   try {
-    event = stripe.webhooks.constructEvent(body, signature, webhookSecret)
-  } catch (err) {
+    event = await stripe.webhooks.constructEventAsync(
+      body,
+      signature,
+      webhookSecret,
+      undefined,
+      cryptoProvider
+    )
+  } catch (err: any) {
     console.error("Webhook signature verification failed:", err)
-    return new Response(`Webhook Error: ${err.message}`, { status: 400 })
+    return new Response(
+      JSON.stringify({ error: `Webhook Error: ${err.message}` }),
+      {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      }
+    )
   }
+
+  console.log(`🔔 Event received: ${event.id} (${event.type})`)
 
   const supabaseClient = createClient(
     Deno.env.get("SUPABASE_URL") ?? "",
@@ -37,8 +65,29 @@ serve(async (req) => {
         const session = event.data.object as Stripe.Checkout.Session
         const parentId = session.metadata?.parent_id
 
-        if (parentId && session.payment_status === "paid") {
-          // Create payment record
+        if (!parentId) break
+
+        if (session.mode === "setup" && session.metadata?.useTrial === "true") {
+          // Trial setup: Update existing trial payment record with setup intent info
+          const setupIntentId = session.setup_intent as string
+          const trialEndDate = session.metadata?.trialEndDate
+
+          // Get the setup intent to get payment method
+          const setupIntent = await stripe.setupIntents.retrieve(setupIntentId)
+          const paymentMethodId = setupIntent.payment_method as string
+
+          // Update the trial payment record
+          await supabaseClient
+            .from("payments")
+            .update({
+              stripe_setup_intent_id: setupIntentId,
+              stripe_payment_method_id: paymentMethodId,
+              status: "trial_active",
+              trial_end_date: trialEndDate || null,
+            })
+            .eq("stripe_checkout_session_id", session.id)
+        } else if (session.payment_status === "paid" && session.payment_intent) {
+          // Immediate payment: Create payment record
           await supabaseClient.from("payments").insert({
             parent_id: parseInt(parentId),
             stripe_checkout_session_id: session.id,
@@ -55,13 +104,65 @@ serve(async (req) => {
         break
       }
 
+      case "setup_intent.succeeded": {
+        const setupIntent = event.data.object as Stripe.SetupIntent
+        const parentId = setupIntent.metadata?.parent_id
+
+        if (parentId && setupIntent.payment_method) {
+          // Update trial payment record with setup intent and payment method
+          await supabaseClient
+            .from("payments")
+            .update({
+              stripe_setup_intent_id: setupIntent.id,
+              stripe_payment_method_id: setupIntent.payment_method as string,
+              status: "trial_active",
+            })
+            .eq("parent_id", parseInt(parentId))
+            .eq("status", "trial")
+        }
+        break
+      }
+
       case "payment_intent.succeeded": {
         const paymentIntent = event.data.object as Stripe.PaymentIntent
-        // Update payment status if needed
-        await supabaseClient
+
+        // Check if payment record exists
+        const { data: existingPayment } = await supabaseClient
           .from("payments")
-          .update({ status: "succeeded" })
+          .select("id")
           .eq("stripe_payment_intent_id", paymentIntent.id)
+          .maybeSingle()
+
+        if (existingPayment) {
+          // Update existing payment
+          await supabaseClient
+            .from("payments")
+            .update({ status: "succeeded" })
+            .eq("stripe_payment_intent_id", paymentIntent.id)
+        } else {
+          // Create new payment record if it doesn't exist (fallback)
+          // Find parent by customer ID
+          const customerId = paymentIntent.customer as string
+          const { data: parent } = await supabaseClient
+            .from("parents")
+            .select("id")
+            .eq("stripe_customer_id", customerId)
+            .maybeSingle()
+
+          if (parent) {
+            await supabaseClient.from("payments").insert({
+              parent_id: parent.id,
+              stripe_payment_intent_id: paymentIntent.id,
+              amount: paymentIntent.amount / 100,
+              currency: paymentIntent.currency,
+              payment_type: "full_payment",
+              status: "succeeded",
+              paid_for_books: true,
+              paid_term_fees: true,
+              metadata: paymentIntent.metadata,
+            })
+          }
+        }
         break
       }
 
@@ -77,8 +178,12 @@ serve(async (req) => {
             stripe_subscription_id: subscription.id,
             stripe_customer_id: subscription.customer as string,
             status: subscription.status,
-            current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
-            current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+            current_period_start: new Date(
+              subscription.current_period_start * 1000
+            ).toISOString(),
+            current_period_end: new Date(
+              subscription.current_period_end * 1000
+            ).toISOString(),
             cancel_at_period_end: subscription.cancel_at_period_end,
             metadata: subscription.metadata,
           }
@@ -105,8 +210,9 @@ serve(async (req) => {
 
     return new Response(JSON.stringify({ received: true }), {
       headers: { "Content-Type": "application/json" },
+      status: 200,
     })
-  } catch (error) {
+  } catch (error: any) {
     console.error("Webhook handler error:", error)
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
@@ -114,4 +220,3 @@ serve(async (req) => {
     })
   }
 })
-
