@@ -1,11 +1,20 @@
 import { useState } from 'react'
 import { useSupabaseFunction } from './useSupabaseFunction'
 
+interface ProductSelection {
+  fiqhBook: boolean
+  surahsDua: boolean
+  islamicStudies: boolean
+  termFees: boolean
+}
+
 interface CheckoutParams {
   numberOfChildren: number
   parentEmail: string
   parentName?: string
   formData?: any // Full form data to store in Supabase
+  productSelection?: ProductSelection
+  useTrial?: boolean // If true, use 14-day trial period
 }
 
 export function useStripeCheckout() {

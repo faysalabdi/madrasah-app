@@ -12,6 +12,8 @@ export default function Admission() {
   const paymentRef = useRef<HTMLDivElement>(null);
   const [showPaymentInfo, setShowPaymentInfo] = useState(false);
   const [formData, setFormData] = useState<any>(null);
+  const [showThankYou, setShowThankYou] = useState(false);
+  const [isTrialPayment, setIsTrialPayment] = useState(false);
   const [location] = useLocation(); // Remove if only used for scrolling effect
 
   // console.log("Admission component render - showPaymentInfo:", showPaymentInfo, "Hash:", location?.hash); // Adjusted for potential removal of location
@@ -36,18 +38,28 @@ export default function Admission() {
     const urlParams = new URLSearchParams(window.location.search);
     const success = urlParams.get('success');
     const canceled = urlParams.get('canceled');
+    const trial = urlParams.get('trial');
     
     if (success === 'true') {
-      // Payment successful - clear localStorage and reset form
+      // Payment successful - clear localStorage and show thank you page
       const FORM_STORAGE_KEY = 'madrasah_application_form';
       localStorage.removeItem(FORM_STORAGE_KEY);
       setShowPaymentInfo(false);
       setFormData(null);
-      // You can add a success message here if needed
-      console.log('Payment successful!');
+      setShowThankYou(true);
+      
+      // Store trial status for thank you page
+      setIsTrialPayment(trial === 'true');
+      
+      // Clean up URL params
+      window.history.replaceState({}, '', '/admission');
+      
+      // Scroll to top
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } else if (canceled === 'true') {
       // Payment canceled - keep form data, just go back to form
       setShowPaymentInfo(false);
+      setShowThankYou(false);
       // Form data is still in localStorage, so it will restore automatically
     }
   }, []);
@@ -298,7 +310,95 @@ export default function Admission() {
       <section id="apply-now" className="py-16 bg-white scroll-mt-20">
         <div className="container mx-auto px-4">
           <div className="max-w-3xl mx-auto">
-            {!showPaymentInfo ? (
+            {showThankYou ? (
+              <div className="text-center py-12">
+                <div className="mb-6">
+                  <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-green-100 mb-4">
+                    <span className="material-icons text-5xl text-green-600">check_circle</span>
+                  </div>
+                  <h2 className="text-4xl font-bold text-primary mb-4 font-amiri">
+                    Thank You!
+                  </h2>
+                  <p className="text-xl text-neutral-text mb-6">
+                    {isTrialPayment
+                      ? "Your 14-day free trial has started! Your payment method has been saved securely and will be charged after the trial period."
+                      : "Your payment has been successfully processed."
+                    }
+                  </p>
+                  {isTrialPayment && (
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 max-w-xl mx-auto">
+                      <p className="text-sm text-blue-800">
+                        <strong>Free Trial Active:</strong> Your child can start attending classes immediately. 
+                        Payment will be automatically processed in 14 days. You can cancel anytime during the trial period.
+                      </p>
+                    </div>
+                  )}
+                </div>
+                
+                <div className="bg-secondary-light text-primary-dark p-8 rounded-lg shadow-sm max-w-xl mx-auto mb-6">
+                  <h3 className="text-2xl font-semibold mb-4 font-amiri">What's Next?</h3>
+                  <div className="text-left space-y-4">
+                    <div className="flex items-start">
+                      <span className="material-icons text-secondary mr-3 mt-1">email</span>
+                      <div>
+                        <p className="font-semibold mb-1">Confirmation Email</p>
+                        <p className="text-sm text-gray-600">
+                          You will receive a confirmation email shortly with your payment receipt and enrollment details.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-start">
+                      <span className="material-icons text-secondary mr-3 mt-1">schedule</span>
+                      <div>
+                        <p className="font-semibold mb-1">Assessment</p>
+                        <p className="text-sm text-gray-600">
+                          Our team will contact you within 3-5 business days to schedule your child's assessment.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-start">
+                      <span className="material-icons text-secondary mr-3 mt-1">school</span>
+                      <div>
+                        <p className="font-semibold mb-1">Enrollment Confirmation</p>
+                        <p className="text-sm text-gray-600">
+                          Once the assessment is complete and enrollment is confirmed, you'll receive all the details about class schedules and start dates.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-6">
+                  <p className="text-sm text-blue-800 mb-2">
+                    <strong>Questions?</strong> Feel free to reach out to us:
+                  </p>
+                  <a 
+                    href="mailto:madrasahabubakr1@gmail.com" 
+                    className="text-primary hover:underline font-medium"
+                  >
+                    madrasahabubakr1@gmail.com
+                  </a>
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                  <Link
+                    href="/"
+                    className="bg-secondary hover:bg-secondary-dark text-white font-medium py-3 px-6 rounded shadow transition duration-300"
+                  >
+                    Return to Home
+                  </Link>
+                  <button
+                    onClick={() => {
+                      setShowThankYou(false);
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    className="bg-primary hover:bg-primary-dark text-white font-medium py-3 px-6 rounded shadow transition duration-300"
+                  >
+                    Submit Another Application
+                  </button>
+                </div>
+              </div>
+            ) : !showPaymentInfo ? (
               <>
                 <h2 className="text-3xl font-bold text-primary mb-6 font-amiri text-center">
                   Apply Below
