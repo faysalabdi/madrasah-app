@@ -28,7 +28,10 @@ serve(async (req) => {
       useTrial = false,
     } = await req.json()
 
-    if (!parentEmail) {
+    // Get email from formData if parentEmail not provided
+    const email = parentEmail || formData?.parent1Email
+
+    if (!email) {
       return new Response(
         JSON.stringify({ error: "Parent email is required" }),
         {
@@ -60,74 +63,108 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     )
 
-    // FAST: Only check if parent exists (minimal query)
-    let { data: parent } = await supabaseClient
+    // Find or create parent in database
+    let { data: parent, error: parentQueryError } = await supabaseClient
       .from("parents")
       .select("id, stripe_customer_id")
-      .eq("parent1_email", parentEmail)
-      .single()
+      .eq("parent1_email", email)
+      .maybeSingle()
+
+    if (parentQueryError) {
+      console.error("Error querying parent:", parentQueryError)
+    }
 
     let parentId: number | null = parent?.id || null
 
-    // FAST: Create or retrieve Stripe customer (parallel operations)
-    const [customerResult, parentResult] = await Promise.all([
-      // Get or create Stripe customer
-      (async () => {
-        if (parent?.stripe_customer_id) {
-          return await stripe.customers.retrieve(parent.stripe_customer_id)
-        }
-        
-        const existingCustomers = await stripe.customers.list({
-          email: parentEmail,
-          limit: 1,
-        })
-
-        if (existingCustomers.data.length > 0) {
-          return existingCustomers.data[0]
-        }
-
-        return await stripe.customers.create({
-          email: parentEmail,
-          name: parentName,
-        })
-      })(),
-      // Create parent if doesn't exist (only if needed)
-      (async () => {
-        if (!parent) {
-          const nameParts = parentName?.split(" ") || []
-          const { data: newParent } = await supabaseClient
-            .from("parents")
-            .insert({
-              parent1_email: parentEmail,
-              parent1_first_name: nameParts[0] || "",
-              parent1_last_name: nameParts.slice(1).join(" ") || "",
-            })
-            .select("id")
-            .single()
-          return newParent?.id || null
-        }
-        return parent.id
-      })(),
-    ])
-
-    const customer = customerResult
-    parentId = parentResult || parentId
-
-    // Update parent with customer ID if needed
-    if (customer.id && parentId) {
-      await supabaseClient
+    // If parent doesn't exist, create it with form data
+    if (!parent && formData) {
+      const { data: newParent, error: createError } = await supabaseClient
         .from("parents")
-        .update({ stripe_customer_id: customer.id })
-        .eq("id", parentId)
+        .insert({
+          parent1_email: formData.parent1Email || email,
+          parent1_first_name: formData.parent1FirstName || "",
+          parent1_last_name: formData.parent1LastName || "",
+          parent1_mobile: formData.parent1Mobile || "",
+          parent1_address: formData.parent1Address || "",
+          parent1_postcode: formData.parent1Postcode || "",
+          parent1_relationship: formData.parent1Relationship || "",
+          parent2_first_name: formData.parent2FirstName || null,
+          parent2_last_name: formData.parent2LastName || null,
+          parent2_mobile: formData.parent2Mobile || null,
+          parent2_relationship: formData.parent2Relationship || null,
+          parent2_address: formData.parent2Address || null,
+          parent2_postcode: formData.parent2Postcode || null,
+        })
+        .select("id")
+        .single()
+
+      if (createError) {
+        console.error("Error creating parent:", createError)
+        throw createError
+      }
+
+      parentId = newParent?.id || null
+      parent = newParent
+      console.log(`Created new parent with ID: ${parentId}`)
+    } else if (!parent) {
+      // Fallback: create minimal parent if no formData
+      const nameParts = (parentName || "").split(" ") || []
+      const { data: newParent, error: createError } = await supabaseClient
+        .from("parents")
+        .insert({
+          parent1_email: email,
+          parent1_first_name: nameParts[0] || "",
+          parent1_last_name: nameParts.slice(1).join(" ") || "",
+        })
+        .select("id")
+        .single()
+
+      if (createError) {
+        console.error("Error creating minimal parent:", createError)
+        throw createError
+      }
+
+      parentId = newParent?.id || null
+      parent = newParent
+      console.log(`Created minimal parent with ID: ${parentId}`)
     }
 
-    // IMPORTANT: Save form data BEFORE creating checkout session (synchronously)
+    // Get or create Stripe customer
+    let customer
+    if (parent?.stripe_customer_id) {
+      customer = await stripe.customers.retrieve(parent.stripe_customer_id)
+    } else {
+      const existingCustomers = await stripe.customers.list({
+        email: email,
+        limit: 1,
+      })
+
+      if (existingCustomers.data.length > 0) {
+        customer = existingCustomers.data[0]
+      } else {
+        customer = await stripe.customers.create({
+          email: email,
+          name: parentName || `${formData?.parent1FirstName || ""} ${formData?.parent1LastName || ""}`.trim(),
+        })
+      }
+
+      // Update parent with customer ID
+      if (customer.id && parentId) {
+        await supabaseClient
+          .from("parents")
+          .update({ stripe_customer_id: customer.id })
+          .eq("id", parentId)
+      }
+    }
+
+    // IMPORTANT: Save/update form data BEFORE creating checkout session (synchronously)
     if (formData && parentId) {
       try {
         // Update parent with full form data
         const { error: parentError } = await supabaseClient
           .from("parents")
           .update({
+            parent1_email: formData.parent1Email || email,
             parent1_first_name: formData.parent1FirstName || "",
             parent1_last_name: formData.parent1LastName || "",
             parent1_mobile: formData.parent1Mobile || "",
@@ -148,6 +185,8 @@ serve(async (req) => {
           throw parentError
         }
 
+        console.log(`Parent ${parentId} updated successfully with form data`)
+
         // Create/update students
         if (formData.children && Array.isArray(formData.children)) {
           for (const child of formData.children) {
@@ -163,13 +202,17 @@ serve(async (req) => {
               medical_details: child.medicalDetails || null,
             }
 
-            const { data: existing } = await supabaseClient
+            const { data: existing, error: findError } = await supabaseClient
               .from("students")
               .select("id")
               .eq("parent_id", parentId)
               .eq("first_name", studentData.first_name)
               .eq("last_name", studentData.last_name)
-              .single()
+              .maybeSingle()
+
+            if (findError) {
+              console.error("Error finding student:", findError)
+            }
 
             if (existing) {
               const { error: updateError } = await supabaseClient
@@ -178,6 +221,8 @@ serve(async (req) => {
                 .eq("id", existing.id)
               if (updateError) {
                 console.error(`Error updating student ${existing.id}:`, updateError)
+              } else {
+                console.log(`Student ${existing.id} updated successfully`)
               }
             } else {
               const { error: insertError } = await supabaseClient
@@ -185,6 +230,8 @@ serve(async (req) => {
                 .insert(studentData)
               if (insertError) {
                 console.error("Error inserting student:", insertError)
+              } else {
+                console.log(`Student created successfully for parent ${parentId}`)
               }
             }
           }
@@ -192,7 +239,12 @@ serve(async (req) => {
       } catch (error) {
         console.error("Error saving form data:", error)
         // Don't fail the entire request, but log the error
+        throw error // Actually throw to see the error
       }
+    } else if (!parentId) {
+      console.error("Cannot save form data: parentId is null")
+    } else if (!formData) {
+      console.error("Cannot save form data: formData is missing")
     }
 
     const frontendUrl = Deno.env.get("FRONTEND_URL") || "http://localhost:5000"
@@ -216,7 +268,7 @@ serve(async (req) => {
         metadata: {
           parent_id: parentId?.toString() || "",
           numberOfChildren: numberOfChildren.toString(),
-          parentEmail: parentEmail.substring(0, 100),
+          parentEmail: email.substring(0, 100),
           useTrial: "true",
           trialEndDate: trialEndDate,
           totalAmount: totalAmountCents.toString(),
@@ -269,7 +321,7 @@ serve(async (req) => {
         metadata: {
           parent_id: parentId?.toString() || "",
           numberOfChildren: numberOfChildren.toString(),
-          parentEmail: parentEmail.substring(0, 100),
+          parentEmail: email.substring(0, 100),
           useTrial: "false",
           products: JSON.stringify(products),
         },
@@ -280,7 +332,8 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         sessionId: session.id,
-        url: session.url 
+        url: session.url,
+        parentId: parentId, // Return parentId for debugging
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -290,7 +343,7 @@ serve(async (req) => {
   } catch (error) {
     console.error("Error creating checkout session:", error)
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: error.message, details: error.toString() }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 500,
