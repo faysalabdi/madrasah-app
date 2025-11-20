@@ -186,8 +186,8 @@ const ApplicationForm: React.FC<ApplicationFormProps> = ({ onSubmitSuccess }) =>
       if (result.success) {
         setSubmitSuccess(true);
         console.log('[ApplicationForm] Web3Forms submission successful. Calling onSubmitSuccess.');
-        // Clear saved form data after successful submission
-        localStorage.removeItem(FORM_STORAGE_KEY);
+        // Don't clear localStorage yet - keep it until payment is successful
+        // This allows users to go back and edit if needed
         onSubmitSuccess({
           ...formData,
           children: childrenData,

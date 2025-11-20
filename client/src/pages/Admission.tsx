@@ -31,6 +31,27 @@ export default function Admission() {
     }, 100); // Keep this scroll for after form submission
   };
 
+  // Check for payment success/cancel in URL params
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const success = urlParams.get('success');
+    const canceled = urlParams.get('canceled');
+    
+    if (success === 'true') {
+      // Payment successful - clear localStorage and reset form
+      const FORM_STORAGE_KEY = 'madrasah_application_form';
+      localStorage.removeItem(FORM_STORAGE_KEY);
+      setShowPaymentInfo(false);
+      setFormData(null);
+      // You can add a success message here if needed
+      console.log('Payment successful!');
+    } else if (canceled === 'true') {
+      // Payment canceled - keep form data, just go back to form
+      setShowPaymentInfo(false);
+      // Form data is still in localStorage, so it will restore automatically
+    }
+  }, []);
+
   // Effect to scroll to #apply-now if present in URL on load/hash change
   useEffect(() => {
     // 'location' from wouter is a string (the current path), not an object.
@@ -295,7 +316,7 @@ export default function Admission() {
                   <button
                     onClick={() => {
                       setShowPaymentInfo(false);
-                      setFormData(null);
+                      // Don't clear formData - keep it so form can restore if needed
                       // Scroll back to form
                       setTimeout(() => {
                         document.getElementById("apply-now")?.scrollIntoView({ behavior: "smooth", block: "start" });
