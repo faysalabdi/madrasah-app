@@ -5,12 +5,21 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
-import { Loader2, Trash2, Calendar, BookOpen, FileText, UserCheck, Search } from 'lucide-react'
+import { Loader2, Trash2, Calendar, BookOpen, FileText, UserCheck, Search, User, LogOut, Settings } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Textarea } from '@/components/ui/textarea'
 import { Checkbox } from '@/components/ui/checkbox'
 import { useToast } from '@/hooks/use-toast'
@@ -97,6 +106,23 @@ const AdminPortal: React.FC = () => {
   const [bulkInvoiceLoading, setBulkInvoiceLoading] = useState(false)
   const [selectedParentsForInvoice, setSelectedParentsForInvoice] = useState<number[]>([])
   const [bulkInvoiceMode, setBulkInvoiceMode] = useState<'all' | 'selected'>('all')
+  
+  // Teacher Attendance
+  const [teacherAttendance, setTeacherAttendance] = useState<any[]>([])
+  const [showTeacherAttendanceDialog, setShowTeacherAttendanceDialog] = useState(false)
+  const [selectedTeacherForAttendance, setSelectedTeacherForAttendance] = useState<Teacher | null>(null)
+  const [attendanceDate, setAttendanceDate] = useState(new Date().toISOString().split('T')[0])
+  const [attendanceHours, setAttendanceHours] = useState('2.00')
+  const [attendanceNotes, setAttendanceNotes] = useState('')
+  
+  // Account Settings
+  const [newEmail, setNewEmail] = useState('')
+  const [currentPasswordForEmail, setCurrentPasswordForEmail] = useState('')
+  const [currentPasswordForPassword, setCurrentPasswordForPassword] = useState('')
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [updatingAccount, setUpdatingAccount] = useState(false)
+  const [showAccountSettingsDialog, setShowAccountSettingsDialog] = useState(false)
   const [showCreatePayment, setShowCreatePayment] = useState(false)
   const [selectedParentForPayment, setSelectedParentForPayment] = useState<Parent | null>(null)
   const [selectedStudentsForPayment, setSelectedStudentsForPayment] = useState<number[]>([])
@@ -113,13 +139,14 @@ const AdminPortal: React.FC = () => {
   const [selectedTeacher, setSelectedTeacher] = useState<string>('')
   const [selectedStudents, setSelectedStudents] = useState<number[]>([])
 
-  // Student Records
-  const [selectedStudentForRecords, setSelectedStudentForRecords] = useState<string>('')
-  const [recordsType, setRecordsType] = useState<'attendance' | 'homework' | 'behavior' | 'notes'>('attendance')
-  const [allAttendance, setAllAttendance] = useState<any[]>([])
-  const [allHomework, setAllHomework] = useState<any[]>([])
-  const [allBehaviorNotes, setAllBehaviorNotes] = useState<any[]>([])
-  const [allStudentNotes, setAllStudentNotes] = useState<any[]>([])
+  // Student Detail View
+  const [selectedStudentForDetail, setSelectedStudentForDetail] = useState<Student | null>(null)
+  const [showStudentDetailDialog, setShowStudentDetailDialog] = useState(false)
+  const [loadingStudentRecords, setLoadingStudentRecords] = useState(false)
+  const [studentAttendance, setStudentAttendance] = useState<any[]>([])
+  const [studentHomework, setStudentHomework] = useState<any[]>([])
+  const [studentBehaviorNotes, setStudentBehaviorNotes] = useState<any[]>([])
+  const [studentNotes, setStudentNotes] = useState<any[]>([])
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -133,74 +160,284 @@ const AdminPortal: React.FC = () => {
     checkAuth()
   }, [setLocation])
 
-  useEffect(() => {
-    if (activeTab === 'records') {
-      loadAllRecords()
-    }
-  }, [activeTab, selectedStudentForRecords, recordsType])
-
-  const loadAllRecords = async () => {
+  const loadStudentRecords = async (studentId: number) => {
     try {
-      if (recordsType === 'attendance') {
-        let query = supabase.from('attendance').select(`
+      setLoadingStudentRecords(true)
+      
+      // Load all record types in parallel
+      const [attendanceRes, homeworkRes, behaviorRes, notesRes] = await Promise.all([
+        supabase.from('attendance').select(`
           *,
-          students (id, first_name, last_name, grade, student_id),
           teachers (id, first_name, last_name)
-        `).order('date', { ascending: false }).limit(100)
+        `).eq('student_id', studentId).order('date', { ascending: false }),
         
-        if (selectedStudentForRecords) {
-          query = query.eq('student_id', parseInt(selectedStudentForRecords))
-        }
-        
-        const { data } = await query
-        setAllAttendance(data || [])
-      } else if (recordsType === 'homework') {
-        let query = supabase.from('homework').select(`
+        supabase.from('homework').select(`
           *,
-          students (id, first_name, last_name, grade, student_id),
           teachers (id, first_name, last_name)
-        `).order('assigned_date', { ascending: false }).limit(100)
+        `).eq('student_id', studentId).order('assigned_date', { ascending: false }),
         
-        if (selectedStudentForRecords) {
-          query = query.eq('student_id', parseInt(selectedStudentForRecords))
-        }
-        
-        const { data } = await query
-        setAllHomework(data || [])
-      } else if (recordsType === 'behavior') {
-        let query = supabase.from('behavior_notes').select(`
+        supabase.from('behavior_notes').select(`
           *,
-          students (id, first_name, last_name, grade, student_id),
           teachers (id, first_name, last_name)
-        `).order('date', { ascending: false }).limit(100)
+        `).eq('student_id', studentId).order('date', { ascending: false }),
         
-        if (selectedStudentForRecords) {
-          query = query.eq('student_id', parseInt(selectedStudentForRecords))
-        }
-        
-        const { data } = await query
-        setAllBehaviorNotes(data || [])
-      } else if (recordsType === 'notes') {
-        let query = supabase.from('student_notes').select(`
+        supabase.from('student_notes').select(`
           *,
-          students (id, first_name, last_name, grade, student_id),
           teachers (id, first_name, last_name)
-        `).order('created_at', { ascending: false }).limit(100)
-        
-        if (selectedStudentForRecords) {
-          query = query.eq('student_id', parseInt(selectedStudentForRecords))
-        }
-        
-        const { data } = await query
-        setAllStudentNotes(data || [])
-      }
-    } catch (err) {
-      console.error('Error loading records:', err)
+        `).eq('student_id', studentId).order('created_at', { ascending: false }),
+      ])
+      
+      setStudentAttendance(attendanceRes.data || [])
+      setStudentHomework(homeworkRes.data || [])
+      setStudentBehaviorNotes(behaviorRes.data || [])
+      setStudentNotes(notesRes.data || [])
+    } catch (err: any) {
+      console.error('Error loading student records:', err)
+      setError(err.message || 'Failed to load student records')
+    } finally {
+      setLoadingStudentRecords(false)
+    }
+  }
+
+  const handleStudentClick = async (student: Student) => {
+    setSelectedStudentForDetail(student)
+    setShowStudentDetailDialog(true)
+    await loadStudentRecords(student.id)
+  }
+
+  const loadTeacherAttendance = async (teacherId: number) => {
+    try {
+      const { data, error } = await supabase
+        .from('teacher_attendance')
+        .select('*')
+        .eq('teacher_id', teacherId)
+        .order('date', { ascending: false })
+      
+      if (error) throw error
+      setTeacherAttendance(data || [])
+    } catch (err: any) {
+      console.error('Error loading teacher attendance:', err)
+      setError(err.message || 'Failed to load teacher attendance')
+    }
+  }
+
+  const handleTeacherAttendanceClick = async (teacher: Teacher) => {
+    setSelectedTeacherForAttendance(teacher)
+    setShowTeacherAttendanceDialog(true)
+    await loadTeacherAttendance(teacher.id)
+  }
+
+  const handleMarkTeacherAttendance = async () => {
+    if (!selectedTeacherForAttendance) return
+
+    try {
+      const { error } = await supabase
+        .from('teacher_attendance')
+        .upsert({
+          teacher_id: selectedTeacherForAttendance.id,
+          date: attendanceDate,
+          hours: parseFloat(attendanceHours) || 2.00,
+          notes: attendanceNotes || null,
+        }, {
+          onConflict: 'teacher_id,date'
+        })
+
+      if (error) throw error
+
+      toast({
+        title: 'Success',
+        description: 'Teacher attendance recorded successfully.',
+      })
+
+      setAttendanceDate(new Date().toISOString().split('T')[0])
+      setAttendanceHours('2.00')
+      setAttendanceNotes('')
+      await loadTeacherAttendance(selectedTeacherForAttendance.id)
+    } catch (err: any) {
       toast({
         title: 'Error',
-        description: 'Failed to load records.',
+        description: err.message || 'Failed to record teacher attendance',
         variant: 'destructive',
       })
+    }
+  }
+
+  const handleDeleteTeacherAttendance = async (attendanceId: number) => {
+    if (!confirm('Are you sure you want to delete this attendance record?')) return
+
+    try {
+      const { error } = await supabase
+        .from('teacher_attendance')
+        .delete()
+        .eq('id', attendanceId)
+
+      if (error) throw error
+
+      toast({
+        title: 'Success',
+        description: 'Attendance record deleted successfully.',
+      })
+
+      if (selectedTeacherForAttendance) {
+        await loadTeacherAttendance(selectedTeacherForAttendance.id)
+      }
+    } catch (err: any) {
+      toast({
+        title: 'Error',
+        description: err.message || 'Failed to delete attendance record',
+        variant: 'destructive',
+      })
+    }
+  }
+
+  const calculateTotalHours = (startDate?: string, endDate?: string) => {
+    let records = teacherAttendance
+    if (startDate || endDate) {
+      records = teacherAttendance.filter(record => {
+        const recordDate = new Date(record.date)
+        if (startDate && recordDate < new Date(startDate)) return false
+        if (endDate && recordDate > new Date(endDate)) return false
+        return true
+      })
+    }
+    return records.reduce((total, record) => total + parseFloat(record.hours || 0), 0)
+  }
+
+  const handleDeleteTeacher = async (teacher: Teacher) => {
+    if (!confirm(`Are you sure you want to delete teacher ${teacher.first_name} ${teacher.last_name}? This will also delete all their attendance records, assigned students, and related data. This action cannot be undone.`)) {
+      return
+    }
+
+    try {
+      setLoading(true)
+
+      // Delete teacher record (cascade will handle related records)
+      const { error: deleteError } = await supabase
+        .from('teachers')
+        .delete()
+        .eq('id', teacher.id)
+
+      if (deleteError) throw deleteError
+
+      // Delete auth user if exists (using Edge Function)
+      try {
+        await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/delete-user`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+            },
+            body: JSON.stringify({ email: teacher.email }),
+          }
+        )
+      } catch (authErr) {
+        console.error('Failed to delete auth user:', authErr)
+        // Continue even if auth deletion fails
+      }
+
+      toast({
+        title: 'Success',
+        description: `Teacher ${teacher.first_name} ${teacher.last_name} deleted successfully.`,
+      })
+
+      loadDashboardData()
+    } catch (err: any) {
+      toast({
+        title: 'Error',
+        description: err.message || 'Failed to delete teacher',
+        variant: 'destructive',
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleDeleteParent = async (parent: Parent) => {
+    const parentStudents = students.filter(s => s.parent_id === parent.id)
+    const studentCount = parentStudents.length
+
+    if (!confirm(`Are you sure you want to delete parent ${parent.parent1_first_name} ${parent.parent1_last_name}?${studentCount > 0 ? ` This will also delete ${studentCount} student(s) and all their related records.` : ''} This action cannot be undone.`)) {
+      return
+    }
+
+    try {
+      setLoading(true)
+
+      // Delete parent record (cascade will handle students and related records)
+      const { error: deleteError } = await supabase
+        .from('parents')
+        .delete()
+        .eq('id', parent.id)
+
+      if (deleteError) throw deleteError
+
+      // Delete auth user if exists (using Edge Function)
+      try {
+        await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/delete-user`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+            },
+            body: JSON.stringify({ email: parent.parent1_email }),
+          }
+        )
+      } catch (authErr) {
+        console.error('Failed to delete auth user:', authErr)
+        // Continue even if auth deletion fails
+      }
+
+      toast({
+        title: 'Success',
+        description: `Parent ${parent.parent1_first_name} ${parent.parent1_last_name} and ${studentCount > 0 ? `${studentCount} student(s) ` : ''}deleted successfully.`,
+      })
+
+      loadDashboardData()
+    } catch (err: any) {
+      toast({
+        title: 'Error',
+        description: err.message || 'Failed to delete parent',
+        variant: 'destructive',
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleDeleteStudent = async (student: Student) => {
+    if (!confirm(`Are you sure you want to delete student ${student.first_name} ${student.last_name}? This will also delete all their attendance records, homework, behavior notes, and related data. This action cannot be undone.`)) {
+      return
+    }
+
+    try {
+      setLoading(true)
+
+      // Delete student record (cascade will handle related records)
+      const { error: deleteError } = await supabase
+        .from('students')
+        .delete()
+        .eq('id', student.id)
+
+      if (deleteError) throw deleteError
+
+      toast({
+        title: 'Success',
+        description: `Student ${student.first_name} ${student.last_name} deleted successfully.`,
+      })
+
+      loadDashboardData()
+    } catch (err: any) {
+      toast({
+        title: 'Error',
+        description: err.message || 'Failed to delete student',
+        variant: 'destructive',
+      })
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -358,36 +595,35 @@ const AdminPortal: React.FC = () => {
     try {
       setLoading(true)
 
-      // First create the user in Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: newTeacher.email,
-        password: newTeacher.password,
-      })
+      // Use Edge Function to create teacher (bypasses email confirmation)
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-teacher`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          },
+          body: JSON.stringify({
+            first_name: newTeacher.first_name,
+            last_name: newTeacher.last_name,
+            email: newTeacher.email,
+            mobile: newTeacher.mobile || null,
+            password: newTeacher.password,
+          }),
+        }
+      )
 
-      if (authError) throw authError
-
-      // Then create the teacher record
-      if (!authData.user?.id) {
-        throw new Error('Failed to create user account')
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.error || 'Failed to create teacher')
       }
 
-      const { data: teacherData, error: teacherError } = await supabase
-        .from('teachers')
-        .insert({
-          user_id: authData.user.id,
-          first_name: newTeacher.first_name,
-          last_name: newTeacher.last_name,
-          email: newTeacher.email,
-          mobile: newTeacher.mobile || null,
-        })
-        .select()
-        .single()
-
-      if (teacherError) throw teacherError
+      const data = await response.json()
 
       toast({
         title: 'Success',
-        description: `Teacher ${newTeacher.first_name} ${newTeacher.last_name} created successfully.`,
+        description: data.message || `Teacher ${newTeacher.first_name} ${newTeacher.last_name} created successfully. They can now log in with their email and password.`,
       })
 
       setShowCreateTeacher(false)
@@ -571,6 +807,139 @@ const AdminPortal: React.FC = () => {
     setLocation('/admin-login')
   }
 
+  useEffect(() => {
+    // Load current user email
+    const loadCurrentUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user?.email) {
+        setNewEmail(user.email)
+      }
+    }
+    loadCurrentUser()
+  }, [])
+
+  const handleUpdateEmail = async () => {
+    if (!newEmail || !currentPasswordForEmail) {
+      toast({
+        title: 'Error',
+        description: 'Please fill in all required fields.',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    setUpdatingAccount(true)
+    try {
+      // First verify current password by attempting to re-authenticate
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user?.email) {
+        throw new Error('No user found')
+      }
+
+      // Verify password
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: user.email,
+        password: currentPasswordForEmail,
+      })
+
+      if (signInError) {
+        throw new Error('Current password is incorrect')
+      }
+
+      // Update email
+      const { error: updateError } = await supabase.auth.updateUser({
+        email: newEmail.trim().toLowerCase(),
+      })
+
+      if (updateError) throw updateError
+
+      toast({
+        title: 'Success',
+        description: 'Email updated successfully. Please check your new email for verification.',
+      })
+      setCurrentPasswordForEmail('')
+    } catch (err: any) {
+      toast({
+        title: 'Error',
+        description: err.message || 'Failed to update email',
+        variant: 'destructive',
+      })
+    } finally {
+      setUpdatingAccount(false)
+    }
+  }
+
+  const handleUpdatePassword = async () => {
+    if (!currentPasswordForPassword || !newPassword || !confirmPassword) {
+      toast({
+        title: 'Error',
+        description: 'Please fill in all password fields.',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    if (newPassword !== confirmPassword) {
+      toast({
+        title: 'Error',
+        description: 'New passwords do not match.',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    if (newPassword.length < 6) {
+      toast({
+        title: 'Error',
+        description: 'Password must be at least 6 characters long.',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    setUpdatingAccount(true)
+    try {
+      // First verify current password
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user?.email) {
+        throw new Error('No user found')
+      }
+
+      // Verify password
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: user.email,
+        password: currentPasswordForPassword,
+      })
+
+      if (signInError) {
+        throw new Error('Current password is incorrect')
+      }
+
+      // Update password
+      const { error: updateError } = await supabase.auth.updateUser({
+        password: newPassword,
+      })
+
+      if (updateError) throw updateError
+
+      toast({
+        title: 'Success',
+        description: 'Password updated successfully.',
+      })
+      setCurrentPasswordForPassword('')
+      setNewPassword('')
+      setConfirmPassword('')
+    } catch (err: any) {
+      toast({
+        title: 'Error',
+        description: err.message || 'Failed to update password',
+        variant: 'destructive',
+      })
+    } finally {
+      setUpdatingAccount(false)
+    }
+  }
+
   if (loading && stats.totalParents === 0) {
     return (
       <div className="min-h-screen bg-neutral-background py-16 flex items-center justify-center">
@@ -593,9 +962,39 @@ const AdminPortal: React.FC = () => {
                 Welcome, {localStorage.getItem('adminName') || 'Administrator'}
               </p>
             </div>
-            <Button variant="outline" onClick={handleLogout}>
-              Logout
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+                  <Avatar className="h-10 w-10">
+                    <AvatarFallback>
+                      <User className="h-5 w-5" />
+                    </AvatarFallback>
+                  </Avatar>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-56" align="end" forceMount>
+                <DropdownMenuLabel className="font-normal">
+                  <div className="flex flex-col space-y-1">
+                    <p className="text-sm font-medium leading-none">
+                      {localStorage.getItem('adminName') || 'Administrator'}
+                    </p>
+                    <p className="text-xs leading-none text-muted-foreground">
+                      {localStorage.getItem('adminEmail') || ''}
+                    </p>
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => setShowAccountSettingsDialog(true)}>
+                  <Settings className="mr-2 h-4 w-4" />
+                  <span>Account Settings</span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleLogout}>
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span>Logout</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
 
           {error && (
@@ -605,13 +1004,12 @@ const AdminPortal: React.FC = () => {
           )}
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-6">
+            <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
               <TabsTrigger value="payments">Payments</TabsTrigger>
               <TabsTrigger value="teachers">Teachers</TabsTrigger>
               <TabsTrigger value="students">Students</TabsTrigger>
               <TabsTrigger value="parents">Parents</TabsTrigger>
-              <TabsTrigger value="records">Student Records</TabsTrigger>
             </TabsList>
 
             {/* Dashboard Tab */}
@@ -1029,13 +1427,19 @@ const AdminPortal: React.FC = () => {
               <Card>
                 <CardHeader>
                   <CardTitle>All Teachers</CardTitle>
+                  <CardDescription>
+                    Click on a teacher's name to view and manage their attendance records
+                  </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-2">
                     {teachers.map((teacher) => (
                       <div key={teacher.id} className="border rounded-lg p-3 flex justify-between items-center">
-                        <div>
-                          <p className="font-medium">
+                        <div className="flex-1">
+                          <p 
+                            className="font-medium cursor-pointer hover:text-primary hover:underline"
+                            onClick={() => handleTeacherAttendanceClick(teacher)}
+                          >
                             {teacher.first_name} {teacher.last_name}
                           </p>
                           <p className="text-sm text-gray-600">{teacher.email}</p>
@@ -1043,12 +1447,181 @@ const AdminPortal: React.FC = () => {
                             <p className="text-xs text-gray-500">{teacher.mobile}</p>
                           )}
                         </div>
-                        <Badge variant="outline">Teacher</Badge>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline">Teacher</Badge>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeleteTeacher(teacher)}
+                            disabled={loading}
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </div>
                     ))}
                   </div>
                 </CardContent>
               </Card>
+
+              {/* Teacher Attendance Dialog */}
+              <Dialog open={showTeacherAttendanceDialog} onOpenChange={setShowTeacherAttendanceDialog}>
+                <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                  {!selectedTeacherForAttendance ? (
+                    <div className="py-12 text-center">
+                      <p className="text-gray-500">No teacher selected</p>
+                    </div>
+                  ) : (
+                    <>
+                      <DialogHeader>
+                        <DialogTitle className="text-2xl">
+                          Teacher Attendance: {selectedTeacherForAttendance.first_name} {selectedTeacherForAttendance.last_name}
+                        </DialogTitle>
+                        <DialogDescription>
+                          Track attendance for fortnightly payment calculations. Each class is 2 hours.
+                        </DialogDescription>
+                      </DialogHeader>
+
+                      <div className="space-y-6 mt-4">
+                        {/* Mark Attendance Form */}
+                        <Card>
+                          <CardHeader>
+                            <CardTitle>Mark Attendance</CardTitle>
+                          </CardHeader>
+                          <CardContent className="space-y-4">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                              <div className="space-y-2">
+                                <Label htmlFor="attendance-date">Date</Label>
+                                <Input
+                                  id="attendance-date"
+                                  type="date"
+                                  value={attendanceDate}
+                                  onChange={(e) => setAttendanceDate(e.target.value)}
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label htmlFor="attendance-hours">Hours</Label>
+                                <Input
+                                  id="attendance-hours"
+                                  type="number"
+                                  step="0.5"
+                                  min="0"
+                                  max="24"
+                                  value={attendanceHours}
+                                  onChange={(e) => setAttendanceHours(e.target.value)}
+                                  placeholder="2.00"
+                                />
+                                <p className="text-xs text-gray-500">Default: 2 hours per class</p>
+                              </div>
+                              <div className="space-y-2">
+                                <Label htmlFor="attendance-notes">Notes (Optional)</Label>
+                                <Input
+                                  id="attendance-notes"
+                                  type="text"
+                                  value={attendanceNotes}
+                                  onChange={(e) => setAttendanceNotes(e.target.value)}
+                                  placeholder=""
+                                />
+                              </div>
+                            </div>
+                            <Button onClick={handleMarkTeacherAttendance} className="w-full">
+                              Record Attendance
+                            </Button>
+                          </CardContent>
+                        </Card>
+
+                        {/* Attendance Records */}
+                        <Card>
+                          <CardHeader>
+                            <div className="flex justify-between items-center">
+                              <div>
+                                <CardTitle>Attendance Records</CardTitle>
+                                <CardDescription>
+                                  Total Hours: {calculateTotalHours().toFixed(2)} hours
+                                </CardDescription>
+                              </div>
+                            </div>
+                          </CardHeader>
+                          <CardContent>
+                            {teacherAttendance.length === 0 ? (
+                              <p className="text-gray-500 text-center py-8">No attendance records found.</p>
+                            ) : (
+                              <div className="space-y-3">
+                                {teacherAttendance.map((record) => (
+                                  <Card key={record.id} className="hover:shadow-md transition-shadow">
+                                    <CardContent className="p-4">
+                                      <div className="flex items-center justify-between">
+                                        <div className="flex-1">
+                                          <p className="font-medium">
+                                            {new Date(record.date).toLocaleDateString('en-US', { 
+                                              weekday: 'long', 
+                                              year: 'numeric', 
+                                              month: 'long', 
+                                              day: 'numeric' 
+                                            })}
+                                          </p>
+                                          <p className="text-sm text-gray-600">
+                                            {record.hours} hours
+                                          </p>
+                                          {record.notes && (
+                                            <p className="text-sm text-gray-700 mt-1">{record.notes}</p>
+                                          )}
+                                        </div>
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          onClick={() => handleDeleteTeacherAttendance(record.id)}
+                                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                        >
+                                          <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                      </div>
+                                    </CardContent>
+                                  </Card>
+                                ))}
+                              </div>
+                            )}
+                          </CardContent>
+                        </Card>
+
+                        {/* Fortnightly Summary */}
+                        <Card>
+                          <CardHeader>
+                            <CardTitle>Fortnightly Summary</CardTitle>
+                            <CardDescription>
+                              Calculate hours for the last 14 days
+                            </CardDescription>
+                          </CardHeader>
+                          <CardContent>
+                            {(() => {
+                              const twoWeeksAgo = new Date()
+                              twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14)
+                              const twoWeeksAgoStr = twoWeeksAgo.toISOString().split('T')[0]
+                              const todayStr = new Date().toISOString().split('T')[0]
+                              const fortnightHours = calculateTotalHours(twoWeeksAgoStr, todayStr)
+                              
+                              return (
+                                <div className="space-y-2">
+                                  <div className="flex justify-between items-center">
+                                    <span className="text-sm text-gray-600">Last 14 Days:</span>
+                                    <span className="text-2xl font-bold text-primary">
+                                      {fortnightHours.toFixed(2)} hours
+                                    </span>
+                                  </div>
+                                  <p className="text-xs text-gray-500">
+                                    From {new Date(twoWeeksAgoStr).toLocaleDateString()} to {new Date(todayStr).toLocaleDateString()}
+                                  </p>
+                                </div>
+                              )
+                            })()}
+                          </CardContent>
+                        </Card>
+                      </div>
+                    </>
+                  )}
+                </DialogContent>
+              </Dialog>
             </TabsContent>
 
             {/* Students Tab */}
@@ -1070,7 +1643,10 @@ const AdminPortal: React.FC = () => {
                           <div className="flex justify-between items-start">
                             <div className="flex-1">
                               <div className="flex items-center gap-2 mb-1">
-                                <p className="font-medium">
+                                <p 
+                                  className="font-medium cursor-pointer hover:text-primary hover:underline"
+                                  onClick={() => handleStudentClick(student)}
+                                >
                                   {student.first_name} {student.last_name}
                                 </p>
                                 {student.hasPaidTermFees ? (
@@ -1092,6 +1668,15 @@ const AdminPortal: React.FC = () => {
                                 </p>
                               )}
                             </div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDeleteStudent(student)}
+                              disabled={loading}
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
                           </div>
                         </div>
                       )
@@ -1516,13 +2101,27 @@ const AdminPortal: React.FC = () => {
                                 </p>
                               </div>
                             </div>
-                            <div className="flex flex-col gap-2 items-end">
-                              {parent.stripe_customer_id ? (
-                                <Badge variant="default" className="bg-green-500">Stripe Customer</Badge>
-                              ) : (
-                                <Badge variant="secondary">No Stripe Customer</Badge>
-                              )}
-                              <Badge variant="outline">Parent</Badge>
+                            <div className="flex items-center gap-2">
+                              <div className="flex flex-col gap-2 items-end">
+                                {parent.stripe_customer_id ? (
+                                  <Badge variant="default" className="bg-green-500">Stripe Customer</Badge>
+                                ) : (
+                                  <Badge variant="secondary">No Stripe Customer</Badge>
+                                )}
+                                <Badge variant="outline">Parent</Badge>
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleDeleteParent(parent)
+                                }}
+                                disabled={loading}
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
                             </div>
                           </div>
                         </div>
@@ -1533,247 +2132,322 @@ const AdminPortal: React.FC = () => {
               </Card>
             </TabsContent>
 
-            {/* Student Records Tab */}
-            <TabsContent value="records" className="mt-6">
-              <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-2xl font-bold">Student Records</h2>
-                </div>
+            {/* Student Detail Dialog */}
+            <Dialog open={showStudentDetailDialog} onOpenChange={setShowStudentDetailDialog}>
+              <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+                {loadingStudentRecords ? (
+                  <div className="flex items-center justify-center py-12">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    <span className="ml-2">Loading student records...</span>
+                  </div>
+                ) : !selectedStudentForDetail ? (
+                  <div className="py-12 text-center">
+                    <p className="text-gray-500">No student selected</p>
+                  </div>
+                ) : (
+                  <>
+                    <DialogHeader>
+                      <DialogTitle className="text-2xl">
+                        {selectedStudentForDetail.first_name} {selectedStudentForDetail.last_name}
+                      </DialogTitle>
+                      <DialogDescription className="text-base">
+                        Grade {selectedStudentForDetail.grade} • Student ID: {selectedStudentForDetail.student_id || `STU-${selectedStudentForDetail.id.toString().padStart(4, '0')}`}
+                      </DialogDescription>
+                    </DialogHeader>
 
-                {/* Filters */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Filters</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label>Student</Label>
-                        <Select value={selectedStudentForRecords} onValueChange={setSelectedStudentForRecords}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="All students" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="">All students</SelectItem>
-                            {students.map((student) => (
-                              <SelectItem key={student.id} value={student.id.toString()}>
-                                {student.first_name} {student.last_name} ({student.grade})
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Record Type</Label>
-                        <Select value={recordsType} onValueChange={(v: any) => setRecordsType(v)}>
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="attendance">Attendance</SelectItem>
-                            <SelectItem value="homework">Homework</SelectItem>
-                            <SelectItem value="behavior">Behavior Notes</SelectItem>
-                            <SelectItem value="notes">General Notes</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                    <Tabs defaultValue="attendance" className="w-full mt-4">
+                      <TabsList className="grid w-full grid-cols-4 h-12">
+                        <TabsTrigger value="attendance" className="flex items-center gap-2">
+                          <Calendar className="h-4 w-4" />
+                          Attendance ({studentAttendance.length})
+                        </TabsTrigger>
+                        <TabsTrigger value="homework" className="flex items-center gap-2">
+                          <BookOpen className="h-4 w-4" />
+                          Homework ({studentHomework.length})
+                        </TabsTrigger>
+                        <TabsTrigger value="behavior" className="flex items-center gap-2">
+                          <FileText className="h-4 w-4" />
+                          Behavior ({studentBehaviorNotes.length})
+                        </TabsTrigger>
+                        <TabsTrigger value="notes" className="flex items-center gap-2">
+                          <FileText className="h-4 w-4" />
+                          Notes ({studentNotes.length})
+                        </TabsTrigger>
+                      </TabsList>
 
-                {/* Records Display */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      {recordsType === 'attendance' && <Calendar className="h-5 w-5" />}
-                      {recordsType === 'homework' && <BookOpen className="h-5 w-5" />}
-                      {(recordsType === 'behavior' || recordsType === 'notes') && <FileText className="h-5 w-5" />}
-                      {recordsType === 'attendance' && 'Attendance Records'}
-                      {recordsType === 'homework' && 'Homework Assignments'}
-                      {recordsType === 'behavior' && 'Behavior Notes'}
-                      {recordsType === 'notes' && 'General Notes'}
-                    </CardTitle>
-                    <CardDescription>
-                      {recordsType === 'attendance' && `${allAttendance.length} records`}
-                      {recordsType === 'homework' && `${allHomework.length} assignments`}
-                      {recordsType === 'behavior' && `${allBehaviorNotes.length} notes`}
-                      {recordsType === 'notes' && `${allStudentNotes.length} notes`}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    {recordsType === 'attendance' && (
-                      <div className="space-y-3">
-                        {allAttendance.length === 0 ? (
-                          <p className="text-gray-500 text-center py-8">No attendance records found.</p>
-                        ) : (
-                          allAttendance.map((record: any) => {
-                            const student = record.students
-                            const teacher = record.teachers
-                            const getStatusColor = (status: string) => {
-                              if (status.includes('present_with_uniform')) return 'bg-green-100 text-green-800 border-green-300'
-                              if (status.includes('present_no_uniform')) return 'bg-yellow-100 text-yellow-800 border-yellow-300'
-                              if (status.includes('late_uniform')) return 'bg-orange-100 text-orange-800 border-orange-300'
-                              if (status.includes('late_no_uniform')) return 'bg-amber-100 text-amber-800 border-amber-300'
-                              if (status.includes('absent_with_excuse')) return 'bg-blue-100 text-blue-800 border-blue-300'
-                              if (status.includes('absent_no_excuse')) return 'bg-red-100 text-red-800 border-red-300'
-                              return 'bg-gray-100 text-gray-800 border-gray-300'
-                            }
-                            const getStatusLabel = (status: string) => {
-                              return status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
-                            }
-                            return (
-                              <Card key={record.id} className="hover:shadow-md transition-shadow">
-                                <CardContent className="p-4">
-                                  <div className="flex items-center justify-between">
-                                    <div className="flex-1">
-                                      <p className="font-semibold text-lg">
-                                        {student?.first_name} {student?.last_name} ({student?.grade})
-                                      </p>
-                                      <p className="text-sm text-gray-600">
-                                        {new Date(record.date).toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}
-                                        {teacher && ` • Teacher: ${teacher.first_name} ${teacher.last_name}`}
-                                      </p>
-                                      {record.notes && (
-                                        <p className="text-sm text-gray-700 mt-1">{record.notes}</p>
-                                      )}
+                      {/* Attendance Tab */}
+                      <TabsContent value="attendance" className="mt-6">
+                        <div className="space-y-3">
+                          {studentAttendance.length === 0 ? (
+                            <p className="text-gray-500 text-center py-8">No attendance records found.</p>
+                          ) : (
+                            studentAttendance.map((record: any) => {
+                              const teacher = record.teachers
+                              const getStatusColor = (status: string) => {
+                                if (status.includes('present_with_uniform')) return 'bg-green-100 text-green-800 border-green-300'
+                                if (status.includes('present_no_uniform')) return 'bg-yellow-100 text-yellow-800 border-yellow-300'
+                                if (status.includes('late_uniform')) return 'bg-orange-100 text-orange-800 border-orange-300'
+                                if (status.includes('late_no_uniform')) return 'bg-amber-100 text-amber-800 border-amber-300'
+                                if (status.includes('absent_with_excuse')) return 'bg-blue-100 text-blue-800 border-blue-300'
+                                if (status.includes('absent_no_excuse')) return 'bg-red-100 text-red-800 border-red-300'
+                                return 'bg-gray-100 text-gray-800 border-gray-300'
+                              }
+                              const getStatusLabel = (status: string) => {
+                                return status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+                              }
+                              return (
+                                <Card key={record.id} className="hover:shadow-md transition-shadow">
+                                  <CardContent className="p-4">
+                                    <div className="flex items-center justify-between">
+                                      <div className="flex-1">
+                                        <p className="text-sm text-gray-600">
+                                          {new Date(record.date).toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}
+                                          {teacher && ` • Teacher: ${teacher.first_name} ${teacher.last_name}`}
+                                        </p>
+                                        {record.notes && (
+                                          <p className="text-sm text-gray-700 mt-1">{record.notes}</p>
+                                        )}
+                                      </div>
+                                      <Badge className={`${getStatusColor(record.status)} border font-medium`}>
+                                        {getStatusLabel(record.status)}
+                                      </Badge>
                                     </div>
-                                    <Badge className={`${getStatusColor(record.status)} border font-medium`}>
-                                      {getStatusLabel(record.status)}
-                                    </Badge>
-                                  </div>
-                                </CardContent>
-                              </Card>
-                            )
-                          })
-                        )}
-                      </div>
-                    )}
+                                  </CardContent>
+                                </Card>
+                              )
+                            })
+                          )}
+                        </div>
+                      </TabsContent>
 
-                    {recordsType === 'homework' && (
-                      <div className="space-y-3">
-                        {allHomework.length === 0 ? (
-                          <p className="text-gray-500 text-center py-8">No homework assignments found.</p>
-                        ) : (
-                          allHomework.map((hw: any) => {
-                            const student = hw.students
-                            const teacher = hw.teachers
-                            const isOverdue = hw.due_date && !hw.completed && new Date(hw.due_date) < new Date()
-                            return (
-                              <Card key={hw.id} className={`hover:shadow-md transition-shadow ${hw.completed ? 'opacity-75' : ''} ${isOverdue ? 'border-red-300 bg-red-50' : ''}`}>
-                                <CardContent className="p-4">
-                                  <div className="flex items-start justify-between gap-4">
-                                    <div className="flex-1">
-                                      <p className="font-semibold text-lg mb-1">
-                                        {student?.first_name} {student?.last_name} ({student?.grade})
-                                      </p>
-                                      <p className="font-medium mb-1">{hw.title}</p>
-                                      {hw.description && (
-                                        <p className="text-sm text-gray-700 mb-2">{hw.description}</p>
-                                      )}
-                                      <div className="flex items-center gap-4 text-xs text-gray-500">
-                                        <span>Assigned: {new Date(hw.assigned_date).toLocaleDateString()}</span>
-                                        {hw.due_date && (
-                                          <span className={isOverdue ? 'text-red-600 font-semibold' : ''}>
-                                            Due: {new Date(hw.due_date).toLocaleDateString()}
-                                            {isOverdue && ' (Overdue)'}
-                                          </span>
+                      {/* Homework Tab */}
+                      <TabsContent value="homework" className="mt-6">
+                        <div className="space-y-3">
+                          {studentHomework.length === 0 ? (
+                            <p className="text-gray-500 text-center py-8">No homework assignments found.</p>
+                          ) : (
+                            studentHomework.map((hw: any) => {
+                              const teacher = hw.teachers
+                              const isOverdue = hw.due_date && !hw.completed && new Date(hw.due_date) < new Date()
+                              return (
+                                <Card key={hw.id} className={`hover:shadow-md transition-shadow ${hw.completed ? 'opacity-75' : ''} ${isOverdue ? 'border-red-300 bg-red-50' : ''}`}>
+                                  <CardContent className="p-4">
+                                    <div className="flex items-start justify-between gap-4">
+                                      <div className="flex-1">
+                                        <p className="font-medium mb-1">{hw.title}</p>
+                                        {hw.description && (
+                                          <p className="text-sm text-gray-700 mb-2">{hw.description}</p>
                                         )}
-                                        {hw.completed && hw.completion_date && (
-                                          <span className="text-green-600 font-medium">
-                                            Completed: {new Date(hw.completion_date).toLocaleDateString()}
-                                          </span>
-                                        )}
-                                        {teacher && <span>Teacher: {teacher.first_name} {teacher.last_name}</span>}
+                                        <div className="flex items-center gap-4 text-xs text-gray-500">
+                                          <span>Assigned: {new Date(hw.assigned_date).toLocaleDateString()}</span>
+                                          {hw.due_date && (
+                                            <span className={isOverdue ? 'text-red-600 font-semibold' : ''}>
+                                              Due: {new Date(hw.due_date).toLocaleDateString()}
+                                              {isOverdue && ' (Overdue)'}
+                                            </span>
+                                          )}
+                                          {hw.completed && hw.completion_date && (
+                                            <span className="text-green-600 font-medium">
+                                              Completed: {new Date(hw.completion_date).toLocaleDateString()}
+                                            </span>
+                                          )}
+                                          {teacher && <span>Teacher: {teacher.first_name} {teacher.last_name}</span>}
+                                        </div>
+                                      </div>
+                                      <Badge variant={hw.completed ? 'default' : isOverdue ? 'destructive' : 'secondary'}>
+                                        {hw.completed ? 'Completed' : isOverdue ? 'Overdue' : 'Pending'}
+                                      </Badge>
+                                    </div>
+                                  </CardContent>
+                                </Card>
+                              )
+                            })
+                          )}
+                        </div>
+                      </TabsContent>
+
+                      {/* Behavior Tab */}
+                      <TabsContent value="behavior" className="mt-6">
+                        <div className="space-y-3">
+                          {studentBehaviorNotes.length === 0 ? (
+                            <p className="text-gray-500 text-center py-8">No behavior notes found.</p>
+                          ) : (
+                            studentBehaviorNotes.map((note: any) => {
+                              const teacher = note.teachers
+                              return (
+                                <Card key={note.id} className="hover:shadow-md transition-shadow">
+                                  <CardContent className="p-4">
+                                    <div className="flex items-start justify-between gap-4">
+                                      <div className="flex-1">
+                                        <p className="font-medium mb-1">{note.title}</p>
+                                        <p className="text-sm text-gray-700 mb-2">{note.description}</p>
+                                        <p className="text-xs text-gray-500">
+                                          {new Date(note.date).toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}
+                                          {teacher && ` • Teacher: ${teacher.first_name} ${teacher.last_name}`}
+                                        </p>
+                                      </div>
+                                      <Badge
+                                        variant={
+                                          note.type === 'positive' ? 'default' :
+                                          note.type === 'concern' ? 'secondary' :
+                                          'destructive'
+                                        }
+                                        className="shrink-0"
+                                      >
+                                        {note.type.charAt(0).toUpperCase() + note.type.slice(1)}
+                                      </Badge>
+                                    </div>
+                                  </CardContent>
+                                </Card>
+                              )
+                            })
+                          )}
+                        </div>
+                      </TabsContent>
+
+                      {/* Notes Tab */}
+                      <TabsContent value="notes" className="mt-6">
+                        <div className="space-y-3">
+                          {studentNotes.length === 0 ? (
+                            <p className="text-gray-500 text-center py-8">No general notes found.</p>
+                          ) : (
+                            studentNotes.map((note: any) => {
+                              const teacher = note.teachers
+                              return (
+                                <Card key={note.id} className="hover:shadow-md transition-shadow">
+                                  <CardContent className="p-4">
+                                    <div className="flex items-start justify-between gap-4">
+                                      <div className="flex-1">
+                                        <p className="text-gray-800 whitespace-pre-wrap mb-2">{note.note}</p>
+                                        <p className="text-xs text-gray-500">
+                                          {new Date(note.created_at).toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                          {teacher && ` • Teacher: ${teacher.first_name} ${teacher.last_name}`}
+                                        </p>
                                       </div>
                                     </div>
-                                    <Badge variant={hw.completed ? 'default' : isOverdue ? 'destructive' : 'secondary'}>
-                                      {hw.completed ? 'Completed' : isOverdue ? 'Overdue' : 'Pending'}
-                                    </Badge>
-                                  </div>
-                                </CardContent>
-                              </Card>
-                            )
-                          })
-                        )}
-                      </div>
-                    )}
+                                  </CardContent>
+                                </Card>
+                              )
+                            })
+                          )}
+                        </div>
+                      </TabsContent>
+                    </Tabs>
+                  </>
+                )}
+              </DialogContent>
+            </Dialog>
 
-                    {recordsType === 'behavior' && (
-                      <div className="space-y-3">
-                        {allBehaviorNotes.length === 0 ? (
-                          <p className="text-gray-500 text-center py-8">No behavior notes found.</p>
-                        ) : (
-                          allBehaviorNotes.map((note: any) => {
-                            const student = note.students
-                            const teacher = note.teachers
-                            return (
-                              <Card key={note.id} className="hover:shadow-md transition-shadow">
-                                <CardContent className="p-4">
-                                  <div className="flex items-start justify-between gap-4">
-                                    <div className="flex-1">
-                                      <p className="font-semibold text-lg mb-1">
-                                        {student?.first_name} {student?.last_name} ({student?.grade})
-                                      </p>
-                                      <p className="font-medium mb-1">{note.title}</p>
-                                      <p className="text-sm text-gray-700 mb-2">{note.description}</p>
-                                      <p className="text-xs text-gray-500">
-                                        {new Date(note.date).toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}
-                                        {teacher && ` • Teacher: ${teacher.first_name} ${teacher.last_name}`}
-                                      </p>
-                                    </div>
-                                    <Badge
-                                      variant={
-                                        note.type === 'positive' ? 'default' :
-                                        note.type === 'concern' ? 'secondary' :
-                                        'destructive'
-                                      }
-                                      className="shrink-0"
-                                    >
-                                      {note.type.charAt(0).toUpperCase() + note.type.slice(1)}
-                                    </Badge>
-                                  </div>
-                                </CardContent>
-                              </Card>
-                            )
-                          })
-                        )}
+            {/* Account Settings Dialog */}
+            <Dialog open={showAccountSettingsDialog} onOpenChange={setShowAccountSettingsDialog}>
+              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>Account Settings</DialogTitle>
+                  <DialogDescription>
+                    Update your email address or change your password
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-6 py-4">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Update Email Address</CardTitle>
+                      <CardDescription>
+                        Change your admin account email address. You'll need to verify the new email.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="new-email">New Email Address</Label>
+                        <Input
+                          id="new-email"
+                          type="email"
+                          value={newEmail}
+                          onChange={(e) => setNewEmail(e.target.value)}
+                          placeholder="admin@example.com"
+                        />
                       </div>
-                    )}
+                      <div className="space-y-2">
+                        <Label htmlFor="current-password-email">Current Password</Label>
+                        <Input
+                          id="current-password-email"
+                          type="password"
+                          value={currentPasswordForEmail}
+                          onChange={(e) => setCurrentPasswordForEmail(e.target.value)}
+                          placeholder="Enter current password to confirm"
+                        />
+                      </div>
+                      <Button
+                        onClick={handleUpdateEmail}
+                        disabled={updatingAccount || !newEmail || !currentPasswordForEmail}
+                      >
+                        {updatingAccount ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Updating...
+                          </>
+                        ) : (
+                          'Update Email'
+                        )}
+                      </Button>
+                    </CardContent>
+                  </Card>
 
-                    {recordsType === 'notes' && (
-                      <div className="space-y-3">
-                        {allStudentNotes.length === 0 ? (
-                          <p className="text-gray-500 text-center py-8">No general notes found.</p>
-                        ) : (
-                          allStudentNotes.map((note: any) => {
-                            const student = note.students
-                            const teacher = note.teachers
-                            return (
-                              <Card key={note.id} className="hover:shadow-md transition-shadow">
-                                <CardContent className="p-4">
-                                  <div className="flex items-start justify-between gap-4">
-                                    <div className="flex-1">
-                                      <p className="font-semibold text-lg mb-1">
-                                        {student?.first_name} {student?.last_name} ({student?.grade})
-                                      </p>
-                                      <p className="text-gray-800 whitespace-pre-wrap mb-2">{note.note}</p>
-                                      <p className="text-xs text-gray-500">
-                                        {new Date(note.created_at).toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                                        {teacher && ` • Teacher: ${teacher.first_name} ${teacher.last_name}`}
-                                      </p>
-                                    </div>
-                                  </div>
-                                </CardContent>
-                              </Card>
-                            )
-                          })
-                        )}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Change Password</CardTitle>
+                      <CardDescription>
+                        Update your admin account password. Password must be at least 6 characters long.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="current-password">Current Password</Label>
+                        <Input
+                          id="current-password"
+                          type="password"
+                          value={currentPasswordForPassword}
+                          onChange={(e) => setCurrentPasswordForPassword(e.target.value)}
+                          placeholder="Enter current password"
+                        />
                       </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </div>
-            </TabsContent>
+                      <div className="space-y-2">
+                        <Label htmlFor="new-password">New Password</Label>
+                        <Input
+                          id="new-password"
+                          type="password"
+                          value={newPassword}
+                          onChange={(e) => setNewPassword(e.target.value)}
+                          placeholder="Enter new password (min 6 characters)"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="confirm-password">Confirm New Password</Label>
+                        <Input
+                          id="confirm-password"
+                          type="password"
+                          value={confirmPassword}
+                          onChange={(e) => setConfirmPassword(e.target.value)}
+                          placeholder="Confirm new password"
+                        />
+                      </div>
+                      <Button
+                        onClick={handleUpdatePassword}
+                        disabled={updatingAccount || !currentPasswordForPassword || !newPassword || !confirmPassword}
+                      >
+                        {updatingAccount ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Updating...
+                          </>
+                        ) : (
+                          'Update Password'
+                        )}
+                      </Button>
+                    </CardContent>
+                  </Card>
+                </div>
+              </DialogContent>
+            </Dialog>
           </Tabs>
         </div>
       </div>
