@@ -11,6 +11,9 @@ import Contact from "@/pages/Contact";
 import GoogleForm from "@/pages/GoogleForm";
 import NotFound from "@/pages/not-found";
 import PaymentPortal from "@/pages/PaymentPortal";
+import ParentLogin from "@/pages/ParentLogin";
+import ParentPortal from "@/pages/ParentPortal";
+import ParentPasswordSetup from "@/pages/ParentPasswordSetup";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import Newsletter from "@/components/Newsletter";
@@ -30,6 +33,9 @@ function App() {
             <Route path="/contact" component={Contact} />
             <Route path="/apply" component={GoogleForm} />
             <Route path="/payment-portal" component={PaymentPortal} />
+            <Route path="/parent-login" component={ParentLogin} />
+            <Route path="/parent-password-setup" component={ParentPasswordSetup} />
+            <Route path="/parent-portal" component={ParentPortal} />
             <Route component={NotFound} />
           </Switch>
         </main>

@@ -126,12 +126,20 @@ export default function Header() {
               </Link>
             </li>
           </ul>
-          <Link
-            href="/admission#apply-now"
-            className="mt-4 md:mt-0 md:ml-6 inline-block bg-secondary hover:bg-secondary-dark text-white font-medium py-2 px-4 rounded shadow transition duration-300"
-          >
-            Apply Now
-          </Link>
+          <div className="flex flex-col md:flex-row gap-3 mt-4 md:mt-0 md:ml-6">
+            <Link
+              href="/parent-login"
+              className="inline-block bg-primary hover:bg-primary-dark text-white font-medium py-2 px-4 rounded shadow transition duration-300"
+            >
+              Parent Login
+            </Link>
+            <Link
+              href="/admission#apply-now"
+              className="inline-block bg-secondary hover:bg-secondary-dark text-white font-medium py-2 px-4 rounded shadow transition duration-300"
+            >
+              Apply Now
+            </Link>
+          </div>
         </nav>
       </div>
 
