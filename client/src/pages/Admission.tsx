@@ -267,13 +267,40 @@ export default function Admission() {
                   <h4 className="font-bold text-primary mb-2">
                     Fees Structure Per School Term – Due By Week 7
                   </h4>
-                  <ul className="text-sm space-y-1">
-                    <li>Fiqh book: $20</li>
-                    <li>Surahs and dua: $20</li>
-                    <li>Islamic studies book: $40</li>
-                    <li>Term fees: $200</li>
-                    <li> <b>Total for 1 child: $280</b></li>
-                  </ul>
+                  <div className="text-sm space-y-2">
+                    <div className="space-y-1">
+                      <div className="flex items-center">
+                        <span className="material-icons text-secondary mr-2 text-sm">check_circle</span>
+                        <span>Fiqh book: $20</span>
+                      </div>
+                      <div className="flex items-center">
+                        <span className="material-icons text-secondary mr-2 text-sm">check_circle</span>
+                        <span>Surahs and dua: $20</span>
+                      </div>
+                      <div className="flex items-center">
+                        <span className="material-icons text-secondary mr-2 text-sm">check_circle</span>
+                        <span>Islamic studies book: $40</span>
+                      </div>
+                      <div className="flex items-center">
+                        <span className="material-icons text-secondary mr-2 text-sm">check_circle</span>
+                        <span>Term fees: $200</span>
+                      </div>
+                    </div>
+                    <div className="border-t border-primary-light pt-2 mt-2 space-y-1">
+                      <div className="flex justify-between">
+                        <span>Subtotal:</span>
+                        <span className="font-semibold">$280.00</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Transaction fee:</span>
+                        <span className="font-semibold">$10.10</span>
+                      </div>
+                      <div className="flex justify-between text-base font-bold text-primary border-t border-primary-light pt-1 mt-1">
+                        <span>Total for 1 child:</span>
+                        <span>$290.10</span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>

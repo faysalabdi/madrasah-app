@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useStripeCheckout } from '@/hooks/useStripeCheckout'
 import { useSupabaseFunction } from '@/hooks/useSupabaseFunction'
+import { calculateStripeFee, getPriceBreakdown } from '@/lib/feeCalculator'
 
 interface StripeCheckoutProps {
   formData?: {
@@ -219,17 +220,39 @@ const StripeCheckout: React.FC<StripeCheckoutProps> = ({ formData, onSuccess }) 
               <span className="font-semibold">{numberOfChildren}</span>
             </div>
             <div className="flex justify-between">
-              <span>Per Child Total:</span>
+              <span>Per Child Subtotal:</span>
               <span className="font-semibold">
                 ${(calculateTotal() / numberOfChildren).toFixed(2)}
               </span>
             </div>
-            <div className="border-t pt-2 mt-2">
-              <div className="flex justify-between text-lg">
-                <span className="font-bold">Total:</span>
-                <span className="font-bold">${total.toFixed(2)} AUD</span>
-              </div>
-            </div>
+            {(() => {
+              const perChildTotal = calculateTotal() / numberOfChildren
+              const perChildBreakdown = getPriceBreakdown(perChildTotal)
+              const totalBreakdown = getPriceBreakdown(total)
+              
+              return (
+                <>
+                  <div className="flex justify-between text-sm text-gray-600">
+                    <span>Transaction fee (per child):</span>
+                    <span>${perChildBreakdown.transactionFee.toFixed(2)}</span>
+                  </div>
+                  <div className="border-t pt-2 mt-2">
+                    <div className="flex justify-between mb-1">
+                      <span>Subtotal ({numberOfChildren} child{numberOfChildren > 1 ? 'ren' : ''}):</span>
+                      <span className="font-semibold">${total.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm text-gray-600 mb-2">
+                      <span>Transaction fee:</span>
+                      <span>${totalBreakdown.transactionFee.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between text-lg border-t pt-2">
+                      <span className="font-bold">Total:</span>
+                      <span className="font-bold">${totalBreakdown.total.toFixed(2)} AUD</span>
+                    </div>
+                  </div>
+                </>
+              )
+            })()}
             {useTrial && (
               <div className="mt-2 text-sm text-blue-600">
                 <span className="font-semibold">Trial Period:</span> Payment will be processed in 14 days
@@ -252,8 +275,8 @@ const StripeCheckout: React.FC<StripeCheckoutProps> = ({ formData, onSuccess }) 
           {loading 
             ? 'Processing...' 
             : useTrial 
-              ? `Start 14-Day Trial (Pay $${total.toFixed(2)} AUD in 14 days)`
-              : `Pay $${total.toFixed(2)} AUD Now`
+              ? `Start 14-Day Trial (Pay $${getPriceBreakdown(total).total.toFixed(2)} AUD in 14 days)`
+              : `Pay $${getPriceBreakdown(total).total.toFixed(2)} AUD Now`
           }
         </button>
 

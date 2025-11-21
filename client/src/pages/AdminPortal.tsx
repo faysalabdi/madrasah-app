@@ -107,6 +107,7 @@ const AdminPortal: React.FC = () => {
 
   // Payments
   const [payments, setPayments] = useState<Payment[]>([])
+  const [paymentDateFilter, setPaymentDateFilter] = useState<string>('all') // 'all', '7days', '30days', '90days', '1year'
   
   // Bulk Invoice
   const [showBulkInvoiceDialog, setShowBulkInvoiceDialog] = useState(false)
@@ -769,12 +770,11 @@ const AdminPortal: React.FC = () => {
         .order('parent1_last_name', { ascending: true })
       setParents(parentsData || [])
 
-      // Load recent payments
+      // Load all payments (no limit for full history)
       const { data: paymentsData } = await supabase
         .from('payments')
         .select('*')
         .order('created_at', { ascending: false })
-        .limit(50)
       setPayments(paymentsData || [])
 
       // Load book products
@@ -1496,12 +1496,63 @@ const AdminPortal: React.FC = () => {
 
               <Card>
                 <CardHeader>
-                  <CardTitle>Recent Payments</CardTitle>
-                  <CardDescription>Click the trash icon to delete a payment record</CardDescription>
+                  <div className="flex justify-between items-start mb-2">
+                    <div>
+                      <CardTitle>Payment History</CardTitle>
+                      <CardDescription>Click the trash icon to delete a payment record</CardDescription>
+                    </div>
+                    <Select value={paymentDateFilter} onValueChange={setPaymentDateFilter}>
+                      <SelectTrigger className="w-[180px]">
+                        <SelectValue placeholder="Filter by date" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Time</SelectItem>
+                        <SelectItem value="7days">Last 7 Days</SelectItem>
+                        <SelectItem value="30days">Last 30 Days</SelectItem>
+                        <SelectItem value="90days">Last 90 Days</SelectItem>
+                        <SelectItem value="1year">Last Year</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-2">
-                    {payments.slice(0, 20).map((payment) => {
+                  {(() => {
+                    // Filter payments by date range
+                    const now = new Date()
+                    const filteredPayments = payments.filter((payment) => {
+                      if (paymentDateFilter === 'all') return true
+                      
+                      const paymentDate = new Date(payment.created_at)
+                      const daysDiff = Math.floor((now.getTime() - paymentDate.getTime()) / (1000 * 60 * 60 * 24))
+                      
+                      switch (paymentDateFilter) {
+                        case '7days':
+                          return daysDiff <= 7
+                        case '30days':
+                          return daysDiff <= 30
+                        case '90days':
+                          return daysDiff <= 90
+                        case '1year':
+                          return daysDiff <= 365
+                        default:
+                          return true
+                      }
+                    })
+
+                    if (filteredPayments.length === 0) {
+                      return (
+                        <div className="text-center py-8 text-gray-500">
+                          No payments found for the selected period.
+                        </div>
+                      )
+                    }
+
+                    return (
+                      <div className="space-y-2">
+                        <div className="text-sm text-gray-600 mb-4">
+                          Showing {filteredPayments.length} payment{filteredPayments.length !== 1 ? 's' : ''}
+                        </div>
+                        {filteredPayments.map((payment) => {
                       const parent = parents.find(p => p.id === payment.parent_id)
                       const student = payment.student_id ? students.find(s => s.id === payment.student_id) : null
                       return (
@@ -1560,7 +1611,9 @@ const AdminPortal: React.FC = () => {
                         </div>
                       )
                     })}
-                  </div>
+                      </div>
+                    )
+                  })()}
                 </CardContent>
               </Card>
             </TabsContent>
