@@ -21,6 +21,124 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
+// Complete list of all 114 Surahs with their ayah counts
+const SURAHS = [
+  { number: 1, name: 'Al-Fatiha', ayahs: 7 },
+  { number: 2, name: 'Al-Baqarah', ayahs: 286 },
+  { number: 3, name: 'Ali Imran', ayahs: 200 },
+  { number: 4, name: 'An-Nisa', ayahs: 176 },
+  { number: 5, name: 'Al-Maidah', ayahs: 120 },
+  { number: 6, name: 'Al-Anam', ayahs: 165 },
+  { number: 7, name: 'Al-Araf', ayahs: 206 },
+  { number: 8, name: 'Al-Anfal', ayahs: 75 },
+  { number: 9, name: 'At-Tawbah', ayahs: 129 },
+  { number: 10, name: 'Yunus', ayahs: 109 },
+  { number: 11, name: 'Hud', ayahs: 123 },
+  { number: 12, name: 'Yusuf', ayahs: 111 },
+  { number: 13, name: 'Ar-Rad', ayahs: 43 },
+  { number: 14, name: 'Ibrahim', ayahs: 52 },
+  { number: 15, name: 'Al-Hijr', ayahs: 99 },
+  { number: 16, name: 'An-Nahl', ayahs: 128 },
+  { number: 17, name: 'Al-Isra', ayahs: 111 },
+  { number: 18, name: 'Al-Kahf', ayahs: 110 },
+  { number: 19, name: 'Maryam', ayahs: 98 },
+  { number: 20, name: 'Ta-Ha', ayahs: 135 },
+  { number: 21, name: 'Al-Anbiya', ayahs: 112 },
+  { number: 22, name: 'Al-Hajj', ayahs: 78 },
+  { number: 23, name: 'Al-Muminun', ayahs: 118 },
+  { number: 24, name: 'An-Nur', ayahs: 64 },
+  { number: 25, name: 'Al-Furqan', ayahs: 77 },
+  { number: 26, name: 'Ash-Shuara', ayahs: 227 },
+  { number: 27, name: 'An-Naml', ayahs: 93 },
+  { number: 28, name: 'Al-Qasas', ayahs: 88 },
+  { number: 29, name: 'Al-Ankabut', ayahs: 69 },
+  { number: 30, name: 'Ar-Rum', ayahs: 60 },
+  { number: 31, name: 'Luqman', ayahs: 34 },
+  { number: 32, name: 'As-Sajdah', ayahs: 30 },
+  { number: 33, name: 'Al-Ahzab', ayahs: 73 },
+  { number: 34, name: 'Saba', ayahs: 54 },
+  { number: 35, name: 'Fatir', ayahs: 45 },
+  { number: 36, name: 'Ya-Sin', ayahs: 83 },
+  { number: 37, name: 'As-Saffat', ayahs: 182 },
+  { number: 38, name: 'Sad', ayahs: 88 },
+  { number: 39, name: 'Az-Zumar', ayahs: 75 },
+  { number: 40, name: 'Ghafir', ayahs: 85 },
+  { number: 41, name: 'Fussilat', ayahs: 54 },
+  { number: 42, name: 'Ash-Shura', ayahs: 53 },
+  { number: 43, name: 'Az-Zukhruf', ayahs: 89 },
+  { number: 44, name: 'Ad-Dukhan', ayahs: 59 },
+  { number: 45, name: 'Al-Jathiyah', ayahs: 37 },
+  { number: 46, name: 'Al-Ahqaf', ayahs: 35 },
+  { number: 47, name: 'Muhammad', ayahs: 38 },
+  { number: 48, name: 'Al-Fath', ayahs: 29 },
+  { number: 49, name: 'Al-Hujurat', ayahs: 18 },
+  { number: 50, name: 'Qaf', ayahs: 45 },
+  { number: 51, name: 'Adh-Dhariyat', ayahs: 60 },
+  { number: 52, name: 'At-Tur', ayahs: 49 },
+  { number: 53, name: 'An-Najm', ayahs: 62 },
+  { number: 54, name: 'Al-Qamar', ayahs: 55 },
+  { number: 55, name: 'Ar-Rahman', ayahs: 78 },
+  { number: 56, name: 'Al-Waqiah', ayahs: 96 },
+  { number: 57, name: 'Al-Hadid', ayahs: 29 },
+  { number: 58, name: 'Al-Mujadila', ayahs: 22 },
+  { number: 59, name: 'Al-Hashr', ayahs: 24 },
+  { number: 60, name: 'Al-Mumtahanah', ayahs: 13 },
+  { number: 61, name: 'As-Saff', ayahs: 14 },
+  { number: 62, name: 'Al-Jumuah', ayahs: 11 },
+  { number: 63, name: 'Al-Munafiqun', ayahs: 11 },
+  { number: 64, name: 'At-Taghabun', ayahs: 18 },
+  { number: 65, name: 'At-Talaq', ayahs: 12 },
+  { number: 66, name: 'At-Tahrim', ayahs: 12 },
+  { number: 67, name: 'Al-Mulk', ayahs: 30 },
+  { number: 68, name: 'Al-Qalam', ayahs: 52 },
+  { number: 69, name: 'Al-Haqqah', ayahs: 52 },
+  { number: 70, name: 'Al-Maarij', ayahs: 44 },
+  { number: 71, name: 'Nuh', ayahs: 28 },
+  { number: 72, name: 'Al-Jinn', ayahs: 28 },
+  { number: 73, name: 'Al-Muzzammil', ayahs: 20 },
+  { number: 74, name: 'Al-Muddathir', ayahs: 56 },
+  { number: 75, name: 'Al-Qiyamah', ayahs: 40 },
+  { number: 76, name: 'Al-Insan', ayahs: 31 },
+  { number: 77, name: 'Al-Mursalat', ayahs: 50 },
+  { number: 78, name: 'An-Naba', ayahs: 40 },
+  { number: 79, name: 'An-Naziat', ayahs: 46 },
+  { number: 80, name: 'Abasa', ayahs: 42 },
+  { number: 81, name: 'At-Takwir', ayahs: 29 },
+  { number: 82, name: 'Al-Infitar', ayahs: 19 },
+  { number: 83, name: 'Al-Mutaffifin', ayahs: 36 },
+  { number: 84, name: 'Al-Inshiqaq', ayahs: 25 },
+  { number: 85, name: 'Al-Buruj', ayahs: 22 },
+  { number: 86, name: 'At-Tariq', ayahs: 17 },
+  { number: 87, name: 'Al-Ala', ayahs: 19 },
+  { number: 88, name: 'Al-Ghashiyah', ayahs: 26 },
+  { number: 89, name: 'Al-Fajr', ayahs: 30 },
+  { number: 90, name: 'Al-Balad', ayahs: 20 },
+  { number: 91, name: 'Ash-Shams', ayahs: 15 },
+  { number: 92, name: 'Al-Layl', ayahs: 21 },
+  { number: 93, name: 'Ad-Duha', ayahs: 11 },
+  { number: 94, name: 'Ash-Sharh', ayahs: 8 },
+  { number: 95, name: 'At-Tin', ayahs: 8 },
+  { number: 96, name: 'Al-Alaq', ayahs: 19 },
+  { number: 97, name: 'Al-Qadr', ayahs: 5 },
+  { number: 98, name: 'Al-Bayyinah', ayahs: 8 },
+  { number: 99, name: 'Az-Zalzalah', ayahs: 8 },
+  { number: 100, name: 'Al-Adiyat', ayahs: 11 },
+  { number: 101, name: 'Al-Qariah', ayahs: 11 },
+  { number: 102, name: 'At-Takathur', ayahs: 8 },
+  { number: 103, name: 'Al-Asr', ayahs: 3 },
+  { number: 104, name: 'Al-Humazah', ayahs: 9 },
+  { number: 105, name: 'Al-Fil', ayahs: 5 },
+  { number: 106, name: 'Quraysh', ayahs: 4 },
+  { number: 107, name: 'Al-Maun', ayahs: 7 },
+  { number: 108, name: 'Al-Kawthar', ayahs: 3 },
+  { number: 109, name: 'Al-Kafirun', ayahs: 6 },
+  { number: 110, name: 'An-Nasr', ayahs: 3 },
+  { number: 111, name: 'Al-Masad', ayahs: 5 },
+  { number: 112, name: 'Al-Ikhlas', ayahs: 4 },
+  { number: 113, name: 'Al-Falaq', ayahs: 5 },
+  { number: 114, name: 'An-Nas', ayahs: 6 },
+]
+
 interface Teacher {
   id: number
   first_name: string
@@ -1292,23 +1410,125 @@ const TeacherPortal: React.FC = () => {
               <>
                 <div>
                   <Label htmlFor="quran-surah">Surah</Label>
-                  <Input
-                    id="quran-surah"
-                    type="text"
-                    value={quranSurah}
-                    onChange={(e) => setQuranSurah(e.target.value)}
-                    placeholder="e.g., Al-Fatiha, Al-Baqarah, or surah number"
-                  />
+                  <Select 
+                    value={quranSurah || ''} 
+                    onValueChange={(v) => {
+                      setQuranSurah(v)
+                      // Reset ayah when surah changes
+                      setQuranAyah('')
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select Surah" />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-[300px]">
+                      {SURAHS.map((surah) => (
+                        <SelectItem key={surah.number} value={surah.name}>
+                          {surah.number}. {surah.name} ({surah.ayahs} ayahs)
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div>
                   <Label htmlFor="quran-ayah">Ayah (Verse)</Label>
-                  <Input
-                    id="quran-ayah"
-                    type="text"
-                    value={quranAyah}
-                    onChange={(e) => setQuranAyah(e.target.value)}
-                    placeholder="e.g., 1-7, 10, or range"
-                  />
+                  {quranSurah && (() => {
+                    const selectedSurah = SURAHS.find(s => s.name === quranSurah)
+                    if (!selectedSurah) return null
+                    
+                    // For surahs with 50 or fewer ayahs, show all individual ayahs
+                    // For longer surahs, show ranges and allow custom input
+                    if (selectedSurah.ayahs <= 50) {
+                      return (
+                        <>
+                          <Select 
+                            value={quranAyah || ''} 
+                            onValueChange={setQuranAyah}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select Ayah" />
+                            </SelectTrigger>
+                            <SelectContent className="max-h-[300px]">
+                              {Array.from({ length: selectedSurah.ayahs }, (_, i) => i + 1).map((ayah) => (
+                                <SelectItem key={ayah} value={ayah.toString()}>
+                                  Ayah {ayah}
+                                </SelectItem>
+                              ))}
+                              {/* Add range options for convenience */}
+                              {selectedSurah.ayahs > 10 && (
+                                <>
+                                  <SelectItem value="1-10">Ayahs 1-10</SelectItem>
+                                  {selectedSurah.ayahs > 20 && (
+                                    <SelectItem value="1-20">Ayahs 1-20</SelectItem>
+                                  )}
+                                </>
+                              )}
+                            </SelectContent>
+                          </Select>
+                          <p className="text-xs text-gray-500 mt-1">
+                            {selectedSurah.name} has {selectedSurah.ayahs} ayahs
+                          </p>
+                        </>
+                      )
+                    } else {
+                      // For longer surahs, provide range options and custom input
+                      return (
+                        <>
+                          <div className="flex gap-2">
+                            <div className="flex-1">
+                              <Select 
+                                value={quranAyah || ''} 
+                                onValueChange={setQuranAyah}
+                              >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select Range or Enter Custom" />
+                              </SelectTrigger>
+                              <SelectContent className="max-h-[300px]">
+                                {/* Common ranges */}
+                                <SelectItem value="1-10">Ayahs 1-10</SelectItem>
+                                <SelectItem value="1-20">Ayahs 1-20</SelectItem>
+                                <SelectItem value="1-30">Ayahs 1-30</SelectItem>
+                                <SelectItem value="1-50">Ayahs 1-50</SelectItem>
+                                {selectedSurah.ayahs > 100 && (
+                                  <SelectItem value="1-100">Ayahs 1-100</SelectItem>
+                                )}
+                                {selectedSurah.ayahs > 200 && (
+                                  <SelectItem value="1-200">Ayahs 1-200</SelectItem>
+                                )}
+                                {/* Individual ayahs for first 20 */}
+                                {Array.from({ length: Math.min(20, selectedSurah.ayahs) }, (_, i) => i + 1).map((ayah) => (
+                                  <SelectItem key={ayah} value={ayah.toString()}>
+                                    Ayah {ayah}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            </div>
+                            <Input
+                              type="text"
+                              value={quranAyah || ''}
+                              onChange={(e) => setQuranAyah(e.target.value)}
+                              placeholder="e.g., 25, 1-10, 50-60"
+                              className="flex-1"
+                            />
+                          </div>
+                          <p className="text-xs text-gray-500 mt-1">
+                            {selectedSurah.name} has {selectedSurah.ayahs} ayahs. Select a range or enter custom (e.g., "25" or "1-10" or "50-60")
+                          </p>
+                        </>
+                      )
+                    }
+                  })()}
+                  {!quranSurah && (
+                    <Input
+                      id="quran-ayah"
+                      type="text"
+                      value={quranAyah}
+                      onChange={(e) => setQuranAyah(e.target.value)}
+                      placeholder="Select Surah first"
+                      disabled
+                    />
+                  )}
                 </div>
               </>
             )}
