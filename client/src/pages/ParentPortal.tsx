@@ -281,10 +281,11 @@ const ParentPortal: React.FC = () => {
     
     // Check for specific student - ONLY count payments explicitly for this student
     // Payments with student_id === null are NOT counted for specific students
+    // Only count succeeded payments (not refunded, canceled, or failed)
     const studentPayments = payments.filter(p => 
       p.student_id === studentId && // Must match exactly - no null checks
       p.paid_term_fees && 
-      p.status === 'succeeded'
+      p.status === 'succeeded' // Only count successful payments, not refunded/canceled/failed
     )
     if (studentPayments.length === 0) return false
     
@@ -505,10 +506,12 @@ const ParentPortal: React.FC = () => {
                                 variant={
                                   payment.status === 'succeeded' || payment.status === 'trial_active'
                                     ? 'default'
+                                    : payment.status === 'refunded'
+                                    ? 'destructive'
                                     : 'secondary'
                                 }
                               >
-                                {payment.status}
+                                {payment.status === 'refunded' ? 'Refunded' : payment.status}
                               </Badge>
                               {payment.paid_term_fees && (
                                 <Badge variant="outline">Term Fees</Badge>

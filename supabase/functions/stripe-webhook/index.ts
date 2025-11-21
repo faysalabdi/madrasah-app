@@ -201,6 +201,49 @@ Deno.serve(async (request) => {
         break
       }
 
+      case "charge.refunded":
+      case "refund.created": {
+        // Handle refunds - update payment status to refunded
+        const charge = event.data.object as Stripe.Charge
+        const paymentIntentId = charge.payment_intent as string
+
+        if (paymentIntentId) {
+          // Update payment status to refunded
+          await supabaseClient
+            .from("payments")
+            .update({ 
+              status: "refunded",
+              updated_at: new Date().toISOString(),
+            })
+            .eq("stripe_payment_intent_id", paymentIntentId)
+          
+          console.log(`Payment refunded: ${paymentIntentId}`)
+        }
+        break
+      }
+
+      case "payment_intent.canceled":
+      case "payment_intent.payment_failed": {
+        // Handle payment cancellations and failures
+        const paymentIntent = event.data.object as Stripe.PaymentIntent
+
+        if (paymentIntent.id) {
+          // Update payment status
+          const newStatus = event.type === "payment_intent.canceled" ? "canceled" : "failed"
+          
+          await supabaseClient
+            .from("payments")
+            .update({ 
+              status: newStatus,
+              updated_at: new Date().toISOString(),
+            })
+            .eq("stripe_payment_intent_id", paymentIntent.id)
+          
+          console.log(`Payment ${newStatus}: ${paymentIntent.id}`)
+        }
+        break
+      }
+
       case "customer.subscription.created":
       case "customer.subscription.updated":
       case "customer.subscription.deleted": {
