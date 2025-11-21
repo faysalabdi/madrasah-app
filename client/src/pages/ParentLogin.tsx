@@ -167,7 +167,10 @@ const ParentLogin: React.FC = () => {
         throw new Error('Could not find your account. Please contact support.')
       }
 
-      // Store parent ID in sessionStorage
+      // Store parent ID in localStorage for persistence
+      localStorage.setItem('parentId', parent.id.toString())
+      localStorage.setItem('parentEmail', emailLower)
+      // Also store in sessionStorage for compatibility
       sessionStorage.setItem('parentId', parent.id.toString())
       sessionStorage.setItem('parentEmail', emailLower)
 

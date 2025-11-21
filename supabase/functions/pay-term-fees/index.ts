@@ -140,6 +140,15 @@ Deno.serve(async (req) => {
 
     const frontendUrl = Deno.env.get("FRONTEND_URL") || "http://localhost:5173"
 
+    // Build description for checkout showing which student(s)
+    let checkoutDescription = "Term Fees"
+    if (studentId && students.length === 1) {
+      checkoutDescription = `Term Fees for ${students[0].first_name} ${students[0].last_name}`
+    } else if (numberOfStudents > 1) {
+      const studentNames = students.map(s => `${s.first_name} ${s.last_name}`).join(", ")
+      checkoutDescription = `Term Fees for ${numberOfStudents} student${numberOfStudents > 1 ? 's' : ''}: ${studentNames}`
+    }
+
     // Create checkout session
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
@@ -152,14 +161,18 @@ Deno.serve(async (req) => {
         parent_id: parentId.toString(),
         payment_type: "term_fees",
         student_ids: students.map((s) => s.id.toString()).join(","),
+        student_id: studentId ? studentId.toString() : "", // Include specific student_id if paying for one
         number_of_students: numberOfStudents.toString(),
+        student_names: students.map(s => `${s.first_name} ${s.last_name}`).join(", "),
       },
       payment_intent_data: {
         metadata: {
           parent_id: parentId.toString(),
           payment_type: "term_fees",
+          student_id: studentId ? studentId.toString() : "", // Include in payment intent too
         },
         receipt_email: parentEmail, // Use receipt_email in payment_intent_data instead
+        description: checkoutDescription,
       },
     })
 

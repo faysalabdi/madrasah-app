@@ -87,19 +87,50 @@ Deno.serve(async (request) => {
             })
             .eq("stripe_checkout_session_id", session.id)
         } else if (session.payment_status === "paid" && session.payment_intent) {
-          // Immediate payment: Create payment record
-          await supabaseClient.from("payments").insert({
-            parent_id: parseInt(parentId),
-            stripe_checkout_session_id: session.id,
-            stripe_payment_intent_id: session.payment_intent as string,
-            amount: (session.amount_total || 0) / 100,
-            currency: session.currency || "aud",
-            payment_type: "full_payment",
-            status: "succeeded",
-            paid_for_books: true,
-            paid_term_fees: true,
-            metadata: session.metadata,
-          })
+          // Immediate payment: Create payment record(s)
+          const paymentType = session.metadata?.payment_type || "full_payment"
+          const studentIdStr = session.metadata?.student_id
+          const studentIdsStr = session.metadata?.student_ids // Comma-separated list
+          
+          // If paying for term fees and we have student_ids, create separate payment records for each student
+          if (paymentType === "term_fees" && studentIdsStr) {
+            const studentIds = studentIdsStr.split(",").filter(Boolean).map(id => parseInt(id.trim()))
+            const amountPerStudent = (session.amount_total || 0) / 100 / studentIds.length
+            
+            // Create one payment record per student
+            for (const sid of studentIds) {
+              await supabaseClient.from("payments").insert({
+                parent_id: parseInt(parentId),
+                student_id: sid,
+                stripe_checkout_session_id: session.id,
+                stripe_payment_intent_id: session.payment_intent as string,
+                amount: amountPerStudent,
+                currency: session.currency || "aud",
+                payment_type: paymentType,
+                status: "succeeded",
+                paid_for_books: false,
+                paid_term_fees: true,
+                metadata: { ...session.metadata, student_id: sid.toString() },
+              })
+            }
+          } else {
+            // Single payment record (books, or term fees for single student)
+            const studentId = studentIdStr ? parseInt(studentIdStr) : null
+            
+            await supabaseClient.from("payments").insert({
+              parent_id: parseInt(parentId),
+              student_id: studentId,
+              stripe_checkout_session_id: session.id,
+              stripe_payment_intent_id: session.payment_intent as string,
+              amount: (session.amount_total || 0) / 100,
+              currency: session.currency || "aud",
+              payment_type: paymentType,
+              status: "succeeded",
+              paid_for_books: paymentType === "books" || paymentType === "full_payment",
+              paid_term_fees: paymentType === "term_fees" || paymentType === "full_payment",
+              metadata: session.metadata,
+            })
+          }
         }
         break
       }
@@ -150,15 +181,19 @@ Deno.serve(async (request) => {
             .maybeSingle()
 
           if (parent) {
+            const paymentType = paymentIntent.metadata?.payment_type || "full_payment"
+            const studentId = paymentIntent.metadata?.student_id ? parseInt(paymentIntent.metadata.student_id) : null
+            
             await supabaseClient.from("payments").insert({
               parent_id: parent.id,
+              student_id: studentId,
               stripe_payment_intent_id: paymentIntent.id,
               amount: paymentIntent.amount / 100,
               currency: paymentIntent.currency,
-              payment_type: "full_payment",
+              payment_type: paymentType,
               status: "succeeded",
-              paid_for_books: true,
-              paid_term_fees: true,
+              paid_for_books: paymentType === "books" || paymentType === "full_payment",
+              paid_term_fees: paymentType === "term_fees" || paymentType === "full_payment",
               metadata: paymentIntent.metadata,
             })
           }

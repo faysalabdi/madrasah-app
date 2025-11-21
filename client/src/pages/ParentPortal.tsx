@@ -6,6 +6,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Loader2 } from 'lucide-react'
 
 interface Student {
@@ -38,8 +40,18 @@ interface Payment {
   payment_type: string
   paid_for_books: boolean
   paid_term_fees: boolean
+  student_id: number | null
   created_at: string
   trial_end_date: string | null
+}
+
+interface BookProduct {
+  id: string
+  name: string
+  description: string
+  priceId: string
+  price: number
+  metadata: any
 }
 
 const ParentPortal: React.FC = () => {
@@ -47,28 +59,48 @@ const ParentPortal: React.FC = () => {
   const [parent, setParent] = useState<Parent | null>(null)
   const [students, setStudents] = useState<Student[]>([])
   const [payments, setPayments] = useState<Payment[]>([])
+  const [bookProducts, setBookProducts] = useState<BookProduct[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [payingFor, setPayingFor] = useState<number | null>(null) // student ID being paid for
+  const [purchasingBooks, setPurchasingBooks] = useState(false)
+  const [showBookDialog, setShowBookDialog] = useState(false)
+  const [selectedBooks, setSelectedBooks] = useState<{ [key: string]: boolean }>({})
 
   useEffect(() => {
-    // Check authentication
+    // Check authentication and restore session
     const checkAuth = async () => {
+      // Check localStorage first (persistent), then sessionStorage (legacy)
+      let parentId = localStorage.getItem('parentId') || sessionStorage.getItem('parentId')
+      
+      // Check Supabase auth session
       const { data: { session } } = await supabase.auth.getSession()
       
-      if (!session) {
-        // No auth session, check if parentId exists in sessionStorage (legacy)
-        const parentId = sessionStorage.getItem('parentId')
-        if (!parentId) {
+      // If we have a parentId but no auth session, try to restore
+      if (parentId && !session) {
+        // Check if we can restore from localStorage
+        const parentEmail = localStorage.getItem('parentEmail')
+        if (parentEmail) {
+          // Session will be restored on next page load or we can continue with parentId
+          // For now, just continue with parentId
+        } else {
+          // No email stored, need to re-login
           setLocation('/parent-login')
           return
         }
       }
-
-      const parentId = sessionStorage.getItem('parentId')
+      
       if (!parentId) {
         setLocation('/parent-login')
         return
+      }
+      
+      // Sync to both for compatibility
+      if (!sessionStorage.getItem('parentId')) {
+        sessionStorage.setItem('parentId', parentId)
+      }
+      if (!localStorage.getItem('parentId')) {
+        localStorage.setItem('parentId', parentId)
       }
 
       // Handle payment redirects
@@ -90,6 +122,17 @@ const ParentPortal: React.FC = () => {
     }
 
     checkAuth()
+
+    // Listen for auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT' || (!session && !localStorage.getItem('parentId'))) {
+        setLocation('/parent-login')
+      }
+    })
+
+    return () => {
+      subscription.unsubscribe()
+    }
   }, [setLocation])
 
   const loadPortalData = async (parentId: number) => {
@@ -122,10 +165,33 @@ const ParentPortal: React.FC = () => {
         .select('*')
         .eq('parent_id', parentId)
         .order('created_at', { ascending: false })
-        .limit(10)
+        .limit(50) // Increased to check all payments
 
       if (paymentsError) throw paymentsError
       setPayments(paymentsData || [])
+
+      // Load book products
+      try {
+        const productsResponse = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/get-products`,
+          {
+            headers: {
+              Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+            },
+          }
+        )
+        if (productsResponse.ok) {
+          const { products } = await productsResponse.json()
+          // Filter out term fee products, only show book products
+          const books = products.filter((p: BookProduct) => 
+            !p.metadata?.term_fee && 
+            !p.name.toLowerCase().includes('term fee')
+          )
+          setBookProducts(books)
+        }
+      } catch (err) {
+        console.error('Failed to load book products:', err)
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load portal data')
     } finally {
@@ -170,6 +236,8 @@ const ParentPortal: React.FC = () => {
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
+    localStorage.removeItem('parentId')
+    localStorage.removeItem('parentEmail')
     sessionStorage.removeItem('parentId')
     sessionStorage.removeItem('parentEmail')
     setLocation('/parent-login')
@@ -202,17 +270,80 @@ const ParentPortal: React.FC = () => {
     )
   }
 
-  // Check if term fees are due (simplified: check if last payment was more than 3 months ago or never paid)
-  const needsTermFees = () => {
-    if (payments.length === 0) return true
-    const lastTermFeePayment = payments.find(p => p.paid_term_fees && p.status === 'succeeded')
-    if (!lastTermFeePayment) return true
+  // Check if term fees are paid for a specific student
+  const hasPaidTermFees = (studentId: number | null) => {
+    if (!studentId) {
+      // Check if all students have paid individually
+      return students.every(student => hasPaidTermFees(student.id))
+    }
     
-    const lastPaymentDate = new Date(lastTermFeePayment.created_at)
+    // Check for specific student - ONLY count payments explicitly for this student
+    // Payments with student_id === null are NOT counted for specific students
+    const studentPayments = payments.filter(p => 
+      p.student_id === studentId && // Must match exactly - no null checks
+      p.paid_term_fees && 
+      p.status === 'succeeded'
+    )
+    if (studentPayments.length === 0) return false
+    
+    const lastPayment = studentPayments[0]
+    const lastPaymentDate = new Date(lastPayment.created_at)
     const threeMonthsAgo = new Date()
     threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3)
-    
-    return lastPaymentDate < threeMonthsAgo
+    return lastPaymentDate >= threeMonthsAgo
+  }
+
+  // Check if term fees are due (for all students)
+  const needsTermFees = () => {
+    return !hasPaidTermFees(null)
+  }
+
+  // Get students who need term fees
+  const studentsNeedingTermFees = () => {
+    return students.filter(student => !hasPaidTermFees(student.id))
+  }
+
+  const handlePurchaseBooks = async () => {
+    if (!parent) return
+
+    const selectedBookProducts = bookProducts.filter(book => selectedBooks[book.id])
+    if (selectedBookProducts.length === 0) {
+      setError('Please select at least one book to purchase')
+      return
+    }
+
+    setPurchasingBooks(true)
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/purchase-books`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          },
+          body: JSON.stringify({
+            parentId: parent.id,
+            parentEmail: parent.parent1_email,
+            bookProducts: selectedBookProducts.map(book => ({
+              priceId: book.priceId,
+              quantity: 1,
+            })),
+          }),
+        }
+      )
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.error || 'Failed to create payment session')
+      }
+
+      const { url } = await response.json()
+      window.location.href = url
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to initiate book purchase')
+      setPurchasingBooks(false)
+    }
   }
 
   return (
@@ -243,16 +374,16 @@ const ParentPortal: React.FC = () => {
           {/* Term Fees Alert */}
           {needsTermFees() && (
             <Alert className="mb-6 border-yellow-500 bg-yellow-50">
-              <AlertDescription className="flex items-center justify-between">
+              <AlertDescription className="flex items-center justify-between flex-wrap gap-2">
                 <span className="font-medium">
-                  Term fees are due. Please make a payment to continue enrollment.
+                  Term fees are due for {studentsNeedingTermFees().length} student{studentsNeedingTermFees().length !== 1 ? 's' : ''}: {studentsNeedingTermFees().map(s => `${s.first_name} ${s.last_name}`).join(', ')}
                 </span>
                 <Button
                   onClick={() => handlePayTermFees()}
                   disabled={payingFor !== null}
                   size="sm"
                 >
-                  {payingFor === 0 ? 'Processing...' : 'Pay Term Fees'}
+                  {payingFor === 0 ? 'Processing...' : 'Pay Term Fees for All'}
                 </Button>
               </AlertDescription>
             </Alert>
@@ -281,7 +412,7 @@ const ParentPortal: React.FC = () => {
                               {student.first_name} {student.last_name}
                             </h3>
                             <p className="text-sm text-gray-600">
-                              {student.grade} • Student ID: {student.student_id}
+                              {student.grade} • Student ID: {student.student_id || `STU-${student.id.toString().padStart(4, '0')}`}
                             </p>
                             {student.quran_level && (
                               <p className="text-sm text-gray-500">
@@ -294,14 +425,22 @@ const ParentPortal: React.FC = () => {
                               </p>
                             )}
                           </div>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handlePayTermFees(student.id)}
-                            disabled={payingFor === student.id}
-                          >
-                            {payingFor === student.id ? 'Processing...' : 'Pay Term Fees'}
-                          </Button>
+                          <div className="flex gap-2">
+                            {hasPaidTermFees(student.id) ? (
+                              <Badge variant="default" className="bg-green-500">
+                                Term Fees Paid
+                              </Badge>
+                            ) : (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handlePayTermFees(student.id)}
+                                disabled={payingFor === student.id}
+                              >
+                                {payingFor === student.id ? 'Processing...' : 'Pay Term Fees'}
+                              </Button>
+                            )}
+                          </div>
                         </div>
                       </div>
                     ))}
@@ -321,43 +460,59 @@ const ParentPortal: React.FC = () => {
                   <p className="text-gray-500">No payment history available.</p>
                 ) : (
                   <div className="space-y-2">
-                    {payments.map((payment) => (
-                      <div
-                        key={payment.id}
-                        className="border rounded-lg p-3 flex justify-between items-center"
-                      >
-                        <div>
-                          <p className="font-medium">
-                            ${payment.amount} {payment.currency.toUpperCase()}
-                          </p>
-                          <p className="text-sm text-gray-600">
-                            {new Date(payment.created_at).toLocaleDateString()}
-                          </p>
-                          <div className="flex gap-2 mt-1">
-                            <Badge
-                              variant={
-                                payment.status === 'succeeded' || payment.status === 'trial_active'
-                                  ? 'default'
-                                  : 'secondary'
-                              }
-                            >
-                              {payment.status}
-                            </Badge>
-                            {payment.paid_term_fees && (
-                              <Badge variant="outline">Term Fees</Badge>
+                    {payments.map((payment) => {
+                      const paymentStudent = payment.student_id 
+                        ? students.find(s => s.id === payment.student_id)
+                        : null
+                      
+                      return (
+                        <div
+                          key={payment.id}
+                          className="border rounded-lg p-3 flex justify-between items-center"
+                        >
+                          <div>
+                            <p className="font-medium">
+                              ${payment.amount} {payment.currency.toUpperCase()}
+                            </p>
+                            <p className="text-sm text-gray-600">
+                              {new Date(payment.created_at).toLocaleDateString()}
+                            </p>
+                            {paymentStudent && (
+                              <p className="text-xs text-gray-500 mt-1">
+                                For: {paymentStudent.first_name} {paymentStudent.last_name}
+                              </p>
                             )}
-                            {payment.paid_for_books && (
-                              <Badge variant="outline">Books</Badge>
+                            {!paymentStudent && payment.paid_term_fees && (
+                              <p className="text-xs text-gray-500 mt-1">
+                                For: All students
+                              </p>
                             )}
-                            {payment.trial_end_date && (
-                              <Badge variant="outline">
-                                Trial ends: {new Date(payment.trial_end_date).toLocaleDateString()}
+                            <div className="flex gap-2 mt-1">
+                              <Badge
+                                variant={
+                                  payment.status === 'succeeded' || payment.status === 'trial_active'
+                                    ? 'default'
+                                    : 'secondary'
+                                }
+                              >
+                                {payment.status}
                               </Badge>
-                            )}
+                              {payment.paid_term_fees && (
+                                <Badge variant="outline">Term Fees</Badge>
+                              )}
+                              {payment.paid_for_books && (
+                                <Badge variant="outline">Books</Badge>
+                              )}
+                              {payment.trial_end_date && (
+                                <Badge variant="outline">
+                                  Trial ends: {new Date(payment.trial_end_date).toLocaleDateString()}
+                                </Badge>
+                              )}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      )
+                    })}
                   </div>
                 )}
               </CardContent>
@@ -402,9 +557,72 @@ const ParentPortal: React.FC = () => {
                     Manage Billing & Subscriptions
                   </Button>
                 )}
-                <Button variant="outline" disabled>
-                  Order Books (Coming Soon)
-                </Button>
+                <Dialog open={showBookDialog} onOpenChange={setShowBookDialog}>
+                  <DialogTrigger asChild>
+                    <Button variant="outline">
+                      Order Books
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                    <DialogHeader>
+                      <DialogTitle>Order Books</DialogTitle>
+                      <DialogDescription>
+                        Select the books you would like to purchase
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 mt-4">
+                      {bookProducts.length === 0 ? (
+                        <p className="text-gray-500">Loading books...</p>
+                      ) : (
+                        bookProducts.map((book) => (
+                          <div key={book.id} className="flex items-start space-x-3 p-3 border rounded-lg">
+                            <Checkbox
+                              id={book.id}
+                              checked={selectedBooks[book.id] || false}
+                              onCheckedChange={(checked) => {
+                                setSelectedBooks(prev => ({
+                                  ...prev,
+                                  [book.id]: checked === true,
+                                }))
+                              }}
+                            />
+                            <div className="flex-1">
+                              <label
+                                htmlFor={book.id}
+                                className="font-medium cursor-pointer"
+                              >
+                                {book.name}
+                              </label>
+                              {book.description && (
+                                <p className="text-sm text-gray-600 mt-1">{book.description}</p>
+                              )}
+                              <p className="text-sm font-semibold text-primary mt-1">
+                                ${book.price.toFixed(2)} AUD
+                              </p>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                      <div className="flex justify-end gap-2 pt-4">
+                        <Button
+                          variant="outline"
+                          onClick={() => {
+                            setShowBookDialog(false)
+                            setSelectedBooks({})
+                          }}
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          onClick={handlePurchaseBooks}
+                          disabled={purchasingBooks || Object.values(selectedBooks).every(v => !v)}
+                        >
+                          {purchasingBooks ? 'Processing...' : 'Purchase Selected Books'}
+                        </Button>
+                      </div>
+                    </div>
+                  </DialogContent>
+                </Dialog>
                 <Button variant="outline" disabled>
                   View Grades (Coming Soon)
                 </Button>
