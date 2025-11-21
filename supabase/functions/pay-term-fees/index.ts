@@ -105,6 +105,9 @@ Deno.serve(async (req) => {
 
     const termFeePrice = pricesResponse.data[0]
 
+    // Determine if this is a recurring price (subscription) or one-time payment
+    const isRecurring = termFeePrice.type === "recurring"
+
     // Calculate total: term fee per student
     const numberOfStudents = students.length
     const lineItems = []
@@ -149,10 +152,10 @@ Deno.serve(async (req) => {
       checkoutDescription = `Term Fees for ${numberOfStudents} student${numberOfStudents > 1 ? 's' : ''}: ${studentNames}`
     }
 
-    // Create checkout session
-    const session = await stripe.checkout.sessions.create({
+    // Create checkout session - use subscription mode if price is recurring, payment mode if one-time
+    const sessionConfig: any = {
       customer: customerId,
-      mode: "payment",
+      mode: isRecurring ? "subscription" : "payment",
       payment_method_types: ["card"],
       line_items: lineItems,
       success_url: `${frontendUrl}/parent-portal?payment=success`,
@@ -164,17 +167,42 @@ Deno.serve(async (req) => {
         student_id: studentId ? studentId.toString() : "", // Include specific student_id if paying for one
         number_of_students: numberOfStudents.toString(),
         student_names: students.map(s => `${s.first_name} ${s.last_name}`).join(", "),
+        paid_term_fees: "true",
+        paid_for_books: "false",
       },
-      payment_intent_data: {
+    }
+
+    // Add subscription-specific metadata if recurring
+    if (isRecurring) {
+      sessionConfig.subscription_data = {
         metadata: {
           parent_id: parentId.toString(),
           payment_type: "term_fees",
-          student_id: studentId ? studentId.toString() : "", // Include in payment intent too
+          student_ids: students.map((s) => s.id.toString()).join(","),
+          student_id: studentId ? studentId.toString() : "",
+          number_of_students: numberOfStudents.toString(),
+          student_names: students.map(s => `${s.first_name} ${s.last_name}`).join(", "),
+          paid_term_fees: "true",
+          paid_for_books: "false",
         },
-        receipt_email: parentEmail, // Use receipt_email in payment_intent_data instead
+      }
+    } else {
+      // For one-time payments, add payment_intent_data
+      sessionConfig.payment_intent_data = {
+        metadata: {
+          parent_id: parentId.toString(),
+          payment_type: "term_fees",
+          student_id: studentId ? studentId.toString() : "",
+          student_ids: students.map((s) => s.id.toString()).join(","),
+          paid_term_fees: "true",
+          paid_for_books: "false",
+        },
+        receipt_email: parentEmail,
         description: checkoutDescription,
-      },
-    })
+      }
+    }
+
+    const session = await stripe.checkout.sessions.create(sessionConfig)
 
     return new Response(
       JSON.stringify({ sessionId: session.id, url: session.url }),

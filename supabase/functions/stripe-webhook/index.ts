@@ -333,6 +333,70 @@ Deno.serve(async (request) => {
         break
       }
 
+      case "invoice.payment_succeeded": {
+        // Handle successful subscription renewal payments
+        const invoice = event.data.object as Stripe.Invoice
+        const subscriptionId = invoice.subscription as string
+
+        if (subscriptionId && invoice.payment_intent) {
+          // Get subscription to find parent and student info
+          const subscription = await stripe.subscriptions.retrieve(subscriptionId)
+          const parentId = subscription.metadata?.parent_id
+
+          if (parentId) {
+            const { data: parent } = await supabaseClient
+              .from("parents")
+              .select("id")
+              .eq("id", parseInt(parentId))
+              .maybeSingle()
+
+            if (parent) {
+              const studentIdsStr = subscription.metadata?.student_ids
+              const paidTermFees = subscription.metadata?.paid_term_fees === "true"
+              const paidForBooks = subscription.metadata?.paid_for_books === "true"
+
+              // If we have student IDs, create payment records for each student
+              if (studentIdsStr && paidTermFees) {
+                const studentIds = studentIdsStr.split(",").filter(Boolean).map(id => parseInt(id.trim()))
+                const amountPerStudent = (invoice.amount_paid || 0) / 100 / studentIds.length
+
+                for (const sid of studentIds) {
+                  await supabaseClient.from("payments").insert({
+                    parent_id: parent.id,
+                    student_id: sid,
+                    stripe_payment_intent_id: invoice.payment_intent as string,
+                    stripe_subscription_id: subscriptionId,
+                    amount: amountPerStudent,
+                    currency: invoice.currency,
+                    payment_type: "term_fees",
+                    status: "succeeded",
+                    paid_for_books: paidForBooks,
+                    paid_term_fees: paidTermFees,
+                    metadata: subscription.metadata,
+                  })
+                }
+              } else {
+                // Single payment record if no student IDs specified
+                await supabaseClient.from("payments").insert({
+                  parent_id: parent.id,
+                  student_id: null,
+                  stripe_payment_intent_id: invoice.payment_intent as string,
+                  stripe_subscription_id: subscriptionId,
+                  amount: (invoice.amount_paid || 0) / 100,
+                  currency: invoice.currency,
+                  payment_type: "term_fees",
+                  status: "succeeded",
+                  paid_for_books: paidForBooks,
+                  paid_term_fees: paidTermFees,
+                  metadata: subscription.metadata,
+                })
+              }
+            }
+          }
+        }
+        break
+      }
+
       default:
         console.log(`Unhandled event type: ${event.type}`)
     }
