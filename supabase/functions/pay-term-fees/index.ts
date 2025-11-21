@@ -64,16 +64,25 @@ Deno.serve(async (req) => {
     }
 
     // Get term fee product from Stripe (look for product with metadata term_fee: true)
-    const { data: products } = await stripe.products.list({
+    const productsResponse = await stripe.products.list({
       active: true,
       limit: 100,
     })
 
-    const termFeeProduct = products.data.find(
+    if (!productsResponse || !productsResponse.data) {
+      console.error("Failed to fetch products from Stripe:", productsResponse)
+      return new Response(
+        JSON.stringify({ error: "Failed to fetch products from Stripe. Please contact support." }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      )
+    }
+
+    const termFeeProduct = productsResponse.data.find(
       (p) => p.metadata?.term_fee === "true" || p.name.toLowerCase().includes("term fee")
     )
 
     if (!termFeeProduct) {
+      console.error("Term fee product not found. Available products:", productsResponse.data.map(p => ({ id: p.id, name: p.name, metadata: p.metadata })))
       return new Response(
         JSON.stringify({ error: "Term fee product not found in Stripe. Please contact support." }),
         { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -81,19 +90,20 @@ Deno.serve(async (req) => {
     }
 
     // Get the default price for term fee product
-    const { data: prices } = await stripe.prices.list({
+    const pricesResponse = await stripe.prices.list({
       product: termFeeProduct.id,
       active: true,
     })
 
-    const termFeePrice = prices.data[0]
-
-    if (!termFeePrice) {
+    if (!pricesResponse || !pricesResponse.data || pricesResponse.data.length === 0) {
+      console.error("No prices found for term fee product:", termFeeProduct.id)
       return new Response(
         JSON.stringify({ error: "Term fee price not found in Stripe. Please contact support." }),
         { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       )
     }
+
+    const termFeePrice = pricesResponse.data[0]
 
     // Calculate total: term fee per student
     const numberOfStudents = students.length
@@ -149,8 +159,8 @@ Deno.serve(async (req) => {
           parent_id: parentId.toString(),
           payment_type: "term_fees",
         },
+        receipt_email: parentEmail, // Use receipt_email in payment_intent_data instead
       },
-      customer_email: parentEmail,
     })
 
     return new Response(
