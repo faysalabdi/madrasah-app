@@ -535,6 +535,45 @@ const TeacherPortal: React.FC = () => {
     await loadStudentDetails(student.id)
   }
 
+  const sendNotification = async (
+    parentEmail: string,
+    parentName: string,
+    studentName: string,
+    notificationType: 'homework' | 'attendance' | 'behavior' | 'note',
+    subject?: string,
+    message?: string,
+    htmlMessage?: string
+  ) => {
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-notification`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          },
+          body: JSON.stringify({
+            parentEmail,
+            parentName,
+            studentName,
+            notificationType,
+            subject,
+            message,
+            htmlMessage,
+          }),
+        }
+      )
+
+      if (!response.ok) {
+        console.error('Failed to send notification email')
+      }
+    } catch (err) {
+      console.error('Error sending notification:', err)
+      // Don't throw - email failure shouldn't break the operation
+    }
+  }
+
   const handleMarkAttendance = async () => {
     if (!selectedStudent || !teacher) return
 
@@ -552,6 +591,41 @@ const TeacherPortal: React.FC = () => {
         })
 
       if (error) throw error
+
+      // Send email notification for absences or lateness
+      if (attendanceStatus.includes('absent') || attendanceStatus.includes('late')) {
+        // Get parent information
+        const { data: parent } = await supabase
+          .from('parents')
+          .select('parent1_email, parent1_first_name, parent1_last_name')
+          .eq('id', selectedStudent.parent_id)
+          .single()
+
+        if (parent?.parent1_email) {
+          const statusLabel = attendanceStatus.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+          const studentName = `${selectedStudent.first_name} ${selectedStudent.last_name}`
+          const parentName = `${parent.parent1_first_name} ${parent.parent1_last_name}`
+          
+          const htmlMessage = `
+            <p>Assalamu Alaikum ${parentName},</p>
+            <p>This is to inform you that ${studentName}'s attendance has been recorded for ${new Date(attendanceDate).toLocaleDateString()}.</p>
+            <p><strong>Status:</strong> ${statusLabel}</p>
+            ${attendanceNotes ? `<p><strong>Notes:</strong> ${attendanceNotes}</p>` : ''}
+            <p>Please check the parent portal for more details.</p>
+            <p>Jazakallahu Khairan,<br>Madrasah Abu Bakr As-Siddiq Team</p>
+          `
+
+          await sendNotification(
+            parent.parent1_email,
+            parentName,
+            studentName,
+            'attendance',
+            `Attendance Update - ${studentName}`,
+            undefined,
+            htmlMessage
+          )
+        }
+      }
 
       setShowAttendanceDialog(false)
       setAttendanceDate(new Date().toISOString().split('T')[0])
@@ -579,6 +653,38 @@ const TeacherPortal: React.FC = () => {
         })
 
       if (error) throw error
+
+      // Get parent information and send email notification
+      const { data: parent } = await supabase
+        .from('parents')
+        .select('parent1_email, parent1_first_name, parent1_last_name')
+        .eq('id', selectedStudent.parent_id)
+        .single()
+
+      if (parent?.parent1_email) {
+        const studentName = `${selectedStudent.first_name} ${selectedStudent.last_name}`
+        const parentName = `${parent.parent1_first_name} ${parent.parent1_last_name}`
+        const typeLabel = behaviorType.charAt(0).toUpperCase() + behaviorType.slice(1)
+        
+        const htmlMessage = `
+          <p>Assalamu Alaikum ${parentName},</p>
+          <p>A ${typeLabel.toLowerCase()} behavior note has been added for ${studentName}.</p>
+          <p><strong>Title:</strong> ${behaviorTitle}</p>
+          <p><strong>Description:</strong> ${behaviorDescription}</p>
+          <p>Please check the parent portal for more details.</p>
+          <p>Jazakallahu Khairan,<br>Madrasah Abu Bakr As-Siddiq Team</p>
+        `
+
+        await sendNotification(
+          parent.parent1_email,
+          parentName,
+          studentName,
+          'behavior',
+          `Behavior Note - ${studentName}`,
+          undefined,
+          htmlMessage
+        )
+      }
 
       setShowBehaviorDialog(false)
       setBehaviorType('positive')
@@ -608,6 +714,38 @@ const TeacherPortal: React.FC = () => {
 
       if (error) throw error
 
+      // Get parent information and send email notification
+      const { data: parent } = await supabase
+        .from('parents')
+        .select('parent1_email, parent1_first_name, parent1_last_name')
+        .eq('id', selectedStudent.parent_id)
+        .single()
+
+      if (parent?.parent1_email) {
+        const studentName = `${selectedStudent.first_name} ${selectedStudent.last_name}`
+        const parentName = `${parent.parent1_first_name} ${parent.parent1_last_name}`
+        
+        const htmlMessage = `
+          <p>Assalamu Alaikum ${parentName},</p>
+          <p>New homework has been assigned to ${studentName}.</p>
+          <p><strong>Title:</strong> ${homeworkTitle}</p>
+          ${homeworkDescription ? `<p><strong>Description:</strong> ${homeworkDescription}</p>` : ''}
+          ${homeworkDueDate ? `<p><strong>Due Date:</strong> ${new Date(homeworkDueDate).toLocaleDateString()}</p>` : ''}
+          <p>Please check the parent portal for more details and to track completion.</p>
+          <p>Jazakallahu Khairan,<br>Madrasah Abu Bakr As-Siddiq Team</p>
+        `
+
+        await sendNotification(
+          parent.parent1_email,
+          parentName,
+          studentName,
+          'homework',
+          `New Homework Assignment - ${studentName}`,
+          undefined,
+          htmlMessage
+        )
+      }
+
       setShowHomeworkDialog(false)
       setHomeworkTitle('')
       setHomeworkDescription('')
@@ -631,6 +769,36 @@ const TeacherPortal: React.FC = () => {
         })
 
       if (error) throw error
+
+      // Get parent information and send email notification
+      const { data: parent } = await supabase
+        .from('parents')
+        .select('parent1_email, parent1_first_name, parent1_last_name')
+        .eq('id', selectedStudent.parent_id)
+        .single()
+
+      if (parent?.parent1_email) {
+        const studentName = `${selectedStudent.first_name} ${selectedStudent.last_name}`
+        const parentName = `${parent.parent1_first_name} ${parent.parent1_last_name}`
+        
+        const htmlMessage = `
+          <p>Assalamu Alaikum ${parentName},</p>
+          <p>A teacher note has been added for ${studentName}.</p>
+          <p><strong>Note:</strong> ${noteText}</p>
+          <p>Please check the parent portal for more details.</p>
+          <p>Jazakallahu Khairan,<br>Madrasah Abu Bakr As-Siddiq Team</p>
+        `
+
+        await sendNotification(
+          parent.parent1_email,
+          parentName,
+          studentName,
+          'note',
+          `Teacher Note - ${studentName}`,
+          undefined,
+          htmlMessage
+        )
+      }
 
       setShowNoteDialog(false)
       setNoteText('')
