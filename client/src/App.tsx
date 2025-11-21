@@ -15,6 +15,8 @@ import PortalLogin from "@/pages/PortalLogin";
 import ParentPortal from "@/pages/ParentPortal";
 import ParentPasswordSetup from "@/pages/ParentPasswordSetup";
 import TeacherPortal from "@/pages/TeacherPortal";
+import AdminLogin from "@/pages/AdminLogin";
+import AdminPortal from "@/pages/AdminPortal";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import Newsletter from "@/components/Newsletter";
@@ -38,6 +40,8 @@ function App() {
             <Route path="/parent-password-setup" component={ParentPasswordSetup} />
             <Route path="/parent-portal" component={ParentPortal} />
             <Route path="/teacher-portal" component={TeacherPortal} />
+            <Route path="/admin-login" component={AdminLogin} />
+            <Route path="/admin-portal" component={AdminPortal} />
             <Route component={NotFound} />
           </Switch>
         </main>

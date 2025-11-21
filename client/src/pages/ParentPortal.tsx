@@ -9,7 +9,16 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Loader2 } from 'lucide-react'
+import { Loader2, User, LogOut, CreditCard } from 'lucide-react'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 
 interface Student {
   id: number
@@ -427,18 +436,57 @@ const ParentPortal: React.FC = () => {
                 Welcome, {parent?.parent1_first_name} {parent?.parent1_last_name}
               </p>
             </div>
-            <div className="flex gap-2">
-              <Button 
-                variant="ghost" 
-                onClick={() => setLocation('/portal')}
-                className="text-sm"
-              >
-                Teacher?
-              </Button>
-              <Button variant="outline" onClick={handleLogout}>
-                Logout
-              </Button>
-            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="flex items-center gap-2">
+                  <Avatar className="h-8 w-8">
+                    <AvatarFallback>
+                      {parent?.parent1_first_name?.[0]}{parent?.parent1_last_name?.[0]}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="hidden md:inline">{parent?.parent1_first_name} {parent?.parent1_last_name}</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {parent?.stripe_customer_id && (
+                  <DropdownMenuItem
+                    onClick={async () => {
+                      try {
+                        const response = await fetch(
+                          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-portal-session`,
+                          {
+                            method: 'POST',
+                            headers: {
+                              'Content-Type': 'application/json',
+                              Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+                            },
+                            body: JSON.stringify({
+                              customerId: parent.stripe_customer_id,
+                              returnUrl: window.location.origin + '/parent-portal',
+                            }),
+                          }
+                        )
+
+                        if (!response.ok) throw new Error('Failed to create portal session')
+                        const { url } = await response.json()
+                        window.location.href = url
+                      } catch (err) {
+                        setError(err instanceof Error ? err.message : 'Failed to open billing portal')
+                      }
+                    }}
+                  >
+                    <CreditCard className="mr-2 h-4 w-4" />
+                    <span>Manage Billing</span>
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuItem onClick={handleLogout}>
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span>Logout</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
 
           {error && (
@@ -609,114 +657,81 @@ const ParentPortal: React.FC = () => {
             </Card>
           </div>
 
-          {/* Additional Actions */}
+          {/* Books Section */}
           <Card className="mt-6">
             <CardHeader>
-              <CardTitle>Account Actions</CardTitle>
+              <CardTitle>Order Books</CardTitle>
+              <CardDescription>
+                Purchase books for your children. Each student receives all selected books.
+              </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="flex gap-4">
-                {parent?.stripe_customer_id && (
-                  <Button
-                    variant="outline"
-                    onClick={async () => {
-                      try {
-                        const response = await fetch(
-                          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-portal-session`,
-                          {
-                            method: 'POST',
-                            headers: {
-                              'Content-Type': 'application/json',
-                              Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-                            },
-                            body: JSON.stringify({
-                              customerId: parent.stripe_customer_id,
-                              returnUrl: window.location.origin + '/parent-portal',
-                            }),
-                          }
-                        )
-
-                        if (!response.ok) throw new Error('Failed to create portal session')
-                        const { url } = await response.json()
-                        window.location.href = url
-                      } catch (err) {
-                        setError(err instanceof Error ? err.message : 'Failed to open billing portal')
-                      }
-                    }}
-                  >
-                    Manage Billing & Subscriptions
+              <Dialog open={showBookDialog} onOpenChange={setShowBookDialog}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" className="w-full md:w-auto">
+                    Order Books
                   </Button>
-                )}
-                <Dialog open={showBookDialog} onOpenChange={setShowBookDialog}>
-                  <DialogTrigger asChild>
-                    <Button variant="outline">
-                      Order Books
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-                    <DialogHeader>
-                      <DialogTitle>Order Books</DialogTitle>
-                      <DialogDescription>
-                        Select the books you would like to purchase
-                      </DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4 mt-4">
-                      {bookProducts.length === 0 ? (
-                        <p className="text-gray-500">Loading books...</p>
-                      ) : (
-                        bookProducts.map((book) => (
-                          <div key={book.id} className="flex items-start space-x-3 p-3 border rounded-lg">
-                            <Checkbox
-                              id={book.id}
-                              checked={selectedBooks[book.id] || false}
-                              onCheckedChange={(checked) => {
-                                setSelectedBooks(prev => ({
-                                  ...prev,
-                                  [book.id]: checked === true,
-                                }))
-                              }}
-                            />
-                            <div className="flex-1">
-                              <label
-                                htmlFor={book.id}
-                                className="font-medium cursor-pointer"
-                              >
-                                {book.name}
-                              </label>
-                              {book.description && (
-                                <p className="text-sm text-gray-600 mt-1">{book.description}</p>
-                              )}
-                              <p className="text-sm font-semibold text-primary mt-1">
-                                ${book.price.toFixed(2)} AUD
-                              </p>
-                            </div>
+                </DialogTrigger>
+                <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>Order Books</DialogTitle>
+                    <DialogDescription>
+                      Select the books you would like to purchase for your children
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4 mt-4">
+                    {bookProducts.length === 0 ? (
+                      <p className="text-gray-500">Loading books...</p>
+                    ) : (
+                      bookProducts.map((book) => (
+                        <div key={book.id} className="flex items-start space-x-3 p-3 border rounded-lg">
+                          <Checkbox
+                            id={book.id}
+                            checked={selectedBooks[book.id] || false}
+                            onCheckedChange={(checked) => {
+                              setSelectedBooks(prev => ({
+                                ...prev,
+                                [book.id]: checked === true,
+                              }))
+                            }}
+                          />
+                          <div className="flex-1">
+                            <label
+                              htmlFor={book.id}
+                              className="font-medium cursor-pointer"
+                            >
+                              {book.name}
+                            </label>
+                            {book.description && (
+                              <p className="text-sm text-gray-600 mt-1">{book.description}</p>
+                            )}
+                            <p className="text-sm font-semibold text-primary mt-1">
+                              ${book.price.toFixed(2)} AUD
+                            </p>
                           </div>
-                        ))
-                      )}
-                      <div className="flex justify-end gap-2 pt-4">
-                        <Button
-                          variant="outline"
-                          onClick={() => {
-                            setShowBookDialog(false)
-                            setSelectedBooks({})
-                          }}
-                        >
-                          Cancel
-                        </Button>
-                        <Button
-                          onClick={handlePurchaseBooks}
-                          disabled={purchasingBooks || Object.values(selectedBooks).every(v => !v)}
-                        >
-                          {purchasingBooks ? 'Processing...' : 'Purchase Selected Books'}
-                        </Button>
-                      </div>
+                        </div>
+                      ))
+                    )}
+                    <div className="flex justify-end gap-2 pt-4">
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setShowBookDialog(false)
+                          setSelectedBooks({})
+                        }}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        onClick={handlePurchaseBooks}
+                        disabled={purchasingBooks || Object.values(selectedBooks).every(v => !v)}
+                      >
+                        {purchasingBooks ? 'Processing...' : 'Purchase Selected Books'}
+                      </Button>
                     </div>
-                  </DialogContent>
-                </Dialog>
-                <Button variant="outline" disabled>
-                  View Grades (Coming Soon)
-                </Button>
-              </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
             </CardContent>
           </Card>
         </div>
