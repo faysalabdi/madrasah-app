@@ -22,6 +22,8 @@ interface Student {
   last_name: string
   grade: string
   parent_id: number
+  hasPaidTermFees?: boolean
+  lastPaymentDate?: string
 }
 
 interface Parent {
@@ -87,6 +89,14 @@ const AdminPortal: React.FC = () => {
 
   // Payments
   const [payments, setPayments] = useState<Payment[]>([])
+  
+  // Bulk Invoice
+  const [showBulkInvoiceDialog, setShowBulkInvoiceDialog] = useState(false)
+  const [bulkInvoiceDays, setBulkInvoiceDays] = useState(30)
+  const [bulkInvoiceSendEmails, setBulkInvoiceSendEmails] = useState(true)
+  const [bulkInvoiceLoading, setBulkInvoiceLoading] = useState(false)
+  const [selectedParentsForInvoice, setSelectedParentsForInvoice] = useState<number[]>([])
+  const [bulkInvoiceMode, setBulkInvoiceMode] = useState<'all' | 'selected'>('all')
   const [showCreatePayment, setShowCreatePayment] = useState(false)
   const [selectedParentForPayment, setSelectedParentForPayment] = useState<Parent | null>(null)
   const [selectedStudentsForPayment, setSelectedStudentsForPayment] = useState<number[]>([])
@@ -245,7 +255,62 @@ const AdminPortal: React.FC = () => {
         .from('students')
         .select('*')
         .order('grade', { ascending: true })
-      setStudents(studentsData || [])
+      
+      // Calculate payment status for each student (reuse threeMonthsAgo from stats calculation above)
+      const { data: termFeePayments } = await supabase
+        .from('payments')
+        .select('student_id, created_at, paid_term_fees, status')
+        .eq('paid_term_fees', true)
+        .eq('status', 'succeeded')
+        .not('student_id', 'is', null)
+      
+      // Create a map of student payment status
+      const studentPaymentMap = new Map<number, { hasPaid: boolean; lastPaymentDate: string | null }>()
+      
+      if (termFeePayments) {
+        termFeePayments.forEach(payment => {
+          if (payment.student_id) {
+            const paymentDate = new Date(payment.created_at)
+            const existing = studentPaymentMap.get(payment.student_id)
+            
+            // Check if payment is within last 3 months
+            const isRecent = paymentDate >= threeMonthsAgo
+            
+            // Keep the most recent payment date
+            if (!existing) {
+              studentPaymentMap.set(payment.student_id, {
+                hasPaid: isRecent,
+                lastPaymentDate: payment.created_at
+              })
+            } else {
+              const existingDate = existing.lastPaymentDate ? new Date(existing.lastPaymentDate) : new Date(0)
+              const isNewer = paymentDate > existingDate
+              
+              if (isNewer) {
+                studentPaymentMap.set(payment.student_id, {
+                  hasPaid: isRecent || existing.hasPaid,
+                  lastPaymentDate: payment.created_at
+                })
+              } else if (existing.hasPaid && isRecent) {
+                // Keep existing date but update hasPaid status
+                studentPaymentMap.set(payment.student_id, {
+                  hasPaid: true,
+                  lastPaymentDate: existing.lastPaymentDate
+                })
+              }
+            }
+          }
+        })
+      }
+      
+      // Add payment status to students
+      const studentsWithPaymentStatus = (studentsData || []).map(student => ({
+        ...student,
+        hasPaidTermFees: studentPaymentMap.get(student.id)?.hasPaid || false,
+        lastPaymentDate: studentPaymentMap.get(student.id)?.lastPaymentDate || null
+      }))
+      
+      setStudents(studentsWithPaymentStatus)
 
       const { data: parentsData } = await supabase
         .from('parents')
@@ -987,7 +1052,55 @@ const AdminPortal: React.FC = () => {
             </TabsContent>
 
             {/* Students Tab */}
-            <TabsContent value="students" className="mt-6">
+            <TabsContent value="students" className="mt-6 space-y-6">
+              {/* Students List with Payment Status */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>All Students</CardTitle>
+                  <CardDescription>
+                    View all students and their term fee payment status
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    {students.map((student) => {
+                      const parent = parents.find(p => p.id === student.parent_id)
+                      return (
+                        <div key={student.id} className="border rounded-lg p-3">
+                          <div className="flex justify-between items-start">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <p className="font-medium">
+                                  {student.first_name} {student.last_name}
+                                </p>
+                                {student.hasPaidTermFees ? (
+                                  <Badge variant="default" className="bg-green-100 text-green-800 border-green-300">
+                                    Term Fees Paid
+                                  </Badge>
+                                ) : (
+                                  <Badge variant="secondary" className="bg-red-100 text-red-800 border-red-300">
+                                    Term Fees Unpaid
+                                  </Badge>
+                                )}
+                              </div>
+                              <p className="text-sm text-gray-600">
+                                {student.grade} • {parent?.parent1_first_name} {parent?.parent1_last_name}
+                              </p>
+                              {student.lastPaymentDate && (
+                                <p className="text-xs text-gray-500 mt-1">
+                                  Last payment: {new Date(student.lastPaymentDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Assign Students to Teachers */}
               <Card>
                 <CardHeader>
                   <CardTitle>Assign Students to Teachers</CardTitle>
@@ -1039,11 +1152,27 @@ const AdminPortal: React.FC = () => {
                               className="cursor-pointer"
                             />
                             <div className="flex-1">
-                              <p className="font-medium">
-                                {student.first_name} {student.last_name}
-                              </p>
+                              <div className="flex items-center gap-2">
+                                <p className="font-medium">
+                                  {student.first_name} {student.last_name}
+                                </p>
+                                {student.hasPaidTermFees ? (
+                                  <Badge variant="default" className="bg-green-100 text-green-800 border-green-300">
+                                    Paid
+                                  </Badge>
+                                ) : (
+                                  <Badge variant="secondary" className="bg-red-100 text-red-800 border-red-300">
+                                    Unpaid
+                                  </Badge>
+                                )}
+                              </div>
                               <p className="text-sm text-gray-600">
                                 {student.grade} • {parent?.parent1_first_name} {parent?.parent1_last_name}
+                                {student.lastPaymentDate && (
+                                  <span className="ml-2 text-xs">
+                                    (Last paid: {new Date(student.lastPaymentDate).toLocaleDateString()})
+                                  </span>
+                                )}
                               </p>
                             </div>
                           </div>
@@ -1152,6 +1281,36 @@ const AdminPortal: React.FC = () => {
                   >
                     {loading ? 'Syncing...' : 'Sync Stripe Customers'}
                   </Button>
+                  <Button
+                    variant="default"
+                    className="bg-blue-600 hover:bg-blue-700"
+                    onClick={() => {
+                      setBulkInvoiceMode('all')
+                      setShowBulkInvoiceDialog(true)
+                    }}
+                    disabled={loading}
+                  >
+                    Bulk Invoice All Parents
+                  </Button>
+                  <Button
+                    variant="default"
+                    className="bg-purple-600 hover:bg-purple-700"
+                    onClick={() => {
+                      if (selectedParentsForInvoice.length === 0) {
+                        toast({
+                          title: 'No Parents Selected',
+                          description: 'Please select at least one parent from the list below.',
+                          variant: 'destructive',
+                        })
+                        return
+                      }
+                      setBulkInvoiceMode('selected')
+                      setShowBulkInvoiceDialog(true)
+                    }}
+                    disabled={loading || selectedParentsForInvoice.length === 0}
+                  >
+                    Invoice Selected ({selectedParentsForInvoice.length})
+                  </Button>
                 </div>
                 <div className="space-y-1">
                   <p className="text-sm text-gray-600">
@@ -1162,27 +1321,200 @@ const AdminPortal: React.FC = () => {
                     <strong>Sync:</strong> Verifies all existing Stripe customer IDs against Stripe. 
                     Invalid or deleted customers will be cleared from the database and recreated if possible.
                   </p>
+                  <p className="text-sm text-gray-600">
+                    <strong>Bulk Invoice:</strong> Creates and sends invoices to all parents with Stripe customer IDs. 
+                    Each parent will be invoiced for term fees for all their students. Invoices will attempt to charge automatically.
+                  </p>
                 </div>
               </div>
+              
+              {/* Bulk Invoice Dialog */}
+              <Dialog open={showBulkInvoiceDialog} onOpenChange={setShowBulkInvoiceDialog}>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>
+                      {bulkInvoiceMode === 'all' ? 'Bulk Invoice All Parents' : `Invoice Selected Parents (${selectedParentsForInvoice.length})`}
+                    </DialogTitle>
+                    <DialogDescription>
+                      {bulkInvoiceMode === 'all' 
+                        ? 'This will create invoices for all parents with Stripe customer IDs. Each invoice will include term fees for all their students.'
+                        : `This will create invoices for ${selectedParentsForInvoice.length} selected parent(s). Each invoice will include term fees for all their students.`
+                      }
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4 py-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="days-until-due">Days Until Due</Label>
+                      <Input
+                        id="days-until-due"
+                        type="number"
+                        min="0"
+                        max="365"
+                        value={bulkInvoiceDays}
+                        onChange={(e) => setBulkInvoiceDays(parseInt(e.target.value) || 30)}
+                      />
+                      <p className="text-xs text-gray-500">
+                        Number of days until the invoice is due. Set to 0 for immediate payment.
+                      </p>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="send-emails"
+                        checked={bulkInvoiceSendEmails}
+                        onCheckedChange={(checked) => setBulkInvoiceSendEmails(checked === true)}
+                      />
+                      <Label htmlFor="send-emails" className="cursor-pointer">
+                        Send invoice emails to parents
+                      </Label>
+                    </div>
+                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                      <p className="text-sm text-yellow-800">
+                        <strong>Note:</strong> This will create invoices for all parents with Stripe customer IDs. 
+                        Stripe will attempt to automatically charge saved payment methods. 
+                        Parents without saved payment methods will receive an invoice to pay manually.
+                      </p>
+                    </div>
+                    <div className="flex justify-end gap-2">
+                      <Button variant="outline" onClick={() => setShowBulkInvoiceDialog(false)}>
+                        Cancel
+                      </Button>
+                      <Button
+                        onClick={async () => {
+                          const confirmMessage = bulkInvoiceMode === 'all'
+                            ? 'This will create invoices for all parents with Stripe customer IDs. Continue?'
+                            : `This will create invoices for ${selectedParentsForInvoice.length} selected parent(s). Continue?`
+                          
+                          if (!confirm(confirmMessage)) {
+                            return
+                          }
+                          
+                          setBulkInvoiceLoading(true)
+                          try {
+                            const requestBody: any = {
+                              daysUntilDue: bulkInvoiceDays,
+                              sendEmails: bulkInvoiceSendEmails,
+                            }
+                            
+                            // Add parent IDs if invoicing selected parents
+                            if (bulkInvoiceMode === 'selected') {
+                              requestBody.parentIds = selectedParentsForInvoice
+                            }
+                            
+                            const response = await fetch(
+                              `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/bulk-invoice`,
+                              {
+                                method: 'POST',
+                                headers: {
+                                  'Content-Type': 'application/json',
+                                  Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+                                },
+                                body: JSON.stringify(requestBody),
+                              }
+                            )
+
+                            if (!response.ok) {
+                              const errorData = await response.json().catch(() => ({}))
+                              throw new Error(errorData.error || 'Failed to create bulk invoices')
+                            }
+
+                            const data = await response.json()
+                            
+                            if (data.failed && data.failed.length > 0) {
+                              toast({
+                                title: 'Partial Success',
+                                description: `Created ${data.succeeded || 0} invoice(s) successfully. ${data.failed.length} failed. Check console for details.`,
+                                variant: 'default',
+                              })
+                              console.log('Failed invoices:', data.results.failed)
+                            } else {
+                              toast({
+                                title: 'Success',
+                                description: `Successfully created ${data.succeeded || 0} invoice(s) for all parents.`,
+                              })
+                            }
+                            
+                            setShowBulkInvoiceDialog(false)
+                            setSelectedParentsForInvoice([]) // Clear selection after invoicing
+                            loadDashboardData()
+                          } catch (err: any) {
+                            toast({
+                              title: 'Error',
+                              description: err.message || 'Failed to create bulk invoices.',
+                              variant: 'destructive',
+                            })
+                          } finally {
+                            setBulkInvoiceLoading(false)
+                          }
+                        }}
+                        disabled={bulkInvoiceLoading}
+                      >
+                        {bulkInvoiceLoading ? 'Creating Invoices...' : 'Create Invoices'}
+                      </Button>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
               <Card>
                 <CardHeader>
-                  <CardTitle>All Parents</CardTitle>
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <CardTitle>All Parents</CardTitle>
+                      <CardDescription>
+                        Select parents to invoice individually
+                      </CardDescription>
+                    </div>
+                    {selectedParentsForInvoice.length > 0 && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setSelectedParentsForInvoice([])}
+                      >
+                        Clear Selection ({selectedParentsForInvoice.length})
+                      </Button>
+                    )}
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-2">
                     {parents.map((parent) => {
                       const parentStudents = students.filter(s => s.parent_id === parent.id)
+                      const isSelected = selectedParentsForInvoice.includes(parent.id)
+                      const hasStripeCustomer = !!parent.stripe_customer_id
                       return (
-                        <div key={parent.id} className="border rounded-lg p-3">
+                        <div
+                          key={parent.id}
+                          className={`border rounded-lg p-3 cursor-pointer transition-colors ${
+                            isSelected ? 'bg-primary/10 border-primary' : 'hover:bg-gray-50'
+                          } ${!hasStripeCustomer ? 'opacity-60' : ''}`}
+                          onClick={() => {
+                            if (!hasStripeCustomer) return
+                            if (isSelected) {
+                              setSelectedParentsForInvoice(selectedParentsForInvoice.filter(id => id !== parent.id))
+                            } else {
+                              setSelectedParentsForInvoice([...selectedParentsForInvoice, parent.id])
+                            }
+                          }}
+                        >
                           <div className="flex justify-between items-start">
-                            <div className="flex-1">
-                              <p className="font-medium">
-                                {parent.parent1_first_name} {parent.parent1_last_name}
-                              </p>
-                              <p className="text-sm text-gray-600">{parent.parent1_email}</p>
-                              <p className="text-xs text-gray-500 mt-1">
-                                {parentStudents.length} student(s): {parentStudents.map(s => `${s.first_name} ${s.last_name}`).join(', ')}
-                              </p>
+                            <div className="flex items-start gap-3 flex-1">
+                              {hasStripeCustomer && (
+                                <input
+                                  type="checkbox"
+                                  checked={isSelected}
+                                  onChange={() => {}}
+                                  className="mt-1 cursor-pointer"
+                                  onClick={(e) => e.stopPropagation()}
+                                />
+                              )}
+                              <div className="flex-1">
+                                <p className="font-medium">
+                                  {parent.parent1_first_name} {parent.parent1_last_name}
+                                </p>
+                                <p className="text-sm text-gray-600">{parent.parent1_email}</p>
+                                <p className="text-xs text-gray-500 mt-1">
+                                  {parentStudents.length} student(s): {parentStudents.map(s => `${s.first_name} ${s.last_name}`).join(', ')}
+                                </p>
+                              </div>
                             </div>
                             <div className="flex flex-col gap-2 items-end">
                               {parent.stripe_customer_id ? (
