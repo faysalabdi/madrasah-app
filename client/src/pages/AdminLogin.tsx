@@ -33,29 +33,26 @@ const AdminLogin: React.FC = () => {
       }
 
       if (data.session) {
-        // Check if the logged-in user is a teacher (admins are teachers for now)
-        const { data: teacherData, error: teacherError } = await supabase
-          .from('teachers')
+        // Check if the logged-in user is an admin
+        const { data: adminData, error: adminError } = await supabase
+          .from('admins')
           .select('id, first_name, last_name, email')
           .eq('email', email.trim().toLowerCase())
           .maybeSingle()
 
-        if (teacherError && teacherError.code !== 'PGRST116') {
-          throw teacherError
+        if (adminError && adminError.code !== 'PGRST116') {
+          throw adminError
         }
 
-        if (!teacherData) {
-          // For now, allow any authenticated user to access admin
-          // In production, add an is_admin flag check here
-          localStorage.setItem('adminEmail', email.trim().toLowerCase())
-          localStorage.setItem('adminName', 'Administrator')
-          setLocation('/admin-portal')
-        } else {
-          localStorage.setItem('adminId', teacherData.id.toString())
-          localStorage.setItem('adminEmail', email.trim().toLowerCase())
-          localStorage.setItem('adminName', `${teacherData.first_name} ${teacherData.last_name}`)
-          setLocation('/admin-portal')
+        if (!adminData) {
+          throw new Error('Access denied. You do not have admin privileges.')
         }
+
+        // User is an admin, allow access
+        localStorage.setItem('adminId', adminData.id.toString())
+        localStorage.setItem('adminEmail', email.trim().toLowerCase())
+        localStorage.setItem('adminName', `${adminData.first_name} ${adminData.last_name}`)
+        setLocation('/admin-portal')
       }
     } catch (err: any) {
       setError(err.message || 'Login failed. Please check your credentials.')

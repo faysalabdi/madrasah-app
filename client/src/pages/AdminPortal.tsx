@@ -92,6 +92,15 @@ const AdminPortal: React.FC = () => {
     password: '',
   })
 
+  // Admins
+  const [admins, setAdmins] = useState<any[]>([])
+  const [showCreateAdmin, setShowCreateAdmin] = useState(false)
+  const [newAdmin, setNewAdmin] = useState({
+    first_name: '',
+    last_name: '',
+    email: '',
+  })
+
   // Students
   const [students, setStudents] = useState<Student[]>([])
   const [parents, setParents] = useState<Parent[]>([])
@@ -155,7 +164,33 @@ const AdminPortal: React.FC = () => {
         setLocation('/admin-login')
         return
       }
+
+      // Verify the user is actually an admin
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user?.email) {
+        setLocation('/admin-login')
+        return
+      }
+
+      const { data: adminData, error: adminError } = await supabase
+        .from('admins')
+        .select('id, first_name, last_name, email')
+        .eq('email', user.email.toLowerCase())
+        .maybeSingle()
+
+      if (adminError || !adminData) {
+        // User is not an admin, redirect to login
+        await supabase.auth.signOut()
+        localStorage.removeItem('adminId')
+        localStorage.removeItem('adminEmail')
+        localStorage.removeItem('adminName')
+        setLocation('/admin-login')
+        return
+      }
+
+      // User is an admin, load dashboard
       loadDashboardData()
+      loadAdmins()
     }
     checkAuth()
   }, [setLocation])
@@ -434,6 +469,185 @@ const AdminPortal: React.FC = () => {
       toast({
         title: 'Error',
         description: err.message || 'Failed to delete student',
+        variant: 'destructive',
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const loadAdmins = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('admins')
+        .select('*')
+        .order('created_at', { ascending: false })
+
+      if (error) throw error
+      setAdmins(data || [])
+    } catch (err: any) {
+      console.error('Failed to load admins:', err)
+    }
+  }
+
+  const handleCreateAdmin = async () => {
+    if (!newAdmin.first_name || !newAdmin.last_name || !newAdmin.email) {
+      toast({
+        title: 'Error',
+        description: 'Please fill in all required fields.',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    try {
+      setLoading(true)
+
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-admin`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          },
+          body: JSON.stringify(newAdmin),
+        }
+      )
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to create admin')
+      }
+
+      toast({
+        title: 'Success',
+        description: `Admin ${newAdmin.first_name} ${newAdmin.last_name} created successfully.`,
+      })
+
+      setNewAdmin({ first_name: '', last_name: '', email: '' })
+      setShowCreateAdmin(false)
+      loadAdmins()
+    } catch (err: any) {
+      toast({
+        title: 'Error',
+        description: err.message || 'Failed to create admin',
+        variant: 'destructive',
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleDeleteAdmin = async (admin: any) => {
+    if (!confirm(`Are you sure you want to delete admin ${admin.first_name} ${admin.last_name}? This action cannot be undone.`)) {
+      return
+    }
+
+    try {
+      setLoading(true)
+
+      // Delete admin record
+      const { error: deleteError } = await supabase
+        .from('admins')
+        .delete()
+        .eq('id', admin.id)
+
+      if (deleteError) throw deleteError
+
+      // Delete auth user if exists (using Edge Function)
+      try {
+        await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/delete-user`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+            },
+            body: JSON.stringify({ email: admin.email }),
+          }
+        )
+      } catch (authErr) {
+        console.error('Failed to delete auth user:', authErr)
+        // Continue even if auth deletion fails
+      }
+
+      toast({
+        title: 'Success',
+        description: `Admin ${admin.first_name} ${admin.last_name} deleted successfully.`,
+      })
+
+      loadAdmins()
+    } catch (err: any) {
+      toast({
+        title: 'Error',
+        description: err.message || 'Failed to delete admin',
+        variant: 'destructive',
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handlePromoteTeacherToAdmin = async (teacher: Teacher) => {
+    if (!confirm(`Are you sure you want to promote ${teacher.first_name} ${teacher.last_name} to admin? They will gain access to the admin portal.`)) {
+      return
+    }
+
+    try {
+      setLoading(true)
+
+      // Check if teacher is already an admin
+      const { data: existingAdmin } = await supabase
+        .from('admins')
+        .select('id')
+        .eq('email', teacher.email.toLowerCase())
+        .maybeSingle()
+
+      if (existingAdmin) {
+        toast({
+          title: 'Already Admin',
+          description: `${teacher.first_name} ${teacher.last_name} is already an admin.`,
+          variant: 'default',
+        })
+        return
+      }
+
+      // Create admin record using the Edge Function
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-admin`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          },
+          body: JSON.stringify({
+            email: teacher.email,
+            first_name: teacher.first_name,
+            last_name: teacher.last_name,
+          }),
+        }
+      )
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to promote teacher to admin')
+      }
+
+      toast({
+        title: 'Success',
+        description: `${teacher.first_name} ${teacher.last_name} has been promoted to admin.`,
+      })
+
+      loadAdmins()
+    } catch (err: any) {
+      toast({
+        title: 'Error',
+        description: err.message || 'Failed to promote teacher to admin',
         variant: 'destructive',
       })
     } finally {
@@ -1004,12 +1218,13 @@ const AdminPortal: React.FC = () => {
           )}
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-5">
+            <TabsList className="grid w-full grid-cols-6">
               <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
               <TabsTrigger value="payments">Payments</TabsTrigger>
               <TabsTrigger value="teachers">Teachers</TabsTrigger>
               <TabsTrigger value="students">Students</TabsTrigger>
               <TabsTrigger value="parents">Parents</TabsTrigger>
+              <TabsTrigger value="admins">Admins</TabsTrigger>
             </TabsList>
 
             {/* Dashboard Tab */}
@@ -1433,34 +1648,53 @@ const AdminPortal: React.FC = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-2">
-                    {teachers.map((teacher) => (
-                      <div key={teacher.id} className="border rounded-lg p-3 flex justify-between items-center">
-                        <div className="flex-1">
-                          <p 
-                            className="font-medium cursor-pointer hover:text-primary hover:underline"
-                            onClick={() => handleTeacherAttendanceClick(teacher)}
-                          >
-                            {teacher.first_name} {teacher.last_name}
-                          </p>
-                          <p className="text-sm text-gray-600">{teacher.email}</p>
-                          {teacher.mobile && (
-                            <p className="text-xs text-gray-500">{teacher.mobile}</p>
-                          )}
+                    {teachers.map((teacher) => {
+                      const isAdmin = admins.some(admin => admin.email.toLowerCase() === teacher.email.toLowerCase())
+                      return (
+                        <div key={teacher.id} className="border rounded-lg p-3 flex justify-between items-center">
+                          <div className="flex-1">
+                            <p 
+                              className="font-medium cursor-pointer hover:text-primary hover:underline"
+                              onClick={() => handleTeacherAttendanceClick(teacher)}
+                            >
+                              {teacher.first_name} {teacher.last_name}
+                            </p>
+                            <p className="text-sm text-gray-600">{teacher.email}</p>
+                            {teacher.mobile && (
+                              <p className="text-xs text-gray-500">{teacher.mobile}</p>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {isAdmin ? (
+                              <Badge variant="default" className="bg-purple-600">Admin</Badge>
+                            ) : (
+                              <>
+                                <Badge variant="outline">Teacher</Badge>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handlePromoteTeacherToAdmin(teacher)}
+                                  disabled={loading}
+                                  className="text-purple-600 hover:text-purple-700 hover:bg-purple-50"
+                                  title="Promote to Admin"
+                                >
+                                  <User className="h-4 w-4" />
+                                </Button>
+                              </>
+                            )}
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDeleteTeacher(teacher)}
+                              disabled={loading}
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <Badge variant="outline">Teacher</Badge>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDeleteTeacher(teacher)}
-                            disabled={loading}
-                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
+                      )
+                    })}
                   </div>
                 </CardContent>
               </Card>
@@ -2127,6 +2361,104 @@ const AdminPortal: React.FC = () => {
                         </div>
                       )
                     })}
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Admins Tab */}
+            <TabsContent value="admins" className="mt-6">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-2xl font-bold">Admin Management</h2>
+                <Dialog open={showCreateAdmin} onOpenChange={setShowCreateAdmin}>
+                  <DialogTrigger asChild>
+                    <Button>Create New Admin</Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Create New Admin</DialogTitle>
+                      <DialogDescription>
+                        Add a new administrator. The email must match an existing user account in the system.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                      <div className="space-y-2">
+                        <Label>First Name</Label>
+                        <Input
+                          value={newAdmin.first_name}
+                          onChange={(e) => setNewAdmin({ ...newAdmin, first_name: e.target.value })}
+                          placeholder="John"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Last Name</Label>
+                        <Input
+                          value={newAdmin.last_name}
+                          onChange={(e) => setNewAdmin({ ...newAdmin, last_name: e.target.value })}
+                          placeholder="Doe"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Email Address</Label>
+                        <Input
+                          type="email"
+                          value={newAdmin.email}
+                          onChange={(e) => setNewAdmin({ ...newAdmin, email: e.target.value })}
+                          placeholder="admin@example.com"
+                        />
+                        <p className="text-xs text-gray-500">
+                          The user must already have an account with this email address.
+                        </p>
+                      </div>
+                      <div className="flex justify-end gap-2">
+                        <Button variant="outline" onClick={() => setShowCreateAdmin(false)}>
+                          Cancel
+                        </Button>
+                        <Button onClick={handleCreateAdmin} disabled={loading}>
+                          {loading ? 'Creating...' : 'Create Admin'}
+                        </Button>
+                      </div>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              </div>
+              <Card>
+                <CardHeader>
+                  <CardTitle>All Admins</CardTitle>
+                  <CardDescription>
+                    Administrators who can access the admin portal
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    {admins.map((admin) => (
+                      <div key={admin.id} className="border rounded-lg p-3 flex justify-between items-center">
+                        <div className="flex-1">
+                          <p className="font-medium">
+                            {admin.first_name} {admin.last_name}
+                          </p>
+                          <p className="text-sm text-gray-600">{admin.email}</p>
+                          <p className="text-xs text-gray-500">
+                            Created: {new Date(admin.created_at).toLocaleDateString()}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline">Admin</Badge>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeleteAdmin(admin)}
+                            disabled={loading}
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                    {admins.length === 0 && (
+                      <p className="text-gray-500 text-center py-8">No admins found.</p>
+                    )}
                   </div>
                 </CardContent>
               </Card>
