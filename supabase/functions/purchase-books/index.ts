@@ -12,11 +12,18 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { parentId, studentId, parentEmail, bookProducts } = await req.json()
+    const { parentId, studentIds, parentEmail, bookProducts } = await req.json()
 
     if (!parentId || !parentEmail || !bookProducts || bookProducts.length === 0) {
       return new Response(
         JSON.stringify({ error: "parentId, parentEmail, and bookProducts are required" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      )
+    }
+
+    if (!studentIds || !Array.isArray(studentIds) || studentIds.length === 0) {
+      return new Response(
+        JSON.stringify({ error: "studentIds array is required and must contain at least one student ID" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       )
     }
@@ -74,6 +81,8 @@ Deno.serve(async (req) => {
     const frontendUrl = Deno.env.get("FRONTEND_URL") || "http://localhost:5173"
 
     // Create checkout session
+    // Pass student IDs as comma-separated string in metadata for webhook to process
+    const studentIdsStr = studentIds.join(",")
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       mode: "payment",
@@ -84,12 +93,17 @@ Deno.serve(async (req) => {
       metadata: {
         parent_id: parentId.toString(),
         payment_type: "books",
-        student_id: studentId ? studentId.toString() : "",
+        student_ids: studentIdsStr, // Comma-separated list of student IDs
+        paid_for_books: "true",
+        paid_term_fees: "false",
       },
       payment_intent_data: {
         metadata: {
           parent_id: parentId.toString(),
           payment_type: "books",
+          student_ids: studentIdsStr,
+          paid_for_books: "true",
+          paid_term_fees: "false",
         },
         receipt_email: parentEmail,
       },

@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
-import { Loader2 } from 'lucide-react'
+import { Loader2, Trash2 } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -30,6 +30,7 @@ interface Parent {
   parent1_first_name: string
   parent1_last_name: string
   parent1_email: string
+  stripe_customer_id: string | null
 }
 
 interface Teacher {
@@ -169,7 +170,7 @@ const AdminPortal: React.FC = () => {
 
       const { data: parentsData } = await supabase
         .from('parents')
-        .select('id, parent_id, parent1_first_name, parent1_last_name, parent1_email')
+        .select('id, parent_id, parent1_first_name, parent1_last_name, parent1_email, stripe_customer_id')
         .order('parent1_last_name', { ascending: true })
       setParents(parentsData || [])
 
@@ -305,7 +306,7 @@ const AdminPortal: React.FC = () => {
       }
 
       // Get term fee amount (you might want to fetch this from Stripe or set a default)
-      const termFeeAmount = 500 // Default term fee - adjust as needed
+      const termFeeAmount = 200 // Default term fee - adjust as needed
       const totalAmount = (newPayment.term_fees ? termFeeAmount * selectedStudentsForPayment.length : 0) + totalBookAmount
 
       // Create payment records for each student
@@ -738,6 +739,7 @@ const AdminPortal: React.FC = () => {
               <Card>
                 <CardHeader>
                   <CardTitle>Recent Payments</CardTitle>
+                  <CardDescription>Click the trash icon to delete a payment record</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-2">
@@ -746,7 +748,7 @@ const AdminPortal: React.FC = () => {
                       const student = payment.student_id ? students.find(s => s.id === payment.student_id) : null
                       return (
                         <div key={payment.id} className="border rounded-lg p-3 flex justify-between items-center">
-                          <div>
+                          <div className="flex-1">
                             <p className="font-medium">
                               ${payment.amount} {payment.currency.toUpperCase()}
                             </p>
@@ -758,12 +760,44 @@ const AdminPortal: React.FC = () => {
                               {new Date(payment.created_at).toLocaleDateString()}
                             </p>
                           </div>
-                          <div className="flex gap-2">
+                          <div className="flex gap-2 items-center">
                             <Badge variant={payment.status === 'succeeded' ? 'default' : 'secondary'}>
                               {payment.status}
                             </Badge>
                             {payment.paid_term_fees && <Badge variant="outline">Term Fees</Badge>}
                             {payment.paid_for_books && <Badge variant="outline">Books</Badge>}
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={async () => {
+                                if (confirm(`Are you sure you want to delete this payment record for $${payment.amount}? This action cannot be undone.`)) {
+                                  try {
+                                    const { error } = await supabase
+                                      .from('payments')
+                                      .delete()
+                                      .eq('id', payment.id)
+                                    
+                                    if (error) throw error
+                                    
+                                    toast({
+                                      title: 'Success',
+                                      description: 'Payment record deleted successfully.',
+                                    })
+                                    
+                                    loadDashboardData()
+                                  } catch (err: any) {
+                                    toast({
+                                      title: 'Error',
+                                      description: err.message || 'Failed to delete payment record.',
+                                      variant: 'destructive',
+                                    })
+                                  }
+                                }
+                              }}
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
                           </div>
                         </div>
                       )
@@ -951,6 +985,105 @@ const AdminPortal: React.FC = () => {
 
             {/* Parents Tab */}
             <TabsContent value="parents" className="mt-6">
+              <div className="mb-4 space-y-3">
+                <div className="flex gap-2">
+                  <Button
+                    onClick={async () => {
+                      if (confirm('This will create Stripe customers for all parents who don\'t have one yet. This allows them to receive payment notifications from Stripe. Continue?')) {
+                        setLoading(true)
+                        try {
+                          const response = await fetch(
+                            `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-stripe-customers`,
+                            {
+                              method: 'POST',
+                              headers: {
+                                'Content-Type': 'application/json',
+                                Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+                              },
+                            }
+                          )
+
+                          if (!response.ok) {
+                            const errorData = await response.json().catch(() => ({}))
+                            throw new Error(errorData.error || 'Failed to create Stripe customers')
+                          }
+
+                          const data = await response.json()
+                          toast({
+                            title: 'Success',
+                            description: `Created Stripe customers for ${data.created || 0} parent(s). ${data.skipped || 0} already had customers.`,
+                          })
+                          loadDashboardData()
+                        } catch (err: any) {
+                          toast({
+                            title: 'Error',
+                            description: err.message || 'Failed to create Stripe customers.',
+                            variant: 'destructive',
+                          })
+                        } finally {
+                          setLoading(false)
+                        }
+                      }
+                    }}
+                    disabled={loading}
+                  >
+                    {loading ? 'Creating...' : 'Create Stripe Customers for All Parents'}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={async () => {
+                      if (confirm('This will sync all parent Stripe customer IDs with Stripe. Invalid or deleted customers will be cleared and recreated. Continue?')) {
+                        setLoading(true)
+                        try {
+                          const response = await fetch(
+                            `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/sync-stripe-customers`,
+                            {
+                              method: 'POST',
+                              headers: {
+                                'Content-Type': 'application/json',
+                                Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+                              },
+                            }
+                          )
+
+                          if (!response.ok) {
+                            const errorData = await response.json().catch(() => ({}))
+                            throw new Error(errorData.error || 'Failed to sync Stripe customers')
+                          }
+
+                          const data = await response.json()
+                          toast({
+                            title: 'Success',
+                            description: `Synced ${data.total || 0} parent(s): ${data.valid || 0} valid, ${data.invalid || 0} invalid (cleared), ${data.recreated || 0} recreated.`,
+                          })
+                          loadDashboardData()
+                        } catch (err: any) {
+                          toast({
+                            title: 'Error',
+                            description: err.message || 'Failed to sync Stripe customers.',
+                            variant: 'destructive',
+                          })
+                        } finally {
+                          setLoading(false)
+                        }
+                      }
+                    }}
+                    disabled={loading}
+                  >
+                    {loading ? 'Syncing...' : 'Sync Stripe Customers'}
+                  </Button>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-sm text-gray-600">
+                    <strong>Create:</strong> Creates Stripe customer records for all parents who don't have one yet. 
+                    This enables Stripe billing/invoicing features and payment notifications.
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    <strong>Sync:</strong> Verifies all existing Stripe customer IDs against Stripe. 
+                    Invalid or deleted customers will be cleared from the database and recreated if possible.
+                  </p>
+                </div>
+              </div>
               <Card>
                 <CardHeader>
                   <CardTitle>All Parents</CardTitle>
@@ -962,7 +1095,7 @@ const AdminPortal: React.FC = () => {
                       return (
                         <div key={parent.id} className="border rounded-lg p-3">
                           <div className="flex justify-between items-start">
-                            <div>
+                            <div className="flex-1">
                               <p className="font-medium">
                                 {parent.parent1_first_name} {parent.parent1_last_name}
                               </p>
@@ -971,7 +1104,14 @@ const AdminPortal: React.FC = () => {
                                 {parentStudents.length} student(s): {parentStudents.map(s => `${s.first_name} ${s.last_name}`).join(', ')}
                               </p>
                             </div>
-                            <Badge variant="outline">Parent</Badge>
+                            <div className="flex flex-col gap-2 items-end">
+                              {parent.stripe_customer_id ? (
+                                <Badge variant="default" className="bg-green-500">Stripe Customer</Badge>
+                              ) : (
+                                <Badge variant="secondary">No Stripe Customer</Badge>
+                              )}
+                              <Badge variant="outline">Parent</Badge>
+                            </div>
                           </div>
                         </div>
                       )

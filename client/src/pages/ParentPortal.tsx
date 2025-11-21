@@ -76,6 +76,7 @@ const ParentPortal: React.FC = () => {
   const [purchasingBooks, setPurchasingBooks] = useState(false)
   const [showBookDialog, setShowBookDialog] = useState(false)
   const [selectedBooks, setSelectedBooks] = useState<{ [key: string]: boolean }>({})
+  const [selectedStudentsForBooks, setSelectedStudentsForBooks] = useState<number[]>([])
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null)
   const [showStudentDetail, setShowStudentDetail] = useState(false)
   
@@ -388,6 +389,11 @@ const ParentPortal: React.FC = () => {
       return
     }
 
+    if (selectedStudentsForBooks.length === 0) {
+      setError('Please select at least one student to order books for')
+      return
+    }
+
     setPurchasingBooks(true)
     try {
       const response = await fetch(
@@ -401,6 +407,7 @@ const ParentPortal: React.FC = () => {
           body: JSON.stringify({
             parentId: parent.id,
             parentEmail: parent.parent1_email,
+            studentIds: selectedStudentsForBooks, // Array of student IDs
             bookProducts: selectedBookProducts.map(book => ({
               priceId: book.priceId,
               quantity: 1,
@@ -662,11 +669,17 @@ const ParentPortal: React.FC = () => {
             <CardHeader>
               <CardTitle>Order Books</CardTitle>
               <CardDescription>
-                Purchase books for your children. Each student receives all selected books.
+                Purchase books for your children. Select which students need books and which books to purchase.
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Dialog open={showBookDialog} onOpenChange={setShowBookDialog}>
+              <Dialog open={showBookDialog} onOpenChange={(open) => {
+                setShowBookDialog(open)
+                if (!open) {
+                  setSelectedBooks({})
+                  setSelectedStudentsForBooks([])
+                }
+              }}>
                 <DialogTrigger asChild>
                   <Button variant="outline" className="w-full md:w-auto">
                     Order Books
@@ -676,55 +689,99 @@ const ParentPortal: React.FC = () => {
                   <DialogHeader>
                     <DialogTitle>Order Books</DialogTitle>
                     <DialogDescription>
-                      Select the books you would like to purchase for your children
+                      Select which students need books and which books to purchase
                     </DialogDescription>
                   </DialogHeader>
-                  <div className="space-y-4 mt-4">
-                    {bookProducts.length === 0 ? (
-                      <p className="text-gray-500">Loading books...</p>
-                    ) : (
-                      bookProducts.map((book) => (
-                        <div key={book.id} className="flex items-start space-x-3 p-3 border rounded-lg">
-                          <Checkbox
-                            id={book.id}
-                            checked={selectedBooks[book.id] || false}
-                            onCheckedChange={(checked) => {
-                              setSelectedBooks(prev => ({
-                                ...prev,
-                                [book.id]: checked === true,
-                              }))
-                            }}
-                          />
-                          <div className="flex-1">
-                            <label
-                              htmlFor={book.id}
-                              className="font-medium cursor-pointer"
-                            >
-                              {book.name}
-                            </label>
-                            {book.description && (
-                              <p className="text-sm text-gray-600 mt-1">{book.description}</p>
-                            )}
-                            <p className="text-sm font-semibold text-primary mt-1">
-                              ${book.price.toFixed(2)} AUD
-                            </p>
-                          </div>
+                  <div className="space-y-6 mt-4">
+                    {/* Student Selection */}
+                    <div>
+                      <h3 className="font-semibold mb-3">Select Students</h3>
+                      <div className="space-y-2">
+                        {students.length === 0 ? (
+                          <p className="text-gray-500">No students enrolled.</p>
+                        ) : (
+                          students.map((student) => (
+                            <div key={student.id} className="flex items-center space-x-2 p-2 border rounded-lg">
+                              <Checkbox
+                                id={`student-book-${student.id}`}
+                                checked={selectedStudentsForBooks.includes(student.id)}
+                                onCheckedChange={(checked) => {
+                                  if (checked) {
+                                    setSelectedStudentsForBooks(prev => [...prev, student.id])
+                                  } else {
+                                    setSelectedStudentsForBooks(prev => prev.filter(id => id !== student.id))
+                                  }
+                                }}
+                              />
+                              <label
+                                htmlFor={`student-book-${student.id}`}
+                                className="flex-1 cursor-pointer font-medium"
+                              >
+                                {student.first_name} {student.last_name} ({student.grade})
+                              </label>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Book Selection */}
+                    <div>
+                      <h3 className="font-semibold mb-3">Select Books</h3>
+                      {bookProducts.length === 0 ? (
+                        <p className="text-gray-500">Loading books...</p>
+                      ) : (
+                        <div className="space-y-2">
+                          {bookProducts.map((book) => (
+                            <div key={book.id} className="flex items-start space-x-3 p-3 border rounded-lg">
+                              <Checkbox
+                                id={book.id}
+                                checked={selectedBooks[book.id] || false}
+                                onCheckedChange={(checked) => {
+                                  setSelectedBooks(prev => ({
+                                    ...prev,
+                                    [book.id]: checked === true,
+                                  }))
+                                }}
+                              />
+                              <div className="flex-1">
+                                <label
+                                  htmlFor={book.id}
+                                  className="font-medium cursor-pointer"
+                                >
+                                  {book.name}
+                                </label>
+                                {book.description && (
+                                  <p className="text-sm text-gray-600 mt-1">{book.description}</p>
+                                )}
+                                <p className="text-sm font-semibold text-primary mt-1">
+                                  ${book.price.toFixed(2)} AUD
+                                </p>
+                              </div>
+                            </div>
+                          ))}
                         </div>
-                      ))
-                    )}
-                    <div className="flex justify-end gap-2 pt-4">
+                      )}
+                    </div>
+
+                    <div className="flex justify-end gap-2 pt-4 border-t">
                       <Button
                         variant="outline"
                         onClick={() => {
                           setShowBookDialog(false)
                           setSelectedBooks({})
+                          setSelectedStudentsForBooks([])
                         }}
                       >
                         Cancel
                       </Button>
                       <Button
                         onClick={handlePurchaseBooks}
-                        disabled={purchasingBooks || Object.values(selectedBooks).every(v => !v)}
+                        disabled={
+                          purchasingBooks || 
+                          Object.values(selectedBooks).every(v => !v) ||
+                          selectedStudentsForBooks.length === 0
+                        }
                       >
                         {purchasingBooks ? 'Processing...' : 'Purchase Selected Books'}
                       </Button>

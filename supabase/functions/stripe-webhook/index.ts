@@ -140,6 +140,28 @@ Deno.serve(async (request) => {
                 metadata: { ...session.metadata, student_id: sid.toString() },
               })
             }
+          } else if (paidForBooks && studentIdsStr && !paidTermFees) {
+            // Books only with multiple students - create one record per student
+            const studentIds = studentIdsStr.split(",").filter(Boolean).map(id => parseInt(id.trim()))
+            // Calculate book amount per student (total books cost divided by number of students)
+            const amountPerStudent = (session.amount_total || 0) / 100 / studentIds.length
+            
+            // Create one payment record per student for books
+            for (const sid of studentIds) {
+              await supabaseClient.from("payments").insert({
+                parent_id: parseInt(parentId),
+                student_id: sid,
+                stripe_checkout_session_id: session.id,
+                stripe_payment_intent_id: session.payment_intent as string,
+                amount: amountPerStudent,
+                currency: session.currency || "aud",
+                payment_type: paymentType,
+                status: "succeeded",
+                paid_for_books: true,
+                paid_term_fees: false,
+                metadata: { ...session.metadata, student_id: sid.toString() },
+              })
+            }
           } else {
             // Single payment record (books only, or single student term fees)
             const studentId = studentIdStr ? parseInt(studentIdStr) : null
