@@ -1424,7 +1424,7 @@ const TeacherPortal: React.FC = () => {
                     <SelectContent className="max-h-[300px]">
                       {SURAHS.map((surah) => (
                         <SelectItem key={surah.number} value={surah.name}>
-                          {surah.number}. {surah.name} ({surah.ayahs} ayahs)
+                          {surah.number}. {surah.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -1436,88 +1436,25 @@ const TeacherPortal: React.FC = () => {
                     const selectedSurah = SURAHS.find(s => s.name === quranSurah)
                     if (!selectedSurah) return null
                     
-                    // For surahs with 50 or fewer ayahs, show all individual ayahs
-                    // For longer surahs, show ranges and allow custom input
-                    if (selectedSurah.ayahs <= 50) {
-                      return (
-                        <>
-                          <Select 
-                            value={quranAyah || ''} 
-                            onValueChange={setQuranAyah}
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select Ayah" />
-                            </SelectTrigger>
-                            <SelectContent className="max-h-[300px]">
-                              {Array.from({ length: selectedSurah.ayahs }, (_, i) => i + 1).map((ayah) => (
-                                <SelectItem key={ayah} value={ayah.toString()}>
-                                  Ayah {ayah}
-                                </SelectItem>
-                              ))}
-                              {/* Add range options for convenience */}
-                              {selectedSurah.ayahs > 10 && (
-                                <>
-                                  <SelectItem value="1-10">Ayahs 1-10</SelectItem>
-                                  {selectedSurah.ayahs > 20 && (
-                                    <SelectItem value="1-20">Ayahs 1-20</SelectItem>
-                                  )}
-                                </>
-                              )}
-                            </SelectContent>
-                          </Select>
-                          <p className="text-xs text-gray-500 mt-1">
-                            {selectedSurah.name} has {selectedSurah.ayahs} ayahs
-                          </p>
-                        </>
-                      )
-                    } else {
-                      // For longer surahs, provide range options and custom input
-                      return (
-                        <>
-                          <div className="flex gap-2">
-                            <div className="flex-1">
-                              <Select 
-                                value={quranAyah || ''} 
-                                onValueChange={setQuranAyah}
-                              >
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select Range or Enter Custom" />
-                              </SelectTrigger>
-                              <SelectContent className="max-h-[300px]">
-                                {/* Common ranges */}
-                                <SelectItem value="1-10">Ayahs 1-10</SelectItem>
-                                <SelectItem value="1-20">Ayahs 1-20</SelectItem>
-                                <SelectItem value="1-30">Ayahs 1-30</SelectItem>
-                                <SelectItem value="1-50">Ayahs 1-50</SelectItem>
-                                {selectedSurah.ayahs > 100 && (
-                                  <SelectItem value="1-100">Ayahs 1-100</SelectItem>
-                                )}
-                                {selectedSurah.ayahs > 200 && (
-                                  <SelectItem value="1-200">Ayahs 1-200</SelectItem>
-                                )}
-                                {/* Individual ayahs for first 20 */}
-                                {Array.from({ length: Math.min(20, selectedSurah.ayahs) }, (_, i) => i + 1).map((ayah) => (
-                                  <SelectItem key={ayah} value={ayah.toString()}>
-                                    Ayah {ayah}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                            </div>
-                            <Input
-                              type="text"
-                              value={quranAyah || ''}
-                              onChange={(e) => setQuranAyah(e.target.value)}
-                              placeholder="e.g., 25, 1-10, 50-60"
-                              className="flex-1"
-                            />
-                          </div>
-                          <p className="text-xs text-gray-500 mt-1">
-                            {selectedSurah.name} has {selectedSurah.ayahs} ayahs. Select a range or enter custom (e.g., "25" or "1-10" or "50-60")
-                          </p>
-                        </>
-                      )
-                    }
+                    return (
+                      <>
+                        <Select 
+                          value={quranAyah || ''} 
+                          onValueChange={setQuranAyah}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select Ayah" />
+                          </SelectTrigger>
+                          <SelectContent className="max-h-[300px]">
+                            {Array.from({ length: selectedSurah.ayahs }, (_, i) => i + 1).map((ayah) => (
+                              <SelectItem key={ayah} value={ayah.toString()}>
+                                {ayah}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </>
+                    )
                   })()}
                   {!quranSurah && (
                     <Input
