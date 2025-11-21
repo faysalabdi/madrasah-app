@@ -9,7 +9,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Loader2, User, LogOut, CreditCard } from 'lucide-react'
+import { Loader2, User, LogOut, CreditCard, CheckCircle2, Circle, Trash2, Calendar, BookOpen, FileText, UserCheck, Star, TrendingUp, Award } from 'lucide-react'
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart'
+import { PieChart, Pie, Cell, ResponsiveContainer, Legend } from 'recharts'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -29,6 +31,10 @@ interface Student {
   date_of_birth: string | null
   current_school: string | null
   quran_level: string | null
+  quran_page: number | null
+  quran_surah: string | null
+  quran_ayah: string | null
+  behavior_standing: string | null
 }
 
 interface Parent {
@@ -261,13 +267,24 @@ const ParentPortal: React.FC = () => {
     
     // Load student details
     try {
+      // Reload student data to get latest quran_page and behavior_standing
+      const { data: updatedStudent } = await supabase
+        .from('students')
+        .select('*')
+        .eq('id', student.id)
+        .single()
+      
+      if (updatedStudent) {
+        setSelectedStudent(updatedStudent as Student)
+      }
+
       // Load attendance
       const { data: attendanceData } = await supabase
         .from('attendance')
         .select('*')
         .eq('student_id', student.id)
         .order('date', { ascending: false })
-        .limit(30)
+        .limit(100)
 
       setAttendance(attendanceData || [])
 
@@ -297,12 +314,87 @@ const ParentPortal: React.FC = () => {
         .select('*')
         .eq('student_id', student.id)
         .order('created_at', { ascending: false })
-        .limit(20)
+        .limit(50)
 
       setStudentNotes(notesData || [])
     } catch (err) {
       console.error('Error loading student details:', err)
     }
+  }
+
+  // Calculate attendance statistics for pie chart
+  const getAttendanceChartData = () => {
+    if (!selectedStudent || attendance.length === 0) {
+      return []
+    }
+
+    const stats = {
+      presentWithUniform: attendance.filter(a => a.status === 'present_with_uniform').length,
+      presentNoUniform: attendance.filter(a => a.status === 'present_no_uniform').length,
+      lateUniform: attendance.filter(a => a.status === 'late_uniform').length,
+      lateNoUniform: attendance.filter(a => a.status === 'late_no_uniform').length,
+      absentWithExcuse: attendance.filter(a => a.status === 'absent_with_excuse').length,
+      absentNoExcuse: attendance.filter(a => a.status === 'absent_no_excuse').length,
+    }
+
+    const chartData = [
+      { name: 'Present (Uniform)', value: stats.presentWithUniform, color: '#22c55e' },
+      { name: 'Present (No Uniform)', value: stats.presentNoUniform, color: '#eab308' },
+      { name: 'Late (Uniform)', value: stats.lateUniform, color: '#f97316' },
+      { name: 'Late (No Uniform)', value: stats.lateNoUniform, color: '#f59e0b' },
+      { name: 'Absent (Excused)', value: stats.absentWithExcuse, color: '#3b82f6' },
+      { name: 'Absent (No Excuse)', value: stats.absentNoExcuse, color: '#ef4444' },
+    ].filter(item => item.value > 0) // Only show categories with data
+
+    return chartData
+  }
+
+  // Format Quran progress display
+  const getQuranProgressDisplay = () => {
+    if (!selectedStudent) return null
+
+    // Check if it's Quran (has surah/ayah) or Iqra (has level/page)
+    if (selectedStudent.quran_surah && selectedStudent.quran_ayah) {
+      return {
+        type: 'quran',
+        display: `Surah ${selectedStudent.quran_surah}, Ayah ${selectedStudent.quran_ayah}`,
+      }
+    } else if (selectedStudent.quran_level && selectedStudent.quran_page) {
+      const level = selectedStudent.quran_level
+      const page = selectedStudent.quran_page
+      // Validate Iqra level (1-6) and page (1-30)
+      if (['1', '2', '3', '4', '5', '6'].includes(level) && page >= 1 && page <= 30) {
+        return {
+          type: 'iqra',
+          display: `Iqra Level ${level}, Page ${page}`,
+        }
+      }
+    }
+
+    return null
+  }
+
+  const getBehaviorStandingColor = (standing: string | null) => {
+    if (!standing) return 'bg-gray-100 text-gray-800 border-gray-300'
+    switch (standing) {
+      case 'excellent':
+        return 'bg-green-100 text-green-800 border-green-300'
+      case 'good':
+        return 'bg-blue-100 text-blue-800 border-blue-300'
+      case 'satisfactory':
+        return 'bg-yellow-100 text-yellow-800 border-yellow-300'
+      case 'needs_improvement':
+        return 'bg-orange-100 text-orange-800 border-orange-300'
+      case 'concern':
+        return 'bg-red-100 text-red-800 border-red-300'
+      default:
+        return 'bg-gray-100 text-gray-800 border-gray-300'
+    }
+  }
+
+  const getBehaviorStandingLabel = (standing: string | null) => {
+    if (!standing) return 'Not Set'
+    return standing.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
   }
 
   const handleLogout = async () => {
@@ -796,128 +888,377 @@ const ParentPortal: React.FC = () => {
 
       {/* Student Detail Dialog */}
       <Dialog open={showStudentDetail} onOpenChange={setShowStudentDetail}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>
+            <DialogTitle className="text-2xl">
               {selectedStudent?.first_name} {selectedStudent?.last_name}
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-base">
               Grade {selectedStudent?.grade} • Student ID: {selectedStudent?.student_id || `STU-${selectedStudent?.id.toString().padStart(4, '0')}`}
             </DialogDescription>
           </DialogHeader>
 
-          <Tabs defaultValue="attendance" className="w-full">
-            <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="attendance">Attendance</TabsTrigger>
-              <TabsTrigger value="behavior">Behavior</TabsTrigger>
-              <TabsTrigger value="homework">Homework</TabsTrigger>
-              <TabsTrigger value="notes">Notes</TabsTrigger>
+          <Tabs defaultValue="profile" className="w-full mt-4">
+            <TabsList className="grid w-full grid-cols-5 h-12">
+              <TabsTrigger value="profile" className="flex items-center gap-2">
+                <UserCheck className="h-4 w-4" />
+                Profile
+              </TabsTrigger>
+              <TabsTrigger value="attendance" className="flex items-center gap-2">
+                <Calendar className="h-4 w-4" />
+                Attendance
+              </TabsTrigger>
+              <TabsTrigger value="homework" className="flex items-center gap-2">
+                <BookOpen className="h-4 w-4" />
+                Homework
+              </TabsTrigger>
+              <TabsTrigger value="behavior" className="flex items-center gap-2">
+                <FileText className="h-4 w-4" />
+                Behavior
+              </TabsTrigger>
+              <TabsTrigger value="notes" className="flex items-center gap-2">
+                <FileText className="h-4 w-4" />
+                Notes
+              </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="attendance" className="space-y-4">
-              <h3 className="text-lg font-semibold">Attendance Records</h3>
-              <div className="space-y-2">
-                {attendance.length === 0 ? (
-                  <p className="text-gray-500">No attendance records yet.</p>
-                ) : (
-                  attendance.map((record) => (
-                    <div key={record.id} className="border rounded-lg p-3 flex justify-between items-center">
-                      <div>
-                        <p className="font-medium">{new Date(record.date).toLocaleDateString()}</p>
-                        {record.notes && (
-                          <p className="text-sm text-gray-600 mt-1">{record.notes}</p>
-                        )}
-                      </div>
-                      <Badge
-                        variant={
-                          record.status === 'present' ? 'default' :
-                          record.status === 'late' ? 'secondary' :
-                          'destructive'
-                        }
-                      >
-                        {record.status}
-                      </Badge>
-                    </div>
-                  ))
-                )}
-              </div>
-            </TabsContent>
+            {/* Profile Tab */}
+            <TabsContent value="profile" className="mt-6 space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Quran Progress Card */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <BookOpen className="h-5 w-5 text-primary" />
+                      Quran / Iqra Progress
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {(() => {
+                      const progress = getQuranProgressDisplay()
+                      if (progress) {
+                        return (
+                          <div>
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="text-sm text-gray-600">Type</span>
+                              <Badge variant="outline" className="text-base px-3 py-1">
+                                {progress.type === 'iqra' ? 'Iqra' : 'Quran'}
+                              </Badge>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm text-gray-600">Current Progress</span>
+                              <span className="text-2xl font-bold text-primary">{progress.display}</span>
+                            </div>
+                          </div>
+                        )
+                      }
+                      return <p className="text-gray-500">Quran/Iqra progress not set yet.</p>
+                    })()}
+                  </CardContent>
+                </Card>
 
-            <TabsContent value="behavior" className="space-y-4">
-              <h3 className="text-lg font-semibold">Behavior Notes</h3>
-              <div className="space-y-2">
-                {behaviorNotes.length === 0 ? (
-                  <p className="text-gray-500">No behavior notes yet.</p>
-                ) : (
-                  behaviorNotes.map((note) => (
-                    <div key={note.id} className="border rounded-lg p-3">
-                      <div className="flex justify-between items-start mb-2">
-                        <div>
-                          <p className="font-medium">{note.title}</p>
-                          <p className="text-sm text-gray-600">{new Date(note.date).toLocaleDateString()}</p>
-                        </div>
-                        <Badge
-                          variant={
-                            note.type === 'positive' ? 'default' :
-                            note.type === 'concern' ? 'secondary' :
-                            'destructive'
-                          }
+                {/* Behavior Standing Card */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Award className="h-5 w-5 text-primary" />
+                      Behavior Standing
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {selectedStudent?.behavior_standing ? (
+                      <div className="flex items-center justify-center py-4">
+                        <Badge className={`${getBehaviorStandingColor(selectedStudent.behavior_standing)} border text-lg font-semibold px-6 py-3`}>
+                          {getBehaviorStandingLabel(selectedStudent.behavior_standing)}
+                        </Badge>
+                      </div>
+                    ) : (
+                      <p className="text-gray-500 text-center py-4">Behavior standing not set yet.</p>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Attendance Statistics Card with Pie Chart */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <TrendingUp className="h-5 w-5 text-primary" />
+                    Attendance Statistics
+                  </CardTitle>
+                  <CardDescription>
+                    Total attendance records: {attendance.length}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {attendance.length === 0 ? (
+                    <p className="text-gray-500 text-center py-8">No attendance records yet.</p>
+                  ) : (
+                    <ChartContainer
+                      config={{
+                        'Present (Uniform)': { label: 'Present (Uniform)', color: '#22c55e' },
+                        'Present (No Uniform)': { label: 'Present (No Uniform)', color: '#eab308' },
+                        'Late (Uniform)': { label: 'Late (Uniform)', color: '#f97316' },
+                        'Late (No Uniform)': { label: 'Late (No Uniform)', color: '#f59e0b' },
+                        'Absent (Excused)': { label: 'Absent (Excused)', color: '#3b82f6' },
+                        'Absent (No Excuse)': { label: 'Absent (No Excuse)', color: '#ef4444' },
+                      }}
+                      className="h-[400px]"
+                    >
+                      <PieChart>
+                        <ChartTooltip content={<ChartTooltipContent />} />
+                        <Pie
+                          data={getAttendanceChartData()}
+                          cx="50%"
+                          cy="50%"
+                          labelLine={false}
+                          label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                          outerRadius={120}
+                          fill="#8884d8"
+                          dataKey="value"
                         >
-                          {note.type}
-                        </Badge>
-                      </div>
-                      <p className="text-sm">{note.description}</p>
-                    </div>
-                  ))
-                )}
-              </div>
+                          {getAttendanceChartData().map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Pie>
+                        <Legend />
+                      </PieChart>
+                    </ChartContainer>
+                  )}
+                </CardContent>
+              </Card>
             </TabsContent>
 
-            <TabsContent value="homework" className="space-y-4">
-              <h3 className="text-lg font-semibold">Homework</h3>
-              <div className="space-y-2">
-                {homework.length === 0 ? (
-                  <p className="text-gray-500">No homework assigned yet.</p>
-                ) : (
-                  homework.map((hw) => (
-                    <div key={hw.id} className="border rounded-lg p-3">
-                      <div className="flex justify-between items-start mb-2">
-                        <div>
-                          <p className="font-medium">{hw.title}</p>
-                          <p className="text-sm text-gray-600">
-                            Assigned: {new Date(hw.assigned_date).toLocaleDateString()}
-                            {hw.due_date && ` • Due: ${new Date(hw.due_date).toLocaleDateString()}`}
-                          </p>
+            <TabsContent value="attendance" className="mt-6 space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold flex items-center gap-2">
+                  <Calendar className="h-5 w-5 text-primary" />
+                  Attendance Records
+                </h3>
+                <Badge variant="outline">{attendance.length} records</Badge>
+              </div>
+              {attendance.length === 0 ? (
+                <Card>
+                  <CardContent className="py-8 text-center">
+                    <UserCheck className="h-12 w-12 mx-auto text-gray-400 mb-2" />
+                    <p className="text-gray-500">No attendance records yet.</p>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="grid gap-3">
+                  {attendance.map((record) => {
+                    const getStatusColor = (status: string) => {
+                      if (status.includes('present_with_uniform')) return 'bg-green-100 text-green-800 border-green-300'
+                      if (status.includes('present_no_uniform')) return 'bg-yellow-100 text-yellow-800 border-yellow-300'
+                      if (status.includes('late_uniform')) return 'bg-orange-100 text-orange-800 border-orange-300'
+                      if (status.includes('late_no_uniform')) return 'bg-amber-100 text-amber-800 border-amber-300'
+                      if (status.includes('absent_with_excuse')) return 'bg-blue-100 text-blue-800 border-blue-300'
+                      if (status.includes('absent_no_excuse')) return 'bg-red-100 text-red-800 border-red-300'
+                      return 'bg-gray-100 text-gray-800 border-gray-300'
+                    }
+                    const getStatusLabel = (status: string) => {
+                      return status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+                    }
+                    return (
+                      <Card key={record.id} className="hover:shadow-md transition-shadow">
+                        <CardContent className="p-4">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                              <div className="flex flex-col">
+                                <p className="font-semibold text-lg">{new Date(record.date).toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}</p>
+                                {record.notes && (
+                                  <p className="text-sm text-gray-600 mt-1">{record.notes}</p>
+                                )}
+                              </div>
+                            </div>
+                            <Badge className={`${getStatusColor(record.status)} border font-medium`}>
+                              {getStatusLabel(record.status)}
+                            </Badge>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )
+                  })}
+                </div>
+              )}
+            </TabsContent>
+
+            <TabsContent value="homework" className="mt-6 space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold flex items-center gap-2">
+                  <BookOpen className="h-5 w-5 text-primary" />
+                  Homework Assignments
+                </h3>
+                <Badge variant="outline">
+                  {homework.filter(h => !h.completed).length} pending • {homework.filter(h => h.completed).length} completed
+                </Badge>
+              </div>
+              {homework.length === 0 ? (
+                <Card>
+                  <CardContent className="py-8 text-center">
+                    <BookOpen className="h-12 w-12 mx-auto text-gray-400 mb-2" />
+                    <p className="text-gray-500">No homework assigned yet.</p>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="space-y-3">
+                  {homework.map((hw) => {
+                    const isOverdue = hw.due_date && !hw.completed && new Date(hw.due_date) < new Date()
+                    return (
+                      <Card key={hw.id} className={`hover:shadow-md transition-shadow ${hw.completed ? 'opacity-75' : ''} ${isOverdue ? 'border-red-300 bg-red-50' : ''}`}>
+                        <CardContent className="p-4">
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-3 mb-2">
+                                <button
+                                  onClick={async () => {
+                                    if (!selectedStudent) return
+                                    try {
+                                      const { error } = await supabase
+                                        .from('homework')
+                                        .update({
+                                          completed: !hw.completed,
+                                          completion_date: !hw.completed ? new Date().toISOString().split('T')[0] : null,
+                                        })
+                                        .eq('id', hw.id)
+                                      
+                                      if (error) throw error
+                                      
+                                      // Reload homework data
+                                      const { data: homeworkData } = await supabase
+                                        .from('homework')
+                                        .select('*')
+                                        .eq('student_id', selectedStudent.id)
+                                        .order('assigned_date', { ascending: false })
+                                        .limit(20)
+                                      
+                                      setHomework(homeworkData || [])
+                                    } catch (err) {
+                                      console.error('Error updating homework:', err)
+                                      setError('Failed to update homework status')
+                                    }
+                                  }}
+                                  className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+                                >
+                                  {hw.completed ? (
+                                    <CheckCircle2 className="h-5 w-5 text-green-600" />
+                                  ) : (
+                                    <Circle className="h-5 w-5 text-gray-400" />
+                                  )}
+                                  <span className={`font-semibold text-lg ${hw.completed ? 'line-through text-gray-500' : ''}`}>
+                                    {hw.title}
+                                  </span>
+                                </button>
+                              </div>
+                              {hw.description && (
+                                <p className="text-sm text-gray-700 mb-2 ml-7">{hw.description}</p>
+                              )}
+                              <div className="flex items-center gap-4 ml-7 text-xs text-gray-500">
+                                <span>Assigned: {new Date(hw.assigned_date).toLocaleDateString()}</span>
+                                {hw.due_date && (
+                                  <span className={isOverdue ? 'text-red-600 font-semibold' : ''}>
+                                    Due: {new Date(hw.due_date).toLocaleDateString()}
+                                    {isOverdue && ' (Overdue)'}
+                                  </span>
+                                )}
+                                {hw.completed && hw.completion_date && (
+                                  <span className="text-green-600 font-medium">
+                                    Completed: {new Date(hw.completion_date).toLocaleDateString()}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            <Badge variant={hw.completed ? 'default' : isOverdue ? 'destructive' : 'secondary'}>
+                              {hw.completed ? 'Completed' : isOverdue ? 'Overdue' : 'Pending'}
+                            </Badge>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )
+                  })}
+                </div>
+              )}
+            </TabsContent>
+
+            <TabsContent value="behavior" className="mt-6 space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold flex items-center gap-2">
+                  <FileText className="h-5 w-5 text-primary" />
+                  Behavior Notes
+                </h3>
+                <Badge variant="outline">{behaviorNotes.length} notes</Badge>
+              </div>
+              {behaviorNotes.length === 0 ? (
+                <Card>
+                  <CardContent className="py-8 text-center">
+                    <FileText className="h-12 w-12 mx-auto text-gray-400 mb-2" />
+                    <p className="text-gray-500">No behavior notes yet.</p>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="space-y-3">
+                  {behaviorNotes.map((note) => (
+                    <Card key={note.id} className="hover:shadow-md transition-shadow">
+                      <CardContent className="p-4">
+                        <div className="flex items-start justify-between gap-4 mb-2">
+                          <div className="flex-1">
+                            <p className="font-semibold text-lg mb-1">{note.title}</p>
+                            <p className="text-sm text-gray-500 mb-2">
+                              {new Date(note.date).toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}
+                            </p>
+                            <p className="text-sm text-gray-700">{note.description}</p>
+                          </div>
+                          <Badge
+                            variant={
+                              note.type === 'positive' ? 'default' :
+                              note.type === 'concern' ? 'secondary' :
+                              'destructive'
+                            }
+                            className="shrink-0"
+                          >
+                            {note.type.charAt(0).toUpperCase() + note.type.slice(1)}
+                          </Badge>
                         </div>
-                        <Badge variant={hw.completed ? 'default' : 'secondary'}>
-                          {hw.completed ? 'Completed' : 'Pending'}
-                        </Badge>
-                      </div>
-                      {hw.description && (
-                        <p className="text-sm text-gray-600">{hw.description}</p>
-                      )}
-                    </div>
-                  ))
-                )}
-              </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
             </TabsContent>
 
-            <TabsContent value="notes" className="space-y-4">
-              <h3 className="text-lg font-semibold">General Notes</h3>
-              <div className="space-y-2">
-                {studentNotes.length === 0 ? (
-                  <p className="text-gray-500">No notes yet.</p>
-                ) : (
-                  studentNotes.map((note) => (
-                    <div key={note.id} className="border rounded-lg p-3">
-                      <p className="text-sm text-gray-600 mb-1">
-                        {new Date(note.created_at).toLocaleDateString()}
-                      </p>
-                      <p>{note.note}</p>
-                    </div>
-                  ))
-                )}
+            <TabsContent value="notes" className="mt-6 space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold flex items-center gap-2">
+                  <FileText className="h-5 w-5 text-primary" />
+                  General Notes from Teacher
+                </h3>
+                <Badge variant="outline">{studentNotes.length} notes</Badge>
               </div>
+              {studentNotes.length === 0 ? (
+                <Card>
+                  <CardContent className="py-8 text-center">
+                    <FileText className="h-12 w-12 mx-auto text-gray-400 mb-2" />
+                    <p className="text-gray-500">No notes from teacher yet.</p>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="space-y-3">
+                  {studentNotes.map((note) => (
+                    <Card key={note.id} className="hover:shadow-md transition-shadow">
+                      <CardContent className="p-4">
+                        <div className="flex items-start gap-3">
+                          <div className="flex-1">
+                            <p className="text-sm text-gray-500 mb-2">
+                              {new Date(note.created_at).toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                            </p>
+                            <p className="text-gray-800 whitespace-pre-wrap">{note.note}</p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
             </TabsContent>
           </Tabs>
         </DialogContent>

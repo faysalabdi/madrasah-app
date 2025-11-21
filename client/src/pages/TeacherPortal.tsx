@@ -5,7 +5,9 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
-import { Loader2 } from 'lucide-react'
+import { Loader2, Trash2, Calendar, BookOpen, FileText, UserCheck, Plus, CheckCircle2, AlertCircle, Award, TrendingUp, Circle } from 'lucide-react'
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart'
+import { PieChart, Pie, Cell, Legend } from 'recharts'
 import {
   Dialog,
   DialogContent,
@@ -37,6 +39,10 @@ interface Student {
   gender: string | null
   current_school: string | null
   quran_level: string | null
+  quran_page: number | null
+  quran_surah: string | null
+  quran_ayah: string | null
+  behavior_standing: string | null
   parent_id: number
 }
 
@@ -44,7 +50,7 @@ interface Attendance {
   id: number
   student_id: number
   date: string
-  status: 'present' | 'absent' | 'late' | 'excused'
+  status: 'present_with_uniform' | 'present_no_uniform' | 'late_uniform' | 'late_no_uniform' | 'absent_with_excuse' | 'absent_no_excuse'
   notes: string | null
 }
 
@@ -89,6 +95,7 @@ const TeacherPortal: React.FC = () => {
   const [behaviorNotes, setBehaviorNotes] = useState<BehaviorNote[]>([])
   const [homework, setHomework] = useState<Homework[]>([])
   const [studentNotes, setStudentNotes] = useState<StudentNote[]>([])
+  const [loadingStudentDetails, setLoadingStudentDetails] = useState(false)
   
   // Dialog states
   const [showStudentDetail, setShowStudentDetail] = useState(false)
@@ -99,7 +106,7 @@ const TeacherPortal: React.FC = () => {
   
   // Form states
   const [attendanceDate, setAttendanceDate] = useState(new Date().toISOString().split('T')[0])
-  const [attendanceStatus, setAttendanceStatus] = useState<'present' | 'absent' | 'late' | 'excused'>('present')
+  const [attendanceStatus, setAttendanceStatus] = useState<'present_with_uniform' | 'present_no_uniform' | 'late_uniform' | 'late_no_uniform' | 'absent_with_excuse' | 'absent_no_excuse'>('present_with_uniform')
   const [attendanceNotes, setAttendanceNotes] = useState('')
   
   const [behaviorType, setBehaviorType] = useState<'positive' | 'concern' | 'incident'>('positive')
@@ -111,6 +118,15 @@ const TeacherPortal: React.FC = () => {
   const [homeworkDueDate, setHomeworkDueDate] = useState('')
   
   const [noteText, setNoteText] = useState('')
+  
+  // Student profile editing
+  const [showProfileEditDialog, setShowProfileEditDialog] = useState(false)
+  const [quranType, setQuranType] = useState<'iqra' | 'quran'>('iqra')
+  const [quranLevel, setQuranLevel] = useState<string>('')
+  const [quranPage, setQuranPage] = useState<string>('')
+  const [quranSurah, setQuranSurah] = useState<string>('')
+  const [quranAyah, setQuranAyah] = useState<string>('')
+  const [behaviorStanding, setBehaviorStanding] = useState<string>('')
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -175,6 +191,10 @@ const TeacherPortal: React.FC = () => {
             gender,
             current_school,
             quran_level,
+            quran_page,
+            quran_surah,
+            quran_ayah,
+            behavior_standing,
             parent_id
           )
         `)
@@ -199,13 +219,47 @@ const TeacherPortal: React.FC = () => {
     if (!teacher) return
 
     try {
+      setLoadingStudentDetails(true)
+      
+      // Reload student data to get latest quran fields and behavior_standing
+      const { data: updatedStudent } = await supabase
+        .from('students')
+        .select('*')
+        .eq('id', studentId)
+        .single()
+      
+      if (updatedStudent) {
+        setSelectedStudent(updatedStudent as Student)
+        // Determine if it's Iqra or Quran
+        if (updatedStudent.quran_surah && updatedStudent.quran_ayah) {
+          setQuranType('quran')
+          setQuranSurah(updatedStudent.quran_surah)
+          setQuranAyah(updatedStudent.quran_ayah)
+          setQuranLevel('')
+          setQuranPage('')
+        } else if (updatedStudent.quran_level) {
+          setQuranType('iqra')
+          setQuranLevel(updatedStudent.quran_level)
+          setQuranPage(updatedStudent.quran_page?.toString() || '')
+          setQuranSurah('')
+          setQuranAyah('')
+        } else {
+          setQuranType('iqra')
+          setQuranLevel('')
+          setQuranPage('')
+          setQuranSurah('')
+          setQuranAyah('')
+        }
+        setBehaviorStanding(updatedStudent.behavior_standing || '')
+      }
+
       // Load attendance
       const { data: attendanceData } = await supabase
         .from('attendance')
         .select('*')
         .eq('student_id', studentId)
         .order('date', { ascending: false })
-        .limit(30)
+        .limit(100)
 
       setAttendance(attendanceData || [])
 
@@ -238,15 +292,129 @@ const TeacherPortal: React.FC = () => {
         .limit(20)
 
       setStudentNotes(notesData || [])
+      setError(null) // Clear any previous errors
     } catch (err) {
       console.error('Error loading student details:', err)
+      setError(err instanceof Error ? err.message : 'Failed to load student details')
+      setSelectedStudent(null) // Clear student on error
+    } finally {
+      setLoadingStudentDetails(false)
     }
   }
 
-  const handleStudentClick = (student: Student) => {
-    setSelectedStudent(student)
+  const handleUpdateProfile = async () => {
+    if (!selectedStudent) return
+
+    try {
+      const updateData: any = {}
+      
+      // Update Quran/Iqra fields based on type
+      if (quranType === 'iqra') {
+        if (quranLevel && quranLevel !== 'none' && quranPage) {
+          updateData.quran_level = quranLevel
+          updateData.quran_page = parseInt(quranPage)
+          // Clear Quran fields
+          updateData.quran_surah = null
+          updateData.quran_ayah = null
+        } else {
+          updateData.quran_level = null
+          updateData.quran_page = null
+          updateData.quran_surah = null
+          updateData.quran_ayah = null
+        }
+      } else if (quranType === 'quran') {
+        if (quranSurah && quranAyah) {
+          updateData.quran_surah = quranSurah
+          updateData.quran_ayah = quranAyah
+          // Clear Iqra fields
+          updateData.quran_level = null
+          updateData.quran_page = null
+        } else {
+          updateData.quran_surah = null
+          updateData.quran_ayah = null
+          updateData.quran_level = null
+          updateData.quran_page = null
+        }
+      }
+      
+      // Update behavior standing
+      if (behaviorStanding && behaviorStanding !== 'none') {
+        updateData.behavior_standing = behaviorStanding
+      } else {
+        updateData.behavior_standing = null
+      }
+
+      const { error } = await supabase
+        .from('students')
+        .update(updateData)
+        .eq('id', selectedStudent.id)
+
+      if (error) throw error
+
+      setShowProfileEditDialog(false)
+      loadStudentDetails(selectedStudent.id)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update student profile')
+    }
+  }
+
+  // Format Quran progress display
+  const getQuranProgressDisplay = () => {
+    if (!selectedStudent) return null
+
+    try {
+      // Check if it's Quran (has surah/ayah) or Iqra (has level/page)
+      if (selectedStudent.quran_surah && selectedStudent.quran_ayah) {
+        return {
+          type: 'quran',
+          display: `Surah ${selectedStudent.quran_surah}, Ayah ${selectedStudent.quran_ayah}`,
+        }
+      } else if (selectedStudent.quran_level && selectedStudent.quran_page) {
+        const level = String(selectedStudent.quran_level)
+        const page = Number(selectedStudent.quran_page)
+        // Validate Iqra level (1-6) and page (1-30)
+        if (['1', '2', '3', '4', '5', '6'].includes(level) && page >= 1 && page <= 30) {
+          return {
+            type: 'iqra',
+            display: `Iqra Level ${level}, Page ${page}`,
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Error formatting Quran progress:', err)
+    }
+
+    return null
+  }
+
+  // Get attendance chart data for pie chart
+  const getAttendanceChartData = () => {
+    try {
+      if (!selectedStudent || !attendance || attendance.length === 0) {
+        return []
+      }
+
+      const chartData = [
+        { name: 'Present (Uniform)', value: attendance.filter(a => a?.status === 'present_with_uniform').length, color: '#22c55e' },
+        { name: 'Present (No Uniform)', value: attendance.filter(a => a?.status === 'present_no_uniform').length, color: '#eab308' },
+        { name: 'Late (Uniform)', value: attendance.filter(a => a?.status === 'late_uniform').length, color: '#f97316' },
+        { name: 'Late (No Uniform)', value: attendance.filter(a => a?.status === 'late_no_uniform').length, color: '#f59e0b' },
+        { name: 'Absent (Excused)', value: attendance.filter(a => a?.status === 'absent_with_excuse').length, color: '#3b82f6' },
+        { name: 'Absent (No Excuse)', value: attendance.filter(a => a?.status === 'absent_no_excuse').length, color: '#ef4444' },
+      ].filter(item => item.value > 0) // Only show categories with data
+
+      return chartData
+    } catch (err) {
+      console.error('Error getting attendance chart data:', err)
+      return []
+    }
+  }
+
+  const handleStudentClick = async (student: Student) => {
+    setSelectedStudent(student) // Set initial student data
     setShowStudentDetail(true)
-    loadStudentDetails(student.id)
+    setError(null) // Clear any previous errors
+    await loadStudentDetails(student.id)
   }
 
   const handleMarkAttendance = async () => {
@@ -269,7 +437,7 @@ const TeacherPortal: React.FC = () => {
 
       setShowAttendanceDialog(false)
       setAttendanceDate(new Date().toISOString().split('T')[0])
-      setAttendanceStatus('present')
+      setAttendanceStatus('present_with_uniform')
       setAttendanceNotes('')
       loadStudentDetails(selectedStudent.id)
     } catch (err) {
@@ -351,6 +519,23 @@ const TeacherPortal: React.FC = () => {
       loadStudentDetails(selectedStudent.id)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to add note')
+    }
+  }
+
+  const handleDeleteNote = async (noteId: number) => {
+    if (!selectedStudent || !confirm('Are you sure you want to delete this note?')) return
+
+    try {
+      const { error } = await supabase
+        .from('student_notes')
+        .delete()
+        .eq('id', noteId)
+
+      if (error) throw error
+
+      loadStudentDetails(selectedStudent.id)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete note')
     }
   }
 
@@ -454,150 +639,418 @@ const TeacherPortal: React.FC = () => {
 
       {/* Student Detail Dialog */}
       <Dialog open={showStudentDetail} onOpenChange={setShowStudentDetail}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>
-              {selectedStudent?.first_name} {selectedStudent?.last_name}
-            </DialogTitle>
-            <DialogDescription>
-              Grade {selectedStudent?.grade} • Student ID: {selectedStudent?.student_id || `STU-${selectedStudent?.id.toString().padStart(4, '0')}`}
-            </DialogDescription>
-          </DialogHeader>
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+          {loadingStudentDetails ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <span className="ml-2">Loading student details...</span>
+            </div>
+          ) : error ? (
+            <div className="py-12 text-center">
+              <Alert variant="destructive">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            </div>
+          ) : !selectedStudent ? (
+            <div className="py-12 text-center">
+              <p className="text-gray-500">No student selected</p>
+            </div>
+          ) : (
+            <>
+              <DialogHeader>
+                <DialogTitle className="text-2xl">
+                  {selectedStudent?.first_name || 'Unknown'} {selectedStudent?.last_name || ''}
+                </DialogTitle>
+                <DialogDescription className="text-base">
+                  Grade {selectedStudent?.grade || 'N/A'} • Student ID: {selectedStudent?.student_id || (selectedStudent?.id ? `STU-${selectedStudent.id.toString().padStart(4, '0')}` : 'N/A')}
+                </DialogDescription>
+              </DialogHeader>
 
-          <Tabs defaultValue="attendance" className="w-full">
-            <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="attendance">Attendance</TabsTrigger>
-              <TabsTrigger value="behavior">Behavior</TabsTrigger>
-              <TabsTrigger value="homework">Homework</TabsTrigger>
-              <TabsTrigger value="notes">Notes</TabsTrigger>
+          <Tabs defaultValue="profile" className="w-full mt-4">
+            <TabsList className="grid w-full grid-cols-5 h-12">
+              <TabsTrigger value="profile" className="flex items-center gap-2">
+                <UserCheck className="h-4 w-4" />
+                Profile
+              </TabsTrigger>
+              <TabsTrigger value="attendance" className="flex items-center gap-2">
+                <Calendar className="h-4 w-4" />
+                Attendance
+              </TabsTrigger>
+              <TabsTrigger value="homework" className="flex items-center gap-2">
+                <BookOpen className="h-4 w-4" />
+                Homework
+              </TabsTrigger>
+              <TabsTrigger value="behavior" className="flex items-center gap-2">
+                <AlertCircle className="h-4 w-4" />
+                Behavior
+              </TabsTrigger>
+              <TabsTrigger value="notes" className="flex items-center gap-2">
+                <FileText className="h-4 w-4" />
+                Notes
+              </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="attendance" className="space-y-4">
-              <div className="flex justify-between items-center">
-                <h3 className="text-lg font-semibold">Attendance Records</h3>
-                <Button onClick={() => setShowAttendanceDialog(true)} size="sm">
+            {/* Profile Tab */}
+            <TabsContent value="profile" className="mt-6 space-y-4">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold flex items-center gap-2">
+                  <UserCheck className="h-5 w-5 text-primary" />
+                  Student Profile
+                </h3>
+                <Button onClick={() => setShowProfileEditDialog(true)} size="sm" className="gap-2">
+                  <Plus className="h-4 w-4" />
+                  Edit Profile
+                </Button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Quran Progress Card */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <BookOpen className="h-5 w-5 text-primary" />
+                      Quran / Iqra Progress
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {(() => {
+                      const progress = getQuranProgressDisplay()
+                      if (progress) {
+                        return (
+                          <div>
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="text-sm text-gray-600">Type</span>
+                              <Badge variant="outline" className="text-base px-3 py-1">
+                                {progress.type === 'iqra' ? 'Iqra' : 'Quran'}
+                              </Badge>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm text-gray-600">Current Progress</span>
+                              <span className="text-2xl font-bold text-primary">{progress.display}</span>
+                            </div>
+                          </div>
+                        )
+                      }
+                      return <p className="text-gray-500">Quran/Iqra progress not set yet.</p>
+                    })()}
+                  </CardContent>
+                </Card>
+
+                {/* Behavior Standing Card */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Award className="h-5 w-5 text-primary" />
+                      Behavior Standing
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {selectedStudent?.behavior_standing ? (
+                      <div className="flex items-center justify-center py-4">
+                        <Badge className={`${
+                          selectedStudent.behavior_standing === 'excellent' ? 'bg-green-100 text-green-800 border-green-300' :
+                          selectedStudent.behavior_standing === 'good' ? 'bg-blue-100 text-blue-800 border-blue-300' :
+                          selectedStudent.behavior_standing === 'satisfactory' ? 'bg-yellow-100 text-yellow-800 border-yellow-300' :
+                          selectedStudent.behavior_standing === 'needs_improvement' ? 'bg-orange-100 text-orange-800 border-orange-300' :
+                          'bg-red-100 text-red-800 border-red-300'
+                        } border text-lg font-semibold px-6 py-3`}>
+                          {selectedStudent.behavior_standing.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                        </Badge>
+                      </div>
+                    ) : (
+                      <p className="text-gray-500 text-center py-4">Behavior standing not set yet.</p>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Attendance Statistics with Pie Chart */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <TrendingUp className="h-5 w-5 text-primary" />
+                    Attendance Statistics
+                  </CardTitle>
+                  <CardDescription>
+                    Total records: {attendance.length}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {(() => {
+                    const chartData = getAttendanceChartData()
+                    if (attendance.length === 0 || chartData.length === 0) {
+                      return <p className="text-gray-500 text-center py-8">No attendance records yet.</p>
+                    }
+                    return (
+                      <ChartContainer
+                        config={{
+                          'Present (Uniform)': { label: 'Present (Uniform)', color: '#22c55e' },
+                          'Present (No Uniform)': { label: 'Present (No Uniform)', color: '#eab308' },
+                          'Late (Uniform)': { label: 'Late (Uniform)', color: '#f97316' },
+                          'Late (No Uniform)': { label: 'Late (No Uniform)', color: '#f59e0b' },
+                          'Absent (Excused)': { label: 'Absent (Excused)', color: '#3b82f6' },
+                          'Absent (No Excuse)': { label: 'Absent (No Excuse)', color: '#ef4444' },
+                        }}
+                        className="h-[400px]"
+                      >
+                        <PieChart>
+                          <ChartTooltip content={<ChartTooltipContent />} />
+                          <Pie
+                            data={chartData}
+                            cx="50%"
+                            cy="50%"
+                            labelLine={false}
+                            label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                            outerRadius={120}
+                            fill="#8884d8"
+                            dataKey="value"
+                          >
+                            {chartData.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={entry.color} />
+                            ))}
+                          </Pie>
+                          <Legend />
+                        </PieChart>
+                      </ChartContainer>
+                    )
+                  })()}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="attendance" className="mt-6 space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold flex items-center gap-2">
+                  <Calendar className="h-5 w-5 text-primary" />
+                  Attendance Records
+                </h3>
+                <Button onClick={() => setShowAttendanceDialog(true)} size="sm" className="gap-2">
+                  <Plus className="h-4 w-4" />
                   Mark Attendance
                 </Button>
               </div>
-              <div className="space-y-2">
-                {attendance.length === 0 ? (
-                  <p className="text-gray-500">No attendance records yet.</p>
-                ) : (
-                  attendance.map((record) => (
-                    <div key={record.id} className="border rounded-lg p-3 flex justify-between items-center">
-                      <div>
-                        <p className="font-medium">{new Date(record.date).toLocaleDateString()}</p>
-                        {record.notes && (
-                          <p className="text-sm text-gray-600 mt-1">{record.notes}</p>
-                        )}
-                      </div>
-                      <Badge
-                        variant={
-                          record.status === 'present' ? 'default' :
-                          record.status === 'late' ? 'secondary' :
-                          'destructive'
-                        }
-                      >
-                        {record.status}
-                      </Badge>
-                    </div>
-                  ))
-                )}
-              </div>
+              {attendance.length === 0 ? (
+                <Card>
+                  <CardContent className="py-8 text-center">
+                    <UserCheck className="h-12 w-12 mx-auto text-gray-400 mb-2" />
+                    <p className="text-gray-500">No attendance records yet.</p>
+                    <Button onClick={() => setShowAttendanceDialog(true)} className="mt-4" size="sm">
+                      Mark First Attendance
+                    </Button>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="grid gap-3">
+                  {attendance.map((record) => {
+                    const getStatusColor = (status: string) => {
+                      if (status.includes('present_with_uniform')) return 'bg-green-100 text-green-800 border-green-300'
+                      if (status.includes('present_no_uniform')) return 'bg-yellow-100 text-yellow-800 border-yellow-300'
+                      if (status.includes('late_uniform')) return 'bg-orange-100 text-orange-800 border-orange-300'
+                      if (status.includes('late_no_uniform')) return 'bg-amber-100 text-amber-800 border-amber-300'
+                      if (status.includes('absent_with_excuse')) return 'bg-blue-100 text-blue-800 border-blue-300'
+                      if (status.includes('absent_no_excuse')) return 'bg-red-100 text-red-800 border-red-300'
+                      return 'bg-gray-100 text-gray-800 border-gray-300'
+                    }
+                    const getStatusLabel = (status: string) => {
+                      return status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+                    }
+                    return (
+                      <Card key={record.id} className="hover:shadow-md transition-shadow">
+                        <CardContent className="p-4">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                              <div className="flex flex-col">
+                                <p className="font-semibold text-lg">{new Date(record.date).toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}</p>
+                                {record.notes && (
+                                  <p className="text-sm text-gray-600 mt-1">{record.notes}</p>
+                                )}
+                              </div>
+                            </div>
+                            <Badge className={`${getStatusColor(record.status)} border font-medium`}>
+                              {getStatusLabel(record.status)}
+                            </Badge>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )
+                  })}
+                </div>
+              )}
             </TabsContent>
 
-            <TabsContent value="behavior" className="space-y-4">
-              <div className="flex justify-between items-center">
-                <h3 className="text-lg font-semibold">Behavior Notes</h3>
-                <Button onClick={() => setShowBehaviorDialog(true)} size="sm">
-                  Add Note
-                </Button>
-              </div>
-              <div className="space-y-2">
-                {behaviorNotes.length === 0 ? (
-                  <p className="text-gray-500">No behavior notes yet.</p>
-                ) : (
-                  behaviorNotes.map((note) => (
-                    <div key={note.id} className="border rounded-lg p-3">
-                      <div className="flex justify-between items-start mb-2">
-                        <div>
-                          <p className="font-medium">{note.title}</p>
-                          <p className="text-sm text-gray-600">{new Date(note.date).toLocaleDateString()}</p>
-                        </div>
-                        <Badge
-                          variant={
-                            note.type === 'positive' ? 'default' :
-                            note.type === 'concern' ? 'secondary' :
-                            'destructive'
-                          }
-                        >
-                          {note.type}
-                        </Badge>
-                      </div>
-                      <p className="text-sm">{note.description}</p>
-                    </div>
-                  ))
-                )}
-              </div>
-            </TabsContent>
-
-            <TabsContent value="homework" className="space-y-4">
-              <div className="flex justify-between items-center">
-                <h3 className="text-lg font-semibold">Homework</h3>
-                <Button onClick={() => setShowHomeworkDialog(true)} size="sm">
+            <TabsContent value="homework" className="mt-6 space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold flex items-center gap-2">
+                  <BookOpen className="h-5 w-5 text-primary" />
+                  Homework Assignments
+                </h3>
+                <Button onClick={() => setShowHomeworkDialog(true)} size="sm" className="gap-2">
+                  <Plus className="h-4 w-4" />
                   Assign Homework
                 </Button>
               </div>
-              <div className="space-y-2">
-                {homework.length === 0 ? (
-                  <p className="text-gray-500">No homework assigned yet.</p>
-                ) : (
-                  homework.map((hw) => (
-                    <div key={hw.id} className="border rounded-lg p-3">
-                      <div className="flex justify-between items-start mb-2">
-                        <div>
-                          <p className="font-medium">{hw.title}</p>
-                          <p className="text-sm text-gray-600">
-                            Assigned: {new Date(hw.assigned_date).toLocaleDateString()}
-                            {hw.due_date && ` • Due: ${new Date(hw.due_date).toLocaleDateString()}`}
-                          </p>
-                        </div>
-                        <Badge variant={hw.completed ? 'default' : 'secondary'}>
-                          {hw.completed ? 'Completed' : 'Pending'}
-                        </Badge>
-                      </div>
-                      {hw.description && (
-                        <p className="text-sm text-gray-600">{hw.description}</p>
-                      )}
-                    </div>
-                  ))
-                )}
-              </div>
+              {homework.length === 0 ? (
+                <Card>
+                  <CardContent className="py-8 text-center">
+                    <BookOpen className="h-12 w-12 mx-auto text-gray-400 mb-2" />
+                    <p className="text-gray-500">No homework assigned yet.</p>
+                    <Button onClick={() => setShowHomeworkDialog(true)} className="mt-4" size="sm">
+                      Assign First Homework
+                    </Button>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="space-y-3">
+                  {homework.map((hw) => {
+                    const isOverdue = hw.due_date && !hw.completed && new Date(hw.due_date) < new Date()
+                    return (
+                      <Card key={hw.id} className={`hover:shadow-md transition-shadow ${hw.completed ? 'opacity-75' : ''} ${isOverdue ? 'border-red-300 bg-red-50' : ''}`}>
+                        <CardContent className="p-4">
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-3 mb-2">
+                                {hw.completed ? (
+                                  <CheckCircle2 className="h-5 w-5 text-green-600" />
+                                ) : (
+                                  <Circle className="h-5 w-5 text-gray-400" />
+                                )}
+                                <span className={`font-semibold text-lg ${hw.completed ? 'line-through text-gray-500' : ''}`}>
+                                  {hw.title}
+                                </span>
+                              </div>
+                              {hw.description && (
+                                <p className="text-sm text-gray-700 mb-2 ml-8">{hw.description}</p>
+                              )}
+                              <div className="flex items-center gap-4 ml-8 text-xs text-gray-500">
+                                <span>Assigned: {new Date(hw.assigned_date).toLocaleDateString()}</span>
+                                {hw.due_date && (
+                                  <span className={isOverdue ? 'text-red-600 font-semibold' : ''}>
+                                    Due: {new Date(hw.due_date).toLocaleDateString()}
+                                    {isOverdue && ' (Overdue)'}
+                                  </span>
+                                )}
+                                {hw.completed && hw.completion_date && (
+                                  <span className="text-green-600 font-medium">
+                                    Completed: {new Date(hw.completion_date).toLocaleDateString()}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            <Badge variant={hw.completed ? 'default' : isOverdue ? 'destructive' : 'secondary'}>
+                              {hw.completed ? 'Completed' : isOverdue ? 'Overdue' : 'Pending'}
+                            </Badge>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )
+                  })}
+                </div>
+              )}
             </TabsContent>
 
-            <TabsContent value="notes" className="space-y-4">
-              <div className="flex justify-between items-center">
-                <h3 className="text-lg font-semibold">General Notes</h3>
-                <Button onClick={() => setShowNoteDialog(true)} size="sm">
+            <TabsContent value="behavior" className="mt-6 space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold flex items-center gap-2">
+                  <AlertCircle className="h-5 w-5 text-primary" />
+                  Behavior Notes
+                </h3>
+                <Button onClick={() => setShowBehaviorDialog(true)} size="sm" className="gap-2">
+                  <Plus className="h-4 w-4" />
                   Add Note
                 </Button>
               </div>
-              <div className="space-y-2">
-                {studentNotes.length === 0 ? (
-                  <p className="text-gray-500">No notes yet.</p>
-                ) : (
-                  studentNotes.map((note) => (
-                    <div key={note.id} className="border rounded-lg p-3">
-                      <p className="text-sm text-gray-600 mb-1">
-                        {new Date(note.created_at).toLocaleDateString()}
-                      </p>
-                      <p>{note.note}</p>
-                    </div>
-                  ))
-                )}
+              {behaviorNotes.length === 0 ? (
+                <Card>
+                  <CardContent className="py-8 text-center">
+                    <AlertCircle className="h-12 w-12 mx-auto text-gray-400 mb-2" />
+                    <p className="text-gray-500">No behavior notes yet.</p>
+                    <Button onClick={() => setShowBehaviorDialog(true)} className="mt-4" size="sm">
+                      Add First Note
+                    </Button>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="space-y-3">
+                  {behaviorNotes.map((note) => (
+                    <Card key={note.id} className="hover:shadow-md transition-shadow">
+                      <CardContent className="p-4">
+                        <div className="flex items-start justify-between gap-4 mb-2">
+                          <div className="flex-1">
+                            <p className="font-semibold text-lg mb-1">{note.title}</p>
+                            <p className="text-sm text-gray-500 mb-2">
+                              {new Date(note.date).toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}
+                            </p>
+                            <p className="text-sm text-gray-700">{note.description}</p>
+                          </div>
+                          <Badge
+                            variant={
+                              note.type === 'positive' ? 'default' :
+                              note.type === 'concern' ? 'secondary' :
+                              'destructive'
+                            }
+                            className="shrink-0"
+                          >
+                            {note.type.charAt(0).toUpperCase() + note.type.slice(1)}
+                          </Badge>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </TabsContent>
+
+            <TabsContent value="notes" className="mt-6 space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold flex items-center gap-2">
+                  <FileText className="h-5 w-5 text-primary" />
+                  General Notes
+                </h3>
+                <Button onClick={() => setShowNoteDialog(true)} size="sm" className="gap-2">
+                  <Plus className="h-4 w-4" />
+                  Add Note
+                </Button>
               </div>
+              {studentNotes.length === 0 ? (
+                <Card>
+                  <CardContent className="py-8 text-center">
+                    <FileText className="h-12 w-12 mx-auto text-gray-400 mb-2" />
+                    <p className="text-gray-500">No notes yet.</p>
+                    <Button onClick={() => setShowNoteDialog(true)} className="mt-4" size="sm">
+                      Add First Note
+                    </Button>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="space-y-3">
+                  {studentNotes.map((note) => (
+                    <Card key={note.id} className="hover:shadow-md transition-shadow">
+                      <CardContent className="p-4">
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex-1">
+                            <p className="text-sm text-gray-500 mb-2">
+                              {new Date(note.created_at).toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                            </p>
+                            <p className="text-gray-800 whitespace-pre-wrap">{note.note}</p>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeleteNote(note.id)}
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50 shrink-0"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
             </TabsContent>
           </Tabs>
+            </>
+          )}
         </DialogContent>
       </Dialog>
 
@@ -627,10 +1080,12 @@ const TeacherPortal: React.FC = () => {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="present">Present</SelectItem>
-                  <SelectItem value="absent">Absent</SelectItem>
-                  <SelectItem value="late">Late</SelectItem>
-                  <SelectItem value="excused">Excused</SelectItem>
+                  <SelectItem value="present_with_uniform">Present with Uniform</SelectItem>
+                  <SelectItem value="present_no_uniform">Present (No Uniform)</SelectItem>
+                  <SelectItem value="late_uniform">Late (with Uniform)</SelectItem>
+                  <SelectItem value="late_no_uniform">Late (No Uniform)</SelectItem>
+                  <SelectItem value="absent_with_excuse">Absent (with Excuse)</SelectItem>
+                  <SelectItem value="absent_no_excuse">Absent (No Excuse)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -771,6 +1226,115 @@ const TeacherPortal: React.FC = () => {
               </Button>
               <Button onClick={handleAddNote}>
                 Save
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Profile Edit Dialog */}
+      <Dialog open={showProfileEditDialog} onOpenChange={setShowProfileEditDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Edit Student Profile</DialogTitle>
+            <DialogDescription>
+              Update Quran/Iqra progress and behavior standing for {selectedStudent?.first_name} {selectedStudent?.last_name}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div>
+              <Label htmlFor="quran-type">Level</Label>
+              <Select value={quranType} onValueChange={(v: 'iqra' | 'quran') => setQuranType(v)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="iqra">Iqra</SelectItem>
+                  <SelectItem value="quran">Quran (Surah & Ayah)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {quranType === 'iqra' ? (
+              <>
+                <div>
+                  <Label htmlFor="quran-level">Iqra Level (1-6)</Label>
+                  <Select value={quranLevel || 'none'} onValueChange={(v) => setQuranLevel(v === 'none' ? '' : v)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select Iqra level" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="1">Level 1</SelectItem>
+                      <SelectItem value="2">Level 2</SelectItem>
+                      <SelectItem value="3">Level 3</SelectItem>
+                      <SelectItem value="4">Level 4</SelectItem>
+                      <SelectItem value="5">Level 5</SelectItem>
+                      <SelectItem value="6">Level 6</SelectItem>
+                      <SelectItem value="none">Clear</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="quran-page">Page (1-30)</Label>
+                  <Input
+                    id="quran-page"
+                    type="number"
+                    min="1"
+                    max="30"
+                    value={quranPage}
+                    onChange={(e) => setQuranPage(e.target.value)}
+                    placeholder="Enter page number (1-30)"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Each Iqra level has 30 pages</p>
+                </div>
+              </>
+            ) : (
+              <>
+                <div>
+                  <Label htmlFor="quran-surah">Surah</Label>
+                  <Input
+                    id="quran-surah"
+                    type="text"
+                    value={quranSurah}
+                    onChange={(e) => setQuranSurah(e.target.value)}
+                    placeholder="e.g., Al-Fatiha, Al-Baqarah, or surah number"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="quran-ayah">Ayah (Verse)</Label>
+                  <Input
+                    id="quran-ayah"
+                    type="text"
+                    value={quranAyah}
+                    onChange={(e) => setQuranAyah(e.target.value)}
+                    placeholder="e.g., 1-7, 10, or range"
+                  />
+                </div>
+              </>
+            )}
+
+            <div>
+              <Label htmlFor="behavior-standing">Behavior Standing</Label>
+              <Select value={behaviorStanding || 'none'} onValueChange={(v) => setBehaviorStanding(v === 'none' ? '' : v)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select behavior standing" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="excellent">Excellent</SelectItem>
+                  <SelectItem value="good">Good</SelectItem>
+                  <SelectItem value="satisfactory">Satisfactory</SelectItem>
+                  <SelectItem value="needs_improvement">Needs Improvement</SelectItem>
+                  <SelectItem value="concern">Concern</SelectItem>
+                  <SelectItem value="none">Clear (Not Set)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setShowProfileEditDialog(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleUpdateProfile}>
+                Save Changes
               </Button>
             </div>
           </div>

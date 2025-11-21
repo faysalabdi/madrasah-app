@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
-import { Loader2, Trash2 } from 'lucide-react'
+import { Loader2, Trash2, Calendar, BookOpen, FileText, UserCheck, Search } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -103,6 +103,14 @@ const AdminPortal: React.FC = () => {
   const [selectedTeacher, setSelectedTeacher] = useState<string>('')
   const [selectedStudents, setSelectedStudents] = useState<number[]>([])
 
+  // Student Records
+  const [selectedStudentForRecords, setSelectedStudentForRecords] = useState<string>('')
+  const [recordsType, setRecordsType] = useState<'attendance' | 'homework' | 'behavior' | 'notes'>('attendance')
+  const [allAttendance, setAllAttendance] = useState<any[]>([])
+  const [allHomework, setAllHomework] = useState<any[]>([])
+  const [allBehaviorNotes, setAllBehaviorNotes] = useState<any[]>([])
+  const [allStudentNotes, setAllStudentNotes] = useState<any[]>([])
+
   useEffect(() => {
     const checkAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession()
@@ -114,6 +122,77 @@ const AdminPortal: React.FC = () => {
     }
     checkAuth()
   }, [setLocation])
+
+  useEffect(() => {
+    if (activeTab === 'records') {
+      loadAllRecords()
+    }
+  }, [activeTab, selectedStudentForRecords, recordsType])
+
+  const loadAllRecords = async () => {
+    try {
+      if (recordsType === 'attendance') {
+        let query = supabase.from('attendance').select(`
+          *,
+          students (id, first_name, last_name, grade, student_id),
+          teachers (id, first_name, last_name)
+        `).order('date', { ascending: false }).limit(100)
+        
+        if (selectedStudentForRecords) {
+          query = query.eq('student_id', parseInt(selectedStudentForRecords))
+        }
+        
+        const { data } = await query
+        setAllAttendance(data || [])
+      } else if (recordsType === 'homework') {
+        let query = supabase.from('homework').select(`
+          *,
+          students (id, first_name, last_name, grade, student_id),
+          teachers (id, first_name, last_name)
+        `).order('assigned_date', { ascending: false }).limit(100)
+        
+        if (selectedStudentForRecords) {
+          query = query.eq('student_id', parseInt(selectedStudentForRecords))
+        }
+        
+        const { data } = await query
+        setAllHomework(data || [])
+      } else if (recordsType === 'behavior') {
+        let query = supabase.from('behavior_notes').select(`
+          *,
+          students (id, first_name, last_name, grade, student_id),
+          teachers (id, first_name, last_name)
+        `).order('date', { ascending: false }).limit(100)
+        
+        if (selectedStudentForRecords) {
+          query = query.eq('student_id', parseInt(selectedStudentForRecords))
+        }
+        
+        const { data } = await query
+        setAllBehaviorNotes(data || [])
+      } else if (recordsType === 'notes') {
+        let query = supabase.from('student_notes').select(`
+          *,
+          students (id, first_name, last_name, grade, student_id),
+          teachers (id, first_name, last_name)
+        `).order('created_at', { ascending: false }).limit(100)
+        
+        if (selectedStudentForRecords) {
+          query = query.eq('student_id', parseInt(selectedStudentForRecords))
+        }
+        
+        const { data } = await query
+        setAllStudentNotes(data || [])
+      }
+    } catch (err) {
+      console.error('Error loading records:', err)
+      toast({
+        title: 'Error',
+        description: 'Failed to load records.',
+        variant: 'destructive',
+      })
+    }
+  }
 
   const loadDashboardData = async () => {
     try {
@@ -461,12 +540,13 @@ const AdminPortal: React.FC = () => {
           )}
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-5">
+            <TabsList className="grid w-full grid-cols-6">
               <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
               <TabsTrigger value="payments">Payments</TabsTrigger>
               <TabsTrigger value="teachers">Teachers</TabsTrigger>
               <TabsTrigger value="students">Students</TabsTrigger>
               <TabsTrigger value="parents">Parents</TabsTrigger>
+              <TabsTrigger value="records">Student Records</TabsTrigger>
             </TabsList>
 
             {/* Dashboard Tab */}
@@ -1119,6 +1199,248 @@ const AdminPortal: React.FC = () => {
                   </div>
                 </CardContent>
               </Card>
+            </TabsContent>
+
+            {/* Student Records Tab */}
+            <TabsContent value="records" className="mt-6">
+              <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-2xl font-bold">Student Records</h2>
+                </div>
+
+                {/* Filters */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Filters</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Student</Label>
+                        <Select value={selectedStudentForRecords} onValueChange={setSelectedStudentForRecords}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="All students" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="">All students</SelectItem>
+                            {students.map((student) => (
+                              <SelectItem key={student.id} value={student.id.toString()}>
+                                {student.first_name} {student.last_name} ({student.grade})
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Record Type</Label>
+                        <Select value={recordsType} onValueChange={(v: any) => setRecordsType(v)}>
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="attendance">Attendance</SelectItem>
+                            <SelectItem value="homework">Homework</SelectItem>
+                            <SelectItem value="behavior">Behavior Notes</SelectItem>
+                            <SelectItem value="notes">General Notes</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Records Display */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      {recordsType === 'attendance' && <Calendar className="h-5 w-5" />}
+                      {recordsType === 'homework' && <BookOpen className="h-5 w-5" />}
+                      {(recordsType === 'behavior' || recordsType === 'notes') && <FileText className="h-5 w-5" />}
+                      {recordsType === 'attendance' && 'Attendance Records'}
+                      {recordsType === 'homework' && 'Homework Assignments'}
+                      {recordsType === 'behavior' && 'Behavior Notes'}
+                      {recordsType === 'notes' && 'General Notes'}
+                    </CardTitle>
+                    <CardDescription>
+                      {recordsType === 'attendance' && `${allAttendance.length} records`}
+                      {recordsType === 'homework' && `${allHomework.length} assignments`}
+                      {recordsType === 'behavior' && `${allBehaviorNotes.length} notes`}
+                      {recordsType === 'notes' && `${allStudentNotes.length} notes`}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {recordsType === 'attendance' && (
+                      <div className="space-y-3">
+                        {allAttendance.length === 0 ? (
+                          <p className="text-gray-500 text-center py-8">No attendance records found.</p>
+                        ) : (
+                          allAttendance.map((record: any) => {
+                            const student = record.students
+                            const teacher = record.teachers
+                            const getStatusColor = (status: string) => {
+                              if (status.includes('present_with_uniform')) return 'bg-green-100 text-green-800 border-green-300'
+                              if (status.includes('present_no_uniform')) return 'bg-yellow-100 text-yellow-800 border-yellow-300'
+                              if (status.includes('late_uniform')) return 'bg-orange-100 text-orange-800 border-orange-300'
+                              if (status.includes('late_no_uniform')) return 'bg-amber-100 text-amber-800 border-amber-300'
+                              if (status.includes('absent_with_excuse')) return 'bg-blue-100 text-blue-800 border-blue-300'
+                              if (status.includes('absent_no_excuse')) return 'bg-red-100 text-red-800 border-red-300'
+                              return 'bg-gray-100 text-gray-800 border-gray-300'
+                            }
+                            const getStatusLabel = (status: string) => {
+                              return status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+                            }
+                            return (
+                              <Card key={record.id} className="hover:shadow-md transition-shadow">
+                                <CardContent className="p-4">
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex-1">
+                                      <p className="font-semibold text-lg">
+                                        {student?.first_name} {student?.last_name} ({student?.grade})
+                                      </p>
+                                      <p className="text-sm text-gray-600">
+                                        {new Date(record.date).toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}
+                                        {teacher && ` • Teacher: ${teacher.first_name} ${teacher.last_name}`}
+                                      </p>
+                                      {record.notes && (
+                                        <p className="text-sm text-gray-700 mt-1">{record.notes}</p>
+                                      )}
+                                    </div>
+                                    <Badge className={`${getStatusColor(record.status)} border font-medium`}>
+                                      {getStatusLabel(record.status)}
+                                    </Badge>
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            )
+                          })
+                        )}
+                      </div>
+                    )}
+
+                    {recordsType === 'homework' && (
+                      <div className="space-y-3">
+                        {allHomework.length === 0 ? (
+                          <p className="text-gray-500 text-center py-8">No homework assignments found.</p>
+                        ) : (
+                          allHomework.map((hw: any) => {
+                            const student = hw.students
+                            const teacher = hw.teachers
+                            const isOverdue = hw.due_date && !hw.completed && new Date(hw.due_date) < new Date()
+                            return (
+                              <Card key={hw.id} className={`hover:shadow-md transition-shadow ${hw.completed ? 'opacity-75' : ''} ${isOverdue ? 'border-red-300 bg-red-50' : ''}`}>
+                                <CardContent className="p-4">
+                                  <div className="flex items-start justify-between gap-4">
+                                    <div className="flex-1">
+                                      <p className="font-semibold text-lg mb-1">
+                                        {student?.first_name} {student?.last_name} ({student?.grade})
+                                      </p>
+                                      <p className="font-medium mb-1">{hw.title}</p>
+                                      {hw.description && (
+                                        <p className="text-sm text-gray-700 mb-2">{hw.description}</p>
+                                      )}
+                                      <div className="flex items-center gap-4 text-xs text-gray-500">
+                                        <span>Assigned: {new Date(hw.assigned_date).toLocaleDateString()}</span>
+                                        {hw.due_date && (
+                                          <span className={isOverdue ? 'text-red-600 font-semibold' : ''}>
+                                            Due: {new Date(hw.due_date).toLocaleDateString()}
+                                            {isOverdue && ' (Overdue)'}
+                                          </span>
+                                        )}
+                                        {hw.completed && hw.completion_date && (
+                                          <span className="text-green-600 font-medium">
+                                            Completed: {new Date(hw.completion_date).toLocaleDateString()}
+                                          </span>
+                                        )}
+                                        {teacher && <span>Teacher: {teacher.first_name} {teacher.last_name}</span>}
+                                      </div>
+                                    </div>
+                                    <Badge variant={hw.completed ? 'default' : isOverdue ? 'destructive' : 'secondary'}>
+                                      {hw.completed ? 'Completed' : isOverdue ? 'Overdue' : 'Pending'}
+                                    </Badge>
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            )
+                          })
+                        )}
+                      </div>
+                    )}
+
+                    {recordsType === 'behavior' && (
+                      <div className="space-y-3">
+                        {allBehaviorNotes.length === 0 ? (
+                          <p className="text-gray-500 text-center py-8">No behavior notes found.</p>
+                        ) : (
+                          allBehaviorNotes.map((note: any) => {
+                            const student = note.students
+                            const teacher = note.teachers
+                            return (
+                              <Card key={note.id} className="hover:shadow-md transition-shadow">
+                                <CardContent className="p-4">
+                                  <div className="flex items-start justify-between gap-4">
+                                    <div className="flex-1">
+                                      <p className="font-semibold text-lg mb-1">
+                                        {student?.first_name} {student?.last_name} ({student?.grade})
+                                      </p>
+                                      <p className="font-medium mb-1">{note.title}</p>
+                                      <p className="text-sm text-gray-700 mb-2">{note.description}</p>
+                                      <p className="text-xs text-gray-500">
+                                        {new Date(note.date).toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}
+                                        {teacher && ` • Teacher: ${teacher.first_name} ${teacher.last_name}`}
+                                      </p>
+                                    </div>
+                                    <Badge
+                                      variant={
+                                        note.type === 'positive' ? 'default' :
+                                        note.type === 'concern' ? 'secondary' :
+                                        'destructive'
+                                      }
+                                      className="shrink-0"
+                                    >
+                                      {note.type.charAt(0).toUpperCase() + note.type.slice(1)}
+                                    </Badge>
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            )
+                          })
+                        )}
+                      </div>
+                    )}
+
+                    {recordsType === 'notes' && (
+                      <div className="space-y-3">
+                        {allStudentNotes.length === 0 ? (
+                          <p className="text-gray-500 text-center py-8">No general notes found.</p>
+                        ) : (
+                          allStudentNotes.map((note: any) => {
+                            const student = note.students
+                            const teacher = note.teachers
+                            return (
+                              <Card key={note.id} className="hover:shadow-md transition-shadow">
+                                <CardContent className="p-4">
+                                  <div className="flex items-start justify-between gap-4">
+                                    <div className="flex-1">
+                                      <p className="font-semibold text-lg mb-1">
+                                        {student?.first_name} {student?.last_name} ({student?.grade})
+                                      </p>
+                                      <p className="text-gray-800 whitespace-pre-wrap mb-2">{note.note}</p>
+                                      <p className="text-xs text-gray-500">
+                                        {new Date(note.created_at).toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                        {teacher && ` • Teacher: ${teacher.first_name} ${teacher.last_name}`}
+                                      </p>
+                                    </div>
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            )
+                          })
+                        )}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
             </TabsContent>
           </Tabs>
         </div>
