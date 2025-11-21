@@ -14,6 +14,8 @@ import PaymentPortal from "@/pages/PaymentPortal";
 import ParentLogin from "@/pages/ParentLogin";
 import ParentPortal from "@/pages/ParentPortal";
 import ParentPasswordSetup from "@/pages/ParentPasswordSetup";
+import TeacherLogin from "@/pages/TeacherLogin";
+import TeacherPortal from "@/pages/TeacherPortal";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import Newsletter from "@/components/Newsletter";
@@ -36,6 +38,8 @@ function App() {
             <Route path="/parent-login" component={ParentLogin} />
             <Route path="/parent-password-setup" component={ParentPasswordSetup} />
             <Route path="/parent-portal" component={ParentPortal} />
+            <Route path="/teacher-login" component={TeacherLogin} />
+            <Route path="/teacher-portal" component={TeacherPortal} />
             <Route component={NotFound} />
           </Switch>
         </main>

@@ -7,6 +7,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Loader2 } from 'lucide-react'
 
@@ -66,6 +67,14 @@ const ParentPortal: React.FC = () => {
   const [purchasingBooks, setPurchasingBooks] = useState(false)
   const [showBookDialog, setShowBookDialog] = useState(false)
   const [selectedBooks, setSelectedBooks] = useState<{ [key: string]: boolean }>({})
+  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null)
+  const [showStudentDetail, setShowStudentDetail] = useState(false)
+  
+  // Student detail data
+  const [attendance, setAttendance] = useState<any[]>([])
+  const [behaviorNotes, setBehaviorNotes] = useState<any[]>([])
+  const [homework, setHomework] = useState<any[]>([])
+  const [studentNotes, setStudentNotes] = useState<any[]>([])
 
   useEffect(() => {
     // Check authentication and restore session
@@ -236,6 +245,56 @@ const ParentPortal: React.FC = () => {
     }
   }
 
+  const handleStudentClick = async (student: Student) => {
+    setSelectedStudent(student)
+    setShowStudentDetail(true)
+    
+    // Load student details
+    try {
+      // Load attendance
+      const { data: attendanceData } = await supabase
+        .from('attendance')
+        .select('*')
+        .eq('student_id', student.id)
+        .order('date', { ascending: false })
+        .limit(30)
+
+      setAttendance(attendanceData || [])
+
+      // Load behavior notes
+      const { data: behaviorData } = await supabase
+        .from('behavior_notes')
+        .select('*')
+        .eq('student_id', student.id)
+        .order('date', { ascending: false })
+        .limit(20)
+
+      setBehaviorNotes(behaviorData || [])
+
+      // Load homework
+      const { data: homeworkData } = await supabase
+        .from('homework')
+        .select('*')
+        .eq('student_id', student.id)
+        .order('assigned_date', { ascending: false })
+        .limit(20)
+
+      setHomework(homeworkData || [])
+
+      // Load student notes
+      const { data: notesData } = await supabase
+        .from('student_notes')
+        .select('*')
+        .eq('student_id', student.id)
+        .order('created_at', { ascending: false })
+        .limit(20)
+
+      setStudentNotes(notesData || [])
+    } catch (err) {
+      console.error('Error loading student details:', err)
+    }
+  }
+
   const handleLogout = async () => {
     await supabase.auth.signOut()
     localStorage.removeItem('parentId')
@@ -368,9 +427,18 @@ const ParentPortal: React.FC = () => {
                 Welcome, {parent?.parent1_first_name} {parent?.parent1_last_name}
               </p>
             </div>
-            <Button variant="outline" onClick={handleLogout}>
-              Logout
-            </Button>
+            <div className="flex gap-2">
+              <Button 
+                variant="ghost" 
+                onClick={() => setLocation('/teacher-login')}
+                className="text-sm"
+              >
+                Teacher?
+              </Button>
+              <Button variant="outline" onClick={handleLogout}>
+                Logout
+              </Button>
+            </div>
           </div>
 
           {error && (
@@ -421,8 +489,8 @@ const ParentPortal: React.FC = () => {
                         className="border rounded-lg p-4 space-y-2"
                       >
                         <div className="flex justify-between items-start">
-                          <div>
-                            <h3 className="font-semibold text-lg">
+                          <div className="flex-1 cursor-pointer" onClick={() => handleStudentClick(student)}>
+                            <h3 className="font-semibold text-lg hover:text-primary">
                               {student.first_name} {student.last_name}
                             </h3>
                             <p className="text-sm text-gray-600">
@@ -438,6 +506,9 @@ const ParentPortal: React.FC = () => {
                                 School: {student.current_school}
                               </p>
                             )}
+                            <p className="text-xs text-primary mt-2 hover:underline">
+                              Click to view details →
+                            </p>
                           </div>
                           <div className="flex gap-2">
                             {hasPaidTermFees(student.id) ? (
@@ -448,7 +519,10 @@ const ParentPortal: React.FC = () => {
                               <Button
                                 size="sm"
                                 variant="outline"
-                                onClick={() => handlePayTermFees(student.id)}
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handlePayTermFees(student.id)
+                                }}
                                 disabled={payingFor === student.id}
                               >
                                 {payingFor === student.id ? 'Processing...' : 'Pay Term Fees'}
@@ -647,6 +721,135 @@ const ParentPortal: React.FC = () => {
           </Card>
         </div>
       </div>
+
+      {/* Student Detail Dialog */}
+      <Dialog open={showStudentDetail} onOpenChange={setShowStudentDetail}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {selectedStudent?.first_name} {selectedStudent?.last_name}
+            </DialogTitle>
+            <DialogDescription>
+              Grade {selectedStudent?.grade} • Student ID: {selectedStudent?.student_id || `STU-${selectedStudent?.id.toString().padStart(4, '0')}`}
+            </DialogDescription>
+          </DialogHeader>
+
+          <Tabs defaultValue="attendance" className="w-full">
+            <TabsList className="grid w-full grid-cols-4">
+              <TabsTrigger value="attendance">Attendance</TabsTrigger>
+              <TabsTrigger value="behavior">Behavior</TabsTrigger>
+              <TabsTrigger value="homework">Homework</TabsTrigger>
+              <TabsTrigger value="notes">Notes</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="attendance" className="space-y-4">
+              <h3 className="text-lg font-semibold">Attendance Records</h3>
+              <div className="space-y-2">
+                {attendance.length === 0 ? (
+                  <p className="text-gray-500">No attendance records yet.</p>
+                ) : (
+                  attendance.map((record) => (
+                    <div key={record.id} className="border rounded-lg p-3 flex justify-between items-center">
+                      <div>
+                        <p className="font-medium">{new Date(record.date).toLocaleDateString()}</p>
+                        {record.notes && (
+                          <p className="text-sm text-gray-600 mt-1">{record.notes}</p>
+                        )}
+                      </div>
+                      <Badge
+                        variant={
+                          record.status === 'present' ? 'default' :
+                          record.status === 'late' ? 'secondary' :
+                          'destructive'
+                        }
+                      >
+                        {record.status}
+                      </Badge>
+                    </div>
+                  ))
+                )}
+              </div>
+            </TabsContent>
+
+            <TabsContent value="behavior" className="space-y-4">
+              <h3 className="text-lg font-semibold">Behavior Notes</h3>
+              <div className="space-y-2">
+                {behaviorNotes.length === 0 ? (
+                  <p className="text-gray-500">No behavior notes yet.</p>
+                ) : (
+                  behaviorNotes.map((note) => (
+                    <div key={note.id} className="border rounded-lg p-3">
+                      <div className="flex justify-between items-start mb-2">
+                        <div>
+                          <p className="font-medium">{note.title}</p>
+                          <p className="text-sm text-gray-600">{new Date(note.date).toLocaleDateString()}</p>
+                        </div>
+                        <Badge
+                          variant={
+                            note.type === 'positive' ? 'default' :
+                            note.type === 'concern' ? 'secondary' :
+                            'destructive'
+                          }
+                        >
+                          {note.type}
+                        </Badge>
+                      </div>
+                      <p className="text-sm">{note.description}</p>
+                    </div>
+                  ))
+                )}
+              </div>
+            </TabsContent>
+
+            <TabsContent value="homework" className="space-y-4">
+              <h3 className="text-lg font-semibold">Homework</h3>
+              <div className="space-y-2">
+                {homework.length === 0 ? (
+                  <p className="text-gray-500">No homework assigned yet.</p>
+                ) : (
+                  homework.map((hw) => (
+                    <div key={hw.id} className="border rounded-lg p-3">
+                      <div className="flex justify-between items-start mb-2">
+                        <div>
+                          <p className="font-medium">{hw.title}</p>
+                          <p className="text-sm text-gray-600">
+                            Assigned: {new Date(hw.assigned_date).toLocaleDateString()}
+                            {hw.due_date && ` • Due: ${new Date(hw.due_date).toLocaleDateString()}`}
+                          </p>
+                        </div>
+                        <Badge variant={hw.completed ? 'default' : 'secondary'}>
+                          {hw.completed ? 'Completed' : 'Pending'}
+                        </Badge>
+                      </div>
+                      {hw.description && (
+                        <p className="text-sm text-gray-600">{hw.description}</p>
+                      )}
+                    </div>
+                  ))
+                )}
+              </div>
+            </TabsContent>
+
+            <TabsContent value="notes" className="space-y-4">
+              <h3 className="text-lg font-semibold">General Notes</h3>
+              <div className="space-y-2">
+                {studentNotes.length === 0 ? (
+                  <p className="text-gray-500">No notes yet.</p>
+                ) : (
+                  studentNotes.map((note) => (
+                    <div key={note.id} className="border rounded-lg p-3">
+                      <p className="text-sm text-gray-600 mb-1">
+                        {new Date(note.created_at).toLocaleDateString()}
+                      </p>
+                      <p>{note.note}</p>
+                    </div>
+                  ))
+                )}
+              </div>
+            </TabsContent>
+          </Tabs>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
