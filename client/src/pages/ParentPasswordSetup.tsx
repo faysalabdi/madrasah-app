@@ -255,7 +255,7 @@ const ParentPasswordSetup: React.FC = () => {
                 <p className="text-sm text-gray-600 mb-2">
                   Already have a password?{' '}
                   <button
-                    onClick={() => setLocation('/parent-login')}
+                            onClick={() => setLocation('/portal')}
                     className="text-primary hover:underline font-medium"
                   >
                     Log In

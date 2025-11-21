@@ -128,10 +128,10 @@ export default function Header() {
           </ul>
           <div className="flex flex-col md:flex-row gap-3 mt-4 md:mt-0 md:ml-6">
             <Link
-              href="/parent-login"
+              href="/portal"
               className="inline-block bg-primary hover:bg-primary-dark text-white font-medium py-2 px-4 rounded shadow transition duration-300"
             >
-              Parent Login
+              Portal
             </Link>
             <Link
               href="/admission#apply-now"

@@ -94,13 +94,13 @@ const ParentPortal: React.FC = () => {
           // For now, just continue with parentId
         } else {
           // No email stored, need to re-login
-          setLocation('/parent-login')
+          setLocation('/portal')
           return
         }
       }
       
       if (!parentId) {
-        setLocation('/parent-login')
+        setLocation('/portal')
         return
       }
       
@@ -135,7 +135,7 @@ const ParentPortal: React.FC = () => {
     // Listen for auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_OUT' || (!session && !localStorage.getItem('parentId'))) {
-        setLocation('/parent-login')
+        setLocation('/portal')
       }
     })
 
@@ -301,7 +301,7 @@ const ParentPortal: React.FC = () => {
     localStorage.removeItem('parentEmail')
     sessionStorage.removeItem('parentId')
     sessionStorage.removeItem('parentEmail')
-    setLocation('/parent-login')
+    setLocation('/portal')
   }
 
   if (loading) {
@@ -321,7 +321,7 @@ const ParentPortal: React.FC = () => {
               <Alert variant="destructive">
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
-              <Button onClick={() => setLocation('/parent-login')} className="mt-4 w-full">
+              <Button onClick={() => setLocation('/portal')} className="mt-4 w-full">
                 Back to Login
               </Button>
             </CardContent>
@@ -430,7 +430,7 @@ const ParentPortal: React.FC = () => {
             <div className="flex gap-2">
               <Button 
                 variant="ghost" 
-                onClick={() => setLocation('/teacher-login')}
+                onClick={() => setLocation('/portal')}
                 className="text-sm"
               >
                 Teacher?

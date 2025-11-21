@@ -11,10 +11,9 @@ import Contact from "@/pages/Contact";
 import GoogleForm from "@/pages/GoogleForm";
 import NotFound from "@/pages/not-found";
 import PaymentPortal from "@/pages/PaymentPortal";
-import ParentLogin from "@/pages/ParentLogin";
+import PortalLogin from "@/pages/PortalLogin";
 import ParentPortal from "@/pages/ParentPortal";
 import ParentPasswordSetup from "@/pages/ParentPasswordSetup";
-import TeacherLogin from "@/pages/TeacherLogin";
 import TeacherPortal from "@/pages/TeacherPortal";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -35,10 +34,9 @@ function App() {
             <Route path="/contact" component={Contact} />
             <Route path="/apply" component={GoogleForm} />
             <Route path="/payment-portal" component={PaymentPortal} />
-            <Route path="/parent-login" component={ParentLogin} />
+            <Route path="/portal" component={PortalLogin} />
             <Route path="/parent-password-setup" component={ParentPasswordSetup} />
             <Route path="/parent-portal" component={ParentPortal} />
-            <Route path="/teacher-login" component={TeacherLogin} />
             <Route path="/teacher-portal" component={TeacherPortal} />
             <Route component={NotFound} />
           </Switch>

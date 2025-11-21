@@ -117,7 +117,7 @@ const TeacherPortal: React.FC = () => {
       let teacherId = localStorage.getItem('teacherId') || sessionStorage.getItem('teacherId')
       
       if (!teacherId) {
-        setLocation('/teacher-login')
+        setLocation('/portal')
         return
       }
       
@@ -137,7 +137,7 @@ const TeacherPortal: React.FC = () => {
     // Listen for auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_OUT' || (!session && !localStorage.getItem('teacherId'))) {
-        setLocation('/teacher-login')
+        setLocation('/portal')
       }
     })
 
@@ -360,7 +360,7 @@ const TeacherPortal: React.FC = () => {
     localStorage.removeItem('teacherEmail')
     sessionStorage.removeItem('teacherId')
     sessionStorage.removeItem('teacherEmail')
-    setLocation('/teacher-login')
+    setLocation('/portal')
   }
 
   if (loading) {
@@ -380,7 +380,7 @@ const TeacherPortal: React.FC = () => {
               <Alert variant="destructive">
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
-              <Button onClick={() => setLocation('/teacher-login')} className="mt-4 w-full">
+              <Button onClick={() => setLocation('/portal')} className="mt-4 w-full">
                 Back to Login
               </Button>
             </CardContent>
