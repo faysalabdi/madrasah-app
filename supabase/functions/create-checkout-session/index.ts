@@ -58,15 +58,37 @@ serve(async (req) => {
     const productNames = products.map((p: any) => p.name).join(", ")
 
     // Determine payment type based on selected products
+    // Fetch product details from Stripe to get metadata if not provided
+    const productDetails = await Promise.all(
+      products.map(async (p: any) => {
+        if (p.metadata) {
+          return p // Already has metadata
+        }
+        // Fetch from Stripe using productId
+        try {
+          if (p.productId) {
+            const stripeProduct = await stripe.products.retrieve(p.productId)
+            return {
+              ...p,
+              metadata: stripeProduct.metadata,
+            }
+          }
+        } catch (err) {
+          console.error(`Error fetching product ${p.productId}:`, err)
+        }
+        return p
+      })
+    )
+
     // Check if term fees product is included (look for metadata term_fee or name contains "term")
-    const hasTermFees = products.some((p: any) => 
+    const hasTermFees = productDetails.some((p: any) => 
       p.metadata?.term_fee === "true" || 
       p.name?.toLowerCase().includes("term fee") ||
       p.name?.toLowerCase().includes("term")
     )
     
     // Check if any book products are included (products that are NOT term fees)
-    const hasBooks = products.some((p: any) => 
+    const hasBooks = productDetails.some((p: any) => 
       !(p.metadata?.term_fee === "true" || 
         p.name?.toLowerCase().includes("term fee") ||
         p.name?.toLowerCase().includes("term"))

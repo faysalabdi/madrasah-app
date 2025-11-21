@@ -210,6 +210,8 @@ Deno.serve(async (request) => {
           if (parent) {
             const paymentType = paymentIntent.metadata?.payment_type || "full_payment"
             const studentId = paymentIntent.metadata?.student_id ? parseInt(paymentIntent.metadata.student_id) : null
+            const paidForBooks = paymentIntent.metadata?.paid_for_books === "true"
+            const paidTermFees = paymentIntent.metadata?.paid_term_fees === "true"
             
             await supabaseClient.from("payments").insert({
               parent_id: parent.id,
@@ -219,8 +221,8 @@ Deno.serve(async (request) => {
               currency: paymentIntent.currency,
               payment_type: paymentType,
               status: "succeeded",
-              paid_for_books: paymentType === "books" || paymentType === "full_payment",
-              paid_term_fees: paymentType === "term_fees" || paymentType === "full_payment",
+              paid_for_books: paidForBooks,
+              paid_term_fees: paidTermFees,
               metadata: paymentIntent.metadata,
             })
           }
