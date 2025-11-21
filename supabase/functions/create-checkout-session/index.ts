@@ -57,6 +57,33 @@ serve(async (req) => {
     )
     const productNames = products.map((p: any) => p.name).join(", ")
 
+    // Determine payment type based on selected products
+    // Check if term fees product is included (look for metadata term_fee or name contains "term")
+    const hasTermFees = products.some((p: any) => 
+      p.metadata?.term_fee === "true" || 
+      p.name?.toLowerCase().includes("term fee") ||
+      p.name?.toLowerCase().includes("term")
+    )
+    
+    // Check if any book products are included (products that are NOT term fees)
+    const hasBooks = products.some((p: any) => 
+      !(p.metadata?.term_fee === "true" || 
+        p.name?.toLowerCase().includes("term fee") ||
+        p.name?.toLowerCase().includes("term"))
+    )
+    
+    // Determine payment_type
+    let paymentType: string
+    if (hasTermFees && hasBooks) {
+      paymentType = "full_payment" // Both term fees and books
+    } else if (hasTermFees) {
+      paymentType = "term_fees" // Only term fees
+    } else if (hasBooks) {
+      paymentType = "books" // Only books (shouldn't happen normally, but handle it)
+    } else {
+      paymentType = "full_payment" // Fallback
+    }
+
     // Initialize Supabase client
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
@@ -247,6 +274,19 @@ serve(async (req) => {
       console.error("Cannot save form data: formData is missing")
     }
 
+    // Get student IDs for this parent (for enrollment payments)
+    let studentIds: number[] = []
+    if (parentId) {
+      const { data: students } = await supabaseClient
+        .from("students")
+        .select("id")
+        .eq("parent_id", parentId)
+      
+      if (students) {
+        studentIds = students.map(s => s.id)
+      }
+    }
+
     const frontendUrl = Deno.env.get("FRONTEND_URL") || "http://localhost:5000"
 
     let session
@@ -274,6 +314,10 @@ serve(async (req) => {
           trialEndDate: trialEndDate,
           totalAmount: totalAmountCents.toString(),
           products: JSON.stringify(products),
+          payment_type: paymentType,
+          paid_for_books: hasBooks.toString(),
+          paid_term_fees: hasTermFees.toString(),
+          student_ids: studentIds.map(id => id.toString()).join(","), // Include student IDs for enrollment
         },
         setup_intent_data: {
           metadata: {
@@ -282,6 +326,9 @@ serve(async (req) => {
             totalAmount: totalAmountCents.toString(),
             products: JSON.stringify(products),
             trialEndDate: trialEndDate,
+            payment_type: paymentType,
+            paid_for_books: hasBooks.toString(),
+            paid_term_fees: hasTermFees.toString(),
           },
         },
       }
@@ -302,12 +349,15 @@ serve(async (req) => {
             amount: totalAmountCents / 100, // Convert cents to dollars
             currency: "aud",
             status: "trial",
-            payment_type: "trial",
+            payment_type: paymentType, // Use determined payment type, not just "trial"
+            paid_for_books: hasBooks,
+            paid_term_fees: hasTermFees,
             metadata: {
               trialEndDate: trialEndDate,
               numberOfChildren: numberOfChildren,
               products: products,
               sessionId: session.id,
+              payment_type: paymentType,
             },
           })
       }
@@ -328,15 +378,25 @@ serve(async (req) => {
         mode: "payment",
         success_url: `${frontendUrl}/admission?success=true&session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${frontendUrl}/admission?canceled=true`,
-        payment_intent_data: {
-          receipt_email: email, // Explicitly set receipt email
-        },
         metadata: {
           parent_id: parentId?.toString() || "",
           numberOfChildren: numberOfChildren.toString(),
           parentEmail: email.substring(0, 100),
           useTrial: "false",
           products: JSON.stringify(products),
+          payment_type: paymentType,
+          paid_for_books: hasBooks.toString(),
+          paid_term_fees: hasTermFees.toString(),
+          student_ids: studentIds.map(id => id.toString()).join(","), // Include student IDs for enrollment
+        },
+        payment_intent_data: {
+          metadata: {
+            parent_id: parentId?.toString() || "",
+            payment_type: paymentType,
+            paid_for_books: hasBooks.toString(),
+            paid_term_fees: hasTermFees.toString(),
+          },
+          receipt_email: email,
         },
       })
     }

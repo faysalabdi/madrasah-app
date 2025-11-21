@@ -91,9 +91,12 @@ Deno.serve(async (request) => {
           const paymentType = session.metadata?.payment_type || "full_payment"
           const studentIdStr = session.metadata?.student_id
           const studentIdsStr = session.metadata?.student_ids // Comma-separated list
+          const paidForBooks = session.metadata?.paid_for_books === "true"
+          const paidTermFees = session.metadata?.paid_term_fees === "true"
           
           // If paying for term fees and we have student_ids, create separate payment records for each student
-          if (paymentType === "term_fees" && studentIdsStr) {
+          if (paidTermFees && studentIdsStr && !paidForBooks) {
+            // Term fees only - create one record per student
             const studentIds = studentIdsStr.split(",").filter(Boolean).map(id => parseInt(id.trim()))
             const amountPerStudent = (session.amount_total || 0) / 100 / studentIds.length
             
@@ -113,8 +116,32 @@ Deno.serve(async (request) => {
                 metadata: { ...session.metadata, student_id: sid.toString() },
               })
             }
+          } else if (paidTermFees && studentIdsStr && paidForBooks) {
+            // Full payment (term fees + books) - create one record per student for term fees, plus one for books
+            const studentIds = studentIdsStr.split(",").filter(Boolean).map(id => parseInt(id.trim()))
+            
+            // Calculate amounts (assuming term fees are per student, books are total)
+            // For now, split total amount equally per student
+            const amountPerStudent = (session.amount_total || 0) / 100 / studentIds.length
+            
+            // Create payment records: one per student with both term fees and books
+            for (const sid of studentIds) {
+              await supabaseClient.from("payments").insert({
+                parent_id: parseInt(parentId),
+                student_id: sid,
+                stripe_checkout_session_id: session.id,
+                stripe_payment_intent_id: session.payment_intent as string,
+                amount: amountPerStudent,
+                currency: session.currency || "aud",
+                payment_type: paymentType,
+                status: "succeeded",
+                paid_for_books: true,
+                paid_term_fees: true,
+                metadata: { ...session.metadata, student_id: sid.toString() },
+              })
+            }
           } else {
-            // Single payment record (books, or term fees for single student)
+            // Single payment record (books only, or single student term fees)
             const studentId = studentIdStr ? parseInt(studentIdStr) : null
             
             await supabaseClient.from("payments").insert({
@@ -126,8 +153,8 @@ Deno.serve(async (request) => {
               currency: session.currency || "aud",
               payment_type: paymentType,
               status: "succeeded",
-              paid_for_books: paymentType === "books" || paymentType === "full_payment",
-              paid_term_fees: paymentType === "term_fees" || paymentType === "full_payment",
+              paid_for_books: paidForBooks,
+              paid_term_fees: paidTermFees,
               metadata: session.metadata,
             })
           }
