@@ -146,7 +146,8 @@ const AdminPortal: React.FC = () => {
   })
 
   // Student assignment
-  const [selectedTeacher, setSelectedTeacher] = useState<string>('')
+  const [selectedQuranTeacher, setSelectedQuranTeacher] = useState<string>('')
+  const [selectedIslamicStudiesTeacher, setSelectedIslamicStudiesTeacher] = useState<string>('')
   const [selectedStudents, setSelectedStudents] = useState<number[]>([])
 
   // Student Detail View
@@ -965,10 +966,10 @@ const AdminPortal: React.FC = () => {
   }
 
   const handleAssignStudents = async () => {
-    if (!selectedTeacher || selectedStudents.length === 0) {
+    if (!selectedQuranTeacher || !selectedIslamicStudiesTeacher || selectedStudents.length === 0) {
       toast({
         title: 'Error',
-        description: 'Please select a teacher and at least one student',
+        description: 'Please select both Quran and Islamic Studies teachers and at least one student',
         variant: 'destructive',
       })
       return
@@ -977,16 +978,16 @@ const AdminPortal: React.FC = () => {
     try {
       setLoading(true)
 
-      // Remove existing assignments for these students to this teacher
+      // Remove existing assignments for these students
       await supabase
         .from('teacher_students')
         .delete()
-        .eq('teacher_id', parseInt(selectedTeacher))
         .in('student_id', selectedStudents)
 
-      // Create new assignments
+      // Create new assignments with both teachers
       const assignments = selectedStudents.map(studentId => ({
-        teacher_id: parseInt(selectedTeacher),
+        quran_teacher_id: parseInt(selectedQuranTeacher),
+        islamic_studies_teacher_id: parseInt(selectedIslamicStudiesTeacher),
         student_id: studentId,
       }))
 
@@ -996,10 +997,11 @@ const AdminPortal: React.FC = () => {
 
       toast({
         title: 'Success',
-        description: `Assigned ${selectedStudents.length} student(s) to teacher.`,
+        description: `Assigned ${selectedStudents.length} student(s) to teachers.`,
       })
 
-      setSelectedTeacher('')
+      setSelectedQuranTeacher('')
+      setSelectedIslamicStudiesTeacher('')
       setSelectedStudents([])
       loadDashboardData()
     } catch (err: any) {
@@ -1977,24 +1979,41 @@ const AdminPortal: React.FC = () => {
                 <CardHeader>
                   <CardTitle>Assign Students to Teachers</CardTitle>
                   <CardDescription>
-                    Select a teacher and students to assign them
+                    Select Quran teacher (First Hour) and Islamic Studies teacher (Second Hour) for students
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label>Select Teacher</Label>
-                    <Select value={selectedTeacher} onValueChange={setSelectedTeacher}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Choose a teacher" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {teachers.map((teacher) => (
-                          <SelectItem key={teacher.id} value={teacher.id.toString()}>
-                            {teacher.first_name} {teacher.last_name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Quran Teacher (First Hour)</Label>
+                      <Select value={selectedQuranTeacher} onValueChange={setSelectedQuranTeacher}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Choose Quran teacher" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {teachers.map((teacher) => (
+                            <SelectItem key={teacher.id} value={teacher.id.toString()}>
+                              {teacher.first_name} {teacher.last_name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Islamic Studies Teacher (Second Hour)</Label>
+                      <Select value={selectedIslamicStudiesTeacher} onValueChange={setSelectedIslamicStudiesTeacher}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Choose Islamic Studies teacher" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {teachers.map((teacher) => (
+                            <SelectItem key={teacher.id} value={teacher.id.toString()}>
+                              {teacher.first_name} {teacher.last_name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
 
                   <div className="space-y-2">
@@ -2055,10 +2074,10 @@ const AdminPortal: React.FC = () => {
 
                   <Button
                     onClick={handleAssignStudents}
-                    disabled={!selectedTeacher || selectedStudents.length === 0 || loading}
+                    disabled={!selectedQuranTeacher || !selectedIslamicStudiesTeacher || selectedStudents.length === 0 || loading}
                     className="w-full"
                   >
-                    Assign {selectedStudents.length} Student(s) to Teacher
+                    Assign {selectedStudents.length} Student(s) to Teachers
                   </Button>
                 </CardContent>
               </Card>

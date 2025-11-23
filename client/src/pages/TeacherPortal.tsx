@@ -213,7 +213,8 @@ interface StudentNote {
 const TeacherPortal: React.FC = () => {
   const [, setLocation] = useLocation()
   const [teacher, setTeacher] = useState<Teacher | null>(null)
-  const [students, setStudents] = useState<Student[]>([])
+  const [quranStudents, setQuranStudents] = useState<Student[]>([])
+  const [islamicStudiesStudents, setIslamicStudiesStudents] = useState<Student[]>([])
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -313,8 +314,8 @@ const TeacherPortal: React.FC = () => {
       if (teacherError) throw teacherError
       setTeacher(teacherData)
 
-      // Load assigned students
-      const { data: teacherStudents, error: studentsError } = await supabase
+      // Load Quran students (where this teacher is the Quran teacher)
+      const { data: quranTeacherStudents, error: quranStudentsError } = await supabase
         .from('teacher_students')
         .select(`
           student_id,
@@ -335,16 +336,47 @@ const TeacherPortal: React.FC = () => {
             parent_id
           )
         `)
-        .eq('teacher_id', teacherId)
+        .eq('quran_teacher_id', teacherId)
 
-      if (studentsError) throw studentsError
+      if (quranStudentsError) throw quranStudentsError
       
-      // Extract students from the join result
-      const studentList = (teacherStudents || [])
+      // Load Islamic Studies students (where this teacher is the Islamic Studies teacher)
+      const { data: islamicStudiesTeacherStudents, error: islamicStudiesStudentsError } = await supabase
+        .from('teacher_students')
+        .select(`
+          student_id,
+          students (
+            id,
+            student_id,
+            first_name,
+            last_name,
+            grade,
+            date_of_birth,
+            gender,
+            current_school,
+            quran_level,
+            quran_page,
+            quran_surah,
+            quran_ayah,
+            behavior_standing,
+            parent_id
+          )
+        `)
+        .eq('islamic_studies_teacher_id', teacherId)
+
+      if (islamicStudiesStudentsError) throw islamicStudiesStudentsError
+      
+      // Extract students from the join results
+      const quranStudentList = (quranTeacherStudents || [])
         .map((ts: any) => ts.students)
         .filter(Boolean)
       
-      setStudents(studentList)
+      const islamicStudiesStudentList = (islamicStudiesTeacherStudents || [])
+        .map((ts: any) => ts.students)
+        .filter(Boolean)
+      
+      setQuranStudents(quranStudentList)
+      setIslamicStudiesStudents(islamicStudiesStudentList)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load teacher data')
     } finally {
@@ -1007,40 +1039,88 @@ const TeacherPortal: React.FC = () => {
             </Alert>
           )}
 
-          {/* Students List */}
-          <Card>
-            <CardHeader>
-              <CardTitle>My Students</CardTitle>
-              <CardDescription>Click on a student to view and manage their details</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {students.length === 0 ? (
-                <p className="text-gray-500">No students assigned yet. Please contact the administrator.</p>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {students.map((student) => (
-                    <div
-                      key={student.id}
-                      onClick={() => handleStudentClick(student)}
-                      className="border rounded-lg p-4 cursor-pointer hover:bg-gray-50 transition-colors"
-                    >
-                      <h3 className="font-semibold text-lg">
-                        {student.first_name} {student.last_name}
-                      </h3>
-                      <p className="text-sm text-gray-600">
-                        {student.grade} • ID: {student.student_id || `STU-${student.id.toString().padStart(4, '0')}`}
-                      </p>
-                      {student.current_school && (
-                        <p className="text-sm text-gray-500 mt-1">
-                          {student.current_school}
+          {/* Students List - Two Sections */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Quran Students */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <BookOpen className="h-5 w-5 text-primary" />
+                  Quran Students
+                </CardTitle>
+                <CardDescription>
+                  Students assigned to you for Quran studies (First Hour)
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {quranStudents.length === 0 ? (
+                  <p className="text-gray-500">No Quran students assigned yet.</p>
+                ) : (
+                  <div className="grid grid-cols-1 gap-3">
+                    {quranStudents.map((student) => (
+                      <div
+                        key={`quran-${student.id}`}
+                        onClick={() => handleStudentClick(student)}
+                        className="border rounded-lg p-4 cursor-pointer hover:bg-gray-50 transition-colors"
+                      >
+                        <h3 className="font-semibold text-lg">
+                          {student.first_name} {student.last_name}
+                        </h3>
+                        <p className="text-sm text-gray-600">
+                          {student.grade} • ID: {student.student_id || `STU-${student.id.toString().padStart(4, '0')}`}
                         </p>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                        {student.current_school && (
+                          <p className="text-sm text-gray-500 mt-1">
+                            {student.current_school}
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Islamic Studies Students */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="h-5 w-5 text-primary" />
+                  Islamic Studies Students
+                </CardTitle>
+                <CardDescription>
+                  Students assigned to you for Islamic Studies (Second Hour)
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {islamicStudiesStudents.length === 0 ? (
+                  <p className="text-gray-500">No Islamic Studies students assigned yet.</p>
+                ) : (
+                  <div className="grid grid-cols-1 gap-3">
+                    {islamicStudiesStudents.map((student) => (
+                      <div
+                        key={`islamic-${student.id}`}
+                        onClick={() => handleStudentClick(student)}
+                        className="border rounded-lg p-4 cursor-pointer hover:bg-gray-50 transition-colors"
+                      >
+                        <h3 className="font-semibold text-lg">
+                          {student.first_name} {student.last_name}
+                        </h3>
+                        <p className="text-sm text-gray-600">
+                          {student.grade} • ID: {student.student_id || `STU-${student.id.toString().padStart(4, '0')}`}
+                        </p>
+                        {student.current_school && (
+                          <p className="text-sm text-gray-500 mt-1">
+                            {student.current_school}
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
 
