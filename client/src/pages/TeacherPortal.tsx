@@ -1528,15 +1528,15 @@ const TeacherPortal: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-neutral-background py-8">
-      <div className="container mx-auto px-4">
+      <div className="container mx-auto px-2 sm:px-4">
         <div className="max-w-6xl mx-auto">
           {/* Header */}
-          <div className="flex justify-between items-center mb-6">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4 sm:mb-6">
             <div>
-              <h1 className="text-3xl font-bold text-primary font-amiri">
+              <h1 className="text-2xl sm:text-3xl font-bold text-primary font-amiri">
                 Teacher Portal
               </h1>
-              <p className="text-gray-600 mt-1">
+              <p className="text-sm sm:text-base text-gray-600 mt-1">
                 Welcome, {teacher?.first_name} {teacher?.last_name}
               </p>
             </div>
@@ -1583,19 +1583,19 @@ const TeacherPortal: React.FC = () => {
 
           {/* Tabs for My Students and All Teachers */}
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="mb-6">
-              <TabsTrigger value="my-students">My Students</TabsTrigger>
-              <TabsTrigger value="all-teachers">All Teachers</TabsTrigger>
+            <TabsList className="mb-4 sm:mb-6 gap-1 w-full">
+              <TabsTrigger value="my-students" className="flex-1 text-xs sm:text-sm">My Students</TabsTrigger>
+              <TabsTrigger value="all-teachers" className="flex-1 text-xs sm:text-sm">All Teachers</TabsTrigger>
             </TabsList>
 
             {/* My Students Tab */}
             <TabsContent value="my-students" className="space-y-4">
-              <div className="flex justify-between items-center">
-                <h2 className="text-xl font-semibold">My Assigned Students</h2>
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                <h2 className="text-lg sm:text-xl font-semibold">My Assigned Students</h2>
                 <Button onClick={() => {
                   setShowAssignStudentsDialog(true)
                   loadAllStudents()
-                }}>
+                }} size="sm" className="w-full sm:w-auto">
                   <Plus className="mr-2 h-4 w-4" />
                   Assign Students to Me
                 </Button>
@@ -1801,7 +1801,7 @@ const TeacherPortal: React.FC = () => {
 
       {/* Student Detail Dialog */}
       <Dialog open={showStudentDetail} onOpenChange={setShowStudentDetail}>
-        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="w-[95vw] sm:w-full max-w-5xl max-h-[90vh] overflow-y-auto p-4 sm:p-6">
           {loadingStudentDetails ? (
             <div className="flex items-center justify-center py-12">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -1829,30 +1829,30 @@ const TeacherPortal: React.FC = () => {
               </DialogHeader>
 
           <Tabs defaultValue="profile" className="w-full mt-4">
-            <TabsList className="flex-wrap h-auto w-full">
-              <TabsTrigger value="profile" className="flex items-center gap-2">
-                <UserCheck className="h-4 w-4" />
-                Profile
+            <TabsList className="flex-wrap h-auto w-full gap-1">
+              <TabsTrigger value="profile" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3">
+                <UserCheck className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span className="hidden sm:inline">Profile</span>
               </TabsTrigger>
-              <TabsTrigger value="attendance" className="flex items-center gap-2">
-                <Calendar className="h-4 w-4" />
-                Attendance
+              <TabsTrigger value="attendance" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3">
+                <Calendar className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span className="hidden sm:inline">Attendance</span>
               </TabsTrigger>
-              <TabsTrigger value="homework" className="flex items-center gap-2">
-                <BookOpen className="h-4 w-4" />
-                Homework
+              <TabsTrigger value="homework" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3">
+                <BookOpen className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span className="hidden sm:inline">Homework</span>
               </TabsTrigger>
-              <TabsTrigger value="behavior" className="flex items-center gap-2">
-                <AlertCircle className="h-4 w-4" />
-                Behavior
+              <TabsTrigger value="behavior" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3">
+                <AlertCircle className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span className="hidden sm:inline">Behavior</span>
               </TabsTrigger>
-              <TabsTrigger value="notes" className="flex items-center gap-2">
-                <FileText className="h-4 w-4" />
-                Notes
+              <TabsTrigger value="notes" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3">
+                <FileText className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span className="hidden sm:inline">Notes</span>
               </TabsTrigger>
-              <TabsTrigger value="class-content" className="flex items-center gap-2">
-                <BookOpen className="h-4 w-4" />
-                Class Content
+              <TabsTrigger value="class-content" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3">
+                <BookOpen className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span className="hidden sm:inline">Class Content</span>
               </TabsTrigger>
             </TabsList>
 
@@ -1869,7 +1869,7 @@ const TeacherPortal: React.FC = () => {
                 </Button>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                 {/* Quran Progress Card */}
                 <Card>
                   <CardHeader>
@@ -2502,7 +2502,7 @@ const TeacherPortal: React.FC = () => {
 
       {/* Profile Edit Dialog */}
       <Dialog open={showProfileEditDialog} onOpenChange={setShowProfileEditDialog}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="w-[95vw] sm:w-full max-w-2xl p-4 sm:p-6">
           <DialogHeader>
             <DialogTitle>Edit Student Profile</DialogTitle>
             <DialogDescription>

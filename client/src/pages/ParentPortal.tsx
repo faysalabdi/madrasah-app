@@ -557,15 +557,15 @@ const ParentPortal: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-neutral-background py-8">
-      <div className="container mx-auto px-4">
+      <div className="container mx-auto px-2 sm:px-4">
         <div className="max-w-6xl mx-auto">
           {/* Header */}
-          <div className="flex justify-between items-center mb-6">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4 sm:mb-6">
             <div>
-              <h1 className="text-3xl font-bold text-primary font-amiri">
+              <h1 className="text-2xl sm:text-3xl font-bold text-primary font-amiri">
                 Parent Portal
               </h1>
-              <p className="text-gray-600 mt-1">
+              <p className="text-sm sm:text-base text-gray-600 mt-1">
                 Welcome, {parent?.parent1_first_name} {parent?.parent1_last_name}
               </p>
             </div>
@@ -631,8 +631,8 @@ const ParentPortal: React.FC = () => {
           {/* Term Fees Alert */}
           {needsTermFees() && (
             <Alert className="mb-6 border-yellow-500 bg-yellow-50">
-              <AlertDescription className="flex items-center justify-between flex-wrap gap-2">
-                <span className="font-medium">
+              <AlertDescription className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <span className="font-medium text-sm sm:text-base">
                   Term fees are due for {studentsNeedingTermFees().length} student{studentsNeedingTermFees().length !== 1 ? 's' : ''}: {studentsNeedingTermFees().map(s => `${s.first_name} ${s.last_name}`).join(', ')}
                 </span>
                 {allStudentsNeedPayment() ? (
@@ -640,11 +640,12 @@ const ParentPortal: React.FC = () => {
                     onClick={() => handlePayTermFees()}
                     disabled={payingFor !== null}
                     size="sm"
+                    className="w-full sm:w-auto"
                   >
                     {payingFor === 0 ? 'Processing...' : 'Pay Term Fees for All'}
                   </Button>
                 ) : (
-                  <span className="text-sm text-gray-600">
+                  <span className="text-xs sm:text-sm text-gray-600">
                     Click "Pay Term Fees" on each student above to pay individually
                   </span>
                 )}
@@ -652,7 +653,7 @@ const ParentPortal: React.FC = () => {
             </Alert>
           )}
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
             {/* Children Section */}
             <Card>
               <CardHeader>
@@ -669,21 +670,21 @@ const ParentPortal: React.FC = () => {
                         key={student.id}
                         className="border rounded-lg p-4 space-y-2"
                       >
-                        <div className="flex justify-between items-start">
+                        <div className="flex flex-col sm:flex-row justify-between items-start gap-3">
                           <div className="flex-1 cursor-pointer" onClick={() => handleStudentClick(student)}>
-                            <h3 className="font-semibold text-lg hover:text-primary">
+                            <h3 className="font-semibold text-base sm:text-lg hover:text-primary">
                               {student.first_name} {student.last_name}
                             </h3>
-                            <p className="text-sm text-gray-600">
+                            <p className="text-xs sm:text-sm text-gray-600 break-words">
                               {student.grade} • {student.program ? `Program ${student.program}` : 'Program Not Set'} • Student ID: {student.student_id || `STU-${student.id.toString().padStart(4, '0')}`}
                             </p>
                             {student.quran_level && (
-                              <p className="text-sm text-gray-500">
+                              <p className="text-xs sm:text-sm text-gray-500">
                                 Quran Level: {student.quran_level}
                               </p>
                             )}
                             {student.current_school && (
-                              <p className="text-sm text-gray-500">
+                              <p className="text-xs sm:text-sm text-gray-500">
                                 School: {student.current_school}
                               </p>
                             )}
@@ -691,9 +692,9 @@ const ParentPortal: React.FC = () => {
                               Click to view details →
                             </p>
                           </div>
-                          <div className="flex gap-2">
+                          <div className="flex gap-2 w-full sm:w-auto">
                             {hasPaidTermFees(student.id) ? (
-                              <Badge variant="default" className="bg-green-500">
+                              <Badge variant="default" className="bg-green-500 text-xs sm:text-sm">
                                 Term Fees Paid
                               </Badge>
                             ) : (
@@ -705,6 +706,7 @@ const ParentPortal: React.FC = () => {
                                   handlePayTermFees(student.id)
                                 }}
                                 disabled={payingFor === student.id}
+                                className="text-xs sm:text-sm flex-1 sm:flex-initial"
                               >
                                 {payingFor === student.id ? 'Processing...' : 'Pay Term Fees'}
                               </Button>
@@ -737,13 +739,13 @@ const ParentPortal: React.FC = () => {
                       return (
                         <div
                           key={payment.id}
-                          className="border rounded-lg p-3 flex justify-between items-center"
+                          className="border rounded-lg p-3 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3"
                         >
-                          <div>
-                            <p className="font-medium">
+                          <div className="flex-1">
+                            <p className="font-medium text-sm sm:text-base">
                               ${payment.amount} {payment.currency.toUpperCase()}
                             </p>
-                            <p className="text-sm text-gray-600">
+                            <p className="text-xs sm:text-sm text-gray-600">
                               {new Date(payment.created_at).toLocaleDateString()}
                             </p>
                             {paymentStudent && (
@@ -756,7 +758,7 @@ const ParentPortal: React.FC = () => {
                                 For: All students
                               </p>
                             )}
-                            <div className="flex gap-2 mt-1">
+                            <div className="flex flex-wrap gap-2 mt-2">
                               <Badge
                                 variant={
                                   payment.status === 'succeeded' || payment.status === 'trial_active'
@@ -811,7 +813,7 @@ const ParentPortal: React.FC = () => {
                     Order Books
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                <DialogContent className="w-[95vw] sm:w-full max-w-2xl max-h-[90vh] overflow-y-auto p-4 sm:p-6">
                   <DialogHeader>
                     <DialogTitle>Order Books</DialogTitle>
                     <DialogDescription>
@@ -922,7 +924,7 @@ const ParentPortal: React.FC = () => {
 
       {/* Student Detail Dialog */}
       <Dialog open={showStudentDetail} onOpenChange={setShowStudentDetail}>
-        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="w-[95vw] sm:w-full max-w-5xl max-h-[90vh] overflow-y-auto p-4 sm:p-6">
           <DialogHeader>
             <DialogTitle className="text-2xl">
               {selectedStudent?.first_name} {selectedStudent?.last_name}
@@ -933,36 +935,36 @@ const ParentPortal: React.FC = () => {
           </DialogHeader>
 
           <Tabs defaultValue="profile" className="w-full mt-4">
-            <TabsList className="flex-wrap h-auto w-full">
-              <TabsTrigger value="profile" className="flex items-center gap-2">
-                <UserCheck className="h-4 w-4" />
-                Profile
+            <TabsList className="flex-wrap h-auto w-full gap-1">
+              <TabsTrigger value="profile" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3">
+                <UserCheck className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span className="hidden sm:inline">Profile</span>
               </TabsTrigger>
-              <TabsTrigger value="attendance" className="flex items-center gap-2">
-                <Calendar className="h-4 w-4" />
-                Attendance
+              <TabsTrigger value="attendance" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3">
+                <Calendar className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span className="hidden sm:inline">Attendance</span>
               </TabsTrigger>
-              <TabsTrigger value="homework" className="flex items-center gap-2">
-                <BookOpen className="h-4 w-4" />
-                Homework
+              <TabsTrigger value="homework" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3">
+                <BookOpen className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span className="hidden sm:inline">Homework</span>
               </TabsTrigger>
-              <TabsTrigger value="behavior" className="flex items-center gap-2">
-                <FileText className="h-4 w-4" />
-                Behavior
+              <TabsTrigger value="behavior" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3">
+                <FileText className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span className="hidden sm:inline">Behavior</span>
               </TabsTrigger>
-              <TabsTrigger value="notes" className="flex items-center gap-2">
-                <FileText className="h-4 w-4" />
-                Notes
+              <TabsTrigger value="notes" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3">
+                <FileText className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span className="hidden sm:inline">Notes</span>
               </TabsTrigger>
-              <TabsTrigger value="class-content" className="flex items-center gap-2">
-                <BookOpen className="h-4 w-4" />
-                Class Content
+              <TabsTrigger value="class-content" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3">
+                <BookOpen className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span className="hidden sm:inline">Class Content</span>
               </TabsTrigger>
             </TabsList>
 
             {/* Profile Tab */}
             <TabsContent value="profile" className="mt-6 space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                 {/* Quran Progress Card */}
                 <Card>
                   <CardHeader>

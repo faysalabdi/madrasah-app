@@ -1763,16 +1763,16 @@ const AdminPortal: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-neutral-background py-8">
-      <div className="container mx-auto px-4">
+    <div className="min-h-screen bg-neutral-background py-4 sm:py-8">
+      <div className="container mx-auto px-2 sm:px-4">
         <div className="max-w-7xl mx-auto">
           {/* Header */}
-          <div className="flex justify-between items-center mb-6">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4 sm:mb-6">
             <div>
-              <h1 className="text-3xl font-bold text-primary font-amiri">
+              <h1 className="text-2xl sm:text-3xl font-bold text-primary font-amiri">
                 Admin Portal
               </h1>
-              <p className="text-gray-600 mt-1">
+              <p className="text-sm sm:text-base text-gray-600 mt-1">
                 Welcome, {localStorage.getItem('adminName') || 'Administrator'}
               </p>
             </div>
@@ -1818,20 +1818,20 @@ const AdminPortal: React.FC = () => {
           )}
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="flex-wrap h-auto w-full">
-              <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
-              <TabsTrigger value="payments">Payments</TabsTrigger>
-              <TabsTrigger value="invoices">Invoices</TabsTrigger>
-              <TabsTrigger value="email">Email</TabsTrigger>
-              <TabsTrigger value="teachers">Teachers</TabsTrigger>
-              <TabsTrigger value="students">Students</TabsTrigger>
-              <TabsTrigger value="parents">Parents</TabsTrigger>
-              <TabsTrigger value="admins">Admins</TabsTrigger>
+            <TabsList className="flex-wrap h-auto w-full gap-1">
+              <TabsTrigger value="dashboard" className="text-xs sm:text-sm px-2 sm:px-3">Dashboard</TabsTrigger>
+              <TabsTrigger value="payments" className="text-xs sm:text-sm px-2 sm:px-3">Payments</TabsTrigger>
+              <TabsTrigger value="invoices" className="text-xs sm:text-sm px-2 sm:px-3">Invoices</TabsTrigger>
+              <TabsTrigger value="email" className="text-xs sm:text-sm px-2 sm:px-3">Email</TabsTrigger>
+              <TabsTrigger value="teachers" className="text-xs sm:text-sm px-2 sm:px-3">Teachers</TabsTrigger>
+              <TabsTrigger value="students" className="text-xs sm:text-sm px-2 sm:px-3">Students</TabsTrigger>
+              <TabsTrigger value="parents" className="text-xs sm:text-sm px-2 sm:px-3">Parents</TabsTrigger>
+              <TabsTrigger value="admins" className="text-xs sm:text-sm px-2 sm:px-3">Admins</TabsTrigger>
             </TabsList>
 
             {/* Dashboard Tab */}
             <TabsContent value="dashboard" className="mt-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 sm:gap-4">
                 <Card>
                   <CardHeader className="pb-2">
                     <CardDescription>Total Parents</CardDescription>
@@ -1883,7 +1883,7 @@ const AdminPortal: React.FC = () => {
                   <DialogTrigger asChild>
                     <Button>Create Manual Payment</Button>
                   </DialogTrigger>
-                  <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                  <DialogContent className="w-[95vw] sm:w-full max-w-4xl max-h-[90vh] overflow-y-auto p-4 sm:p-6">
                     <DialogHeader>
                       <DialogTitle>Create Manual Payment</DialogTitle>
                       <DialogDescription>
@@ -2247,16 +2247,17 @@ const AdminPortal: React.FC = () => {
                     </CardHeader>
                     <CardContent>
                       <div className="overflow-x-auto">
-                        <Table>
-                          <TableHeader>
-                            <TableRow>
-                              <TableHead>Invoice #</TableHead>
-                              <TableHead>Parent</TableHead>
-                              <TableHead>Amount</TableHead>
-                              <TableHead>Status</TableHead>
-                              <TableHead>Due Date</TableHead>
-                              <TableHead>Created</TableHead>
-                              <TableHead>Actions</TableHead>
+                        <div className="overflow-x-auto">
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead className="text-xs sm:text-sm">Invoice #</TableHead>
+                                <TableHead className="text-xs sm:text-sm">Parent</TableHead>
+                                <TableHead className="text-xs sm:text-sm">Amount</TableHead>
+                                <TableHead className="text-xs sm:text-sm">Status</TableHead>
+                              <TableHead className="text-xs sm:text-sm hidden md:table-cell">Due Date</TableHead>
+                              <TableHead className="text-xs sm:text-sm hidden lg:table-cell">Created</TableHead>
+                              <TableHead className="text-xs sm:text-sm">Actions</TableHead>
                             </TableRow>
                           </TableHeader>
                           <TableBody>
@@ -2269,17 +2270,17 @@ const AdminPortal: React.FC = () => {
                               
                               return (
                                 <TableRow key={invoice.id}>
-                                  <TableCell className="font-mono text-sm">
+                                  <TableCell className="font-mono text-xs sm:text-sm">
                                     {invoice.number || invoice.id.substring(0, 12)}
                                   </TableCell>
-                                  <TableCell>
+                                  <TableCell className="text-xs sm:text-sm">
                                     {invoice.parent 
                                       ? `${invoice.parent.parent1_first_name} ${invoice.parent.parent1_last_name}`
                                       : 'Unknown Parent'
                                     }
                                   </TableCell>
-                                  <TableCell>${amount.toFixed(2)}</TableCell>
-                                  <TableCell>
+                                  <TableCell className="text-xs sm:text-sm">${amount.toFixed(2)}</TableCell>
+                                  <TableCell className="text-xs sm:text-sm">
                                     <Badge 
                                       variant={
                                         status === 'paid' ? 'default' :
@@ -2287,13 +2288,14 @@ const AdminPortal: React.FC = () => {
                                         status === 'draft' ? 'outline' :
                                         'destructive'
                                       }
+                                      className="text-xs"
                                     >
                                       {status}
                                     </Badge>
                                   </TableCell>
-                                  <TableCell>{dueDate}</TableCell>
-                                  <TableCell>{createdDate}</TableCell>
-                                  <TableCell>
+                                  <TableCell className="text-xs sm:text-sm hidden md:table-cell">{dueDate}</TableCell>
+                                  <TableCell className="text-xs sm:text-sm hidden lg:table-cell">{createdDate}</TableCell>
+                                  <TableCell className="text-xs sm:text-sm">
                                     {invoiceUrl && (
                                       <Button
                                         variant="outline"
@@ -2309,6 +2311,7 @@ const AdminPortal: React.FC = () => {
                             })}
                           </TableBody>
                         </Table>
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
@@ -2879,7 +2882,7 @@ const AdminPortal: React.FC = () => {
 
               {/* Teacher Student Assignment Dialog */}
               <Dialog open={showTeacherAssignmentDialog} onOpenChange={setShowTeacherAssignmentDialog}>
-                <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+                <DialogContent className="w-[95vw] sm:w-full max-w-5xl max-h-[90vh] overflow-y-auto p-4 sm:p-6">
                   {!selectedTeacherForAssignment ? (
                     <div className="py-12 text-center">
                       <p className="text-gray-500">No teacher selected</p>
@@ -3309,7 +3312,7 @@ const AdminPortal: React.FC = () => {
                       View all students and their term fee payment status
                     </CardDescription>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mt-4">
                     <div className="space-y-2">
                       <Label>Filter by Program</Label>
                       <Select value={programFilter} onValueChange={setProgramFilter}>
@@ -3395,26 +3398,26 @@ const AdminPortal: React.FC = () => {
                       const parent = parents.find(p => p.id === student.parent_id)
                       return (
                         <div key={student.id} className="border rounded-lg p-3">
-                          <div className="flex justify-between items-start">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-1">
+                          <div className="flex flex-col sm:flex-row justify-between items-start gap-3">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex flex-wrap items-center gap-2 mb-1">
                                 <p 
-                                  className="font-medium cursor-pointer hover:text-primary hover:underline"
+                                  className="font-medium text-sm sm:text-base cursor-pointer hover:text-primary hover:underline break-words"
                                   onClick={() => handleStudentClick(student)}
                                 >
                                   {student.first_name} {student.last_name}
                                 </p>
                                 {student.hasPaidTermFees ? (
-                                  <Badge variant="default" className="bg-green-100 text-green-800 border-green-300">
+                                  <Badge variant="default" className="bg-green-100 text-green-800 border-green-300 text-xs">
                                     Term Fees Paid
                                   </Badge>
                                 ) : (
-                                  <Badge variant="secondary" className="bg-red-100 text-red-800 border-red-300">
+                                  <Badge variant="secondary" className="bg-red-100 text-red-800 border-red-300 text-xs">
                                     Term Fees Unpaid
                                   </Badge>
                                 )}
                               </div>
-                              <p className="text-sm text-gray-600">
+                              <p className="text-xs sm:text-sm text-gray-600 break-words">
                                 {student.grade} • {student.program ? `Program ${student.program}` : 'Program Not Set'} • {parent?.parent1_first_name} {parent?.parent1_last_name}
                                 {student.quran_level && ` • ${student.quran_level}`}
                               </p>
@@ -3429,7 +3432,7 @@ const AdminPortal: React.FC = () => {
                               size="sm"
                               onClick={() => handleDeleteStudent(student)}
                               disabled={loading}
-                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50 shrink-0"
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
@@ -3581,7 +3584,7 @@ const AdminPortal: React.FC = () => {
               
               {/* Bulk Invoice Dialog */}
               <Dialog open={showBulkInvoiceDialog} onOpenChange={setShowBulkInvoiceDialog}>
-                <DialogContent className="max-h-[90vh] overflow-y-auto">
+                <DialogContent className="w-[95vw] sm:w-full max-h-[90vh] overflow-y-auto p-4 sm:p-6">
                   <DialogHeader>
                     <DialogTitle>
                       {bulkInvoiceMode === 'all' ? 'Bulk Invoice All Parents' : `Invoice Selected Parents (${selectedParentsForInvoice.length})`}
@@ -4353,7 +4356,7 @@ const AdminPortal: React.FC = () => {
 
             {/* Account Settings Dialog */}
             <Dialog open={showAccountSettingsDialog} onOpenChange={setShowAccountSettingsDialog}>
-              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+              <DialogContent className="w-[95vw] sm:w-full max-w-2xl max-h-[90vh] overflow-y-auto p-4 sm:p-6">
                 <DialogHeader>
                   <DialogTitle>Account Settings</DialogTitle>
                   <DialogDescription>
