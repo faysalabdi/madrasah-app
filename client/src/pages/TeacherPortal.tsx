@@ -220,6 +220,25 @@ const TeacherPortal: React.FC = () => {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [programFilter, setProgramFilter] = useState<string>('all') // 'all', 'A', 'B', 'none'
+  const [activeTab, setActiveTab] = useState<string>('my-students') // 'my-students' or 'all-teachers'
+  
+  // Student assignment
+  const [showAssignStudentsDialog, setShowAssignStudentsDialog] = useState(false)
+  const [allStudents, setAllStudents] = useState<Student[]>([])
+  const [selectedStudentsForQuran, setSelectedStudentsForQuran] = useState<number[]>([])
+  const [selectedStudentsForIslamicStudies, setSelectedStudentsForIslamicStudies] = useState<number[]>([])
+  const [assignProgramFilter, setAssignProgramFilter] = useState<string>('all')
+  const [assignGradeFilter, setAssignGradeFilter] = useState<string>('all')
+  const [assignQuranLevelFilter, setAssignQuranLevelFilter] = useState<string>('all')
+  const [quranAssignedStudentIds, setQuranAssignedStudentIds] = useState<Set<number>>(new Set())
+  const [islamicStudiesAssignedStudentIds, setIslamicStudiesAssignedStudentIds] = useState<Set<number>>(new Set())
+  
+  // All teachers view
+  const [allTeachers, setAllTeachers] = useState<any[]>([])
+  const [selectedTeacherForView, setSelectedTeacherForView] = useState<any | null>(null)
+  const [showTeacherViewDialog, setShowTeacherViewDialog] = useState(false)
+  const [teacherViewQuranStudents, setTeacherViewQuranStudents] = useState<Student[]>([])
+  const [teacherViewIslamicStudiesStudents, setTeacherViewIslamicStudiesStudents] = useState<Student[]>([])
   
   // Student detail data
   const [attendance, setAttendance] = useState<Attendance[]>([])
@@ -381,10 +400,322 @@ const TeacherPortal: React.FC = () => {
       
       setQuranStudents(quranStudentList)
       setIslamicStudiesStudents(islamicStudiesStudentList)
+      
+      // Load all teachers for the "All Teachers" view
+      await loadAllTeachers()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load teacher data')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const loadAllStudents = async () => {
+    if (!teacher) return
+    
+    try {
+      // Load all students
+      const { data, error } = await supabase
+        .from('students')
+        .select('id, first_name, last_name, grade, program, quran_level')
+        .order('first_name')
+      
+      if (error) throw error
+      
+      // Load current assignments to filter out already-assigned students
+      const { data: currentAssignments } = await supabase
+        .from('teacher_students')
+        .select('student_id, quran_teacher_id, islamic_studies_teacher_id')
+        .eq('quran_teacher_id', teacher.id)
+        .or(`islamic_studies_teacher_id.eq.${teacher.id}`)
+      
+      // Create sets of already-assigned student IDs
+      const quranAssignedIds = new Set(
+        (currentAssignments || [])
+          .filter(ts => ts.quran_teacher_id === teacher.id)
+          .map(ts => ts.student_id)
+      )
+      
+      const islamicStudiesAssignedIds = new Set(
+        (currentAssignments || [])
+          .filter(ts => ts.islamic_studies_teacher_id === teacher.id)
+          .map(ts => ts.student_id)
+      )
+      
+      // Store the assigned IDs for filtering in the dialog
+      setAllStudents(data as any || [])
+      // Store assigned IDs in state for use in the dialog
+      setQuranAssignedStudentIds(quranAssignedIds)
+      setIslamicStudiesAssignedStudentIds(islamicStudiesAssignedIds)
+    } catch (err) {
+      console.error('Error loading all students:', err)
+    }
+  }
+
+  const loadAllTeachers = async () => {
+    try {
+      const { data: teachersData, error: teachersError } = await supabase
+        .from('teachers')
+        .select('id, first_name, last_name, email')
+        .order('first_name')
+      
+      if (teachersError) throw teachersError
+      
+      // Get student counts for each teacher
+      const teachersWithCounts = await Promise.all(
+        (teachersData || []).map(async (t) => {
+          const { count: quranCount } = await supabase
+            .from('teacher_students')
+            .select('*', { count: 'exact', head: true })
+            .eq('quran_teacher_id', t.id)
+          
+          const { count: islamicStudiesCount } = await supabase
+            .from('teacher_students')
+            .select('*', { count: 'exact', head: true })
+            .eq('islamic_studies_teacher_id', t.id)
+          
+          return {
+            ...t,
+            quran_student_count: quranCount || 0,
+            islamic_studies_student_count: islamicStudiesCount || 0,
+          }
+        })
+      )
+      
+      setAllTeachers(teachersWithCounts)
+    } catch (err) {
+      console.error('Error loading all teachers:', err)
+    }
+  }
+
+  const handleAssignQuranStudents = async () => {
+    if (!teacher || selectedStudentsForQuran.length === 0) return
+
+    try {
+      for (const studentId of selectedStudentsForQuran) {
+        // Check if student already has a teacher_students record
+        const { data: existing } = await supabase
+          .from('teacher_students')
+          .select('*')
+          .eq('student_id', studentId)
+          .maybeSingle()
+
+        if (existing) {
+          // Update existing record
+          await supabase
+            .from('teacher_students')
+            .update({ quran_teacher_id: teacher.id })
+            .eq('student_id', studentId)
+        } else {
+          // Create new record
+          await supabase
+            .from('teacher_students')
+            .insert({
+              student_id: studentId,
+              quran_teacher_id: teacher.id,
+              islamic_studies_teacher_id: null,
+            })
+        }
+      }
+
+      setShowAssignStudentsDialog(false)
+      setSelectedStudentsForQuran([])
+      setSelectedStudentsForIslamicStudies([])
+      await loadTeacherData(teacher.id)
+      
+      toast({
+        title: 'Success',
+        description: `Assigned ${selectedStudentsForQuran.length} student(s) to you for Quran.`,
+      })
+    } catch (err: any) {
+      toast({
+        title: 'Error',
+        description: err.message || 'Failed to assign students',
+        variant: 'destructive',
+      })
+    }
+  }
+
+  const handleAssignIslamicStudiesStudents = async () => {
+    if (!teacher || selectedStudentsForIslamicStudies.length === 0) return
+
+    try {
+      for (const studentId of selectedStudentsForIslamicStudies) {
+        // Check if student already has a teacher_students record
+        const { data: existing } = await supabase
+          .from('teacher_students')
+          .select('*')
+          .eq('student_id', studentId)
+          .maybeSingle()
+
+        if (existing) {
+          // Update existing record
+          await supabase
+            .from('teacher_students')
+            .update({ islamic_studies_teacher_id: teacher.id })
+            .eq('student_id', studentId)
+        } else {
+          // Create new record
+          await supabase
+            .from('teacher_students')
+            .insert({
+              student_id: studentId,
+              quran_teacher_id: null,
+              islamic_studies_teacher_id: teacher.id,
+            })
+        }
+      }
+
+      setShowAssignStudentsDialog(false)
+      setSelectedStudentsForQuran([])
+      setSelectedStudentsForIslamicStudies([])
+      await loadTeacherData(teacher.id)
+      
+      toast({
+        title: 'Success',
+        description: `Assigned ${selectedStudentsForIslamicStudies.length} student(s) to you for Islamic Studies.`,
+      })
+    } catch (err: any) {
+      toast({
+        title: 'Error',
+        description: err.message || 'Failed to assign students',
+        variant: 'destructive',
+      })
+    }
+  }
+
+  const handleUnassignQuranStudent = async (studentId: number) => {
+    if (!teacher || !confirm('Are you sure you want to unassign this student from Quran?')) return
+
+    try {
+      // Check if student has Islamic Studies teacher
+      const { data: existing } = await supabase
+        .from('teacher_students')
+        .select('*')
+        .eq('student_id', studentId)
+        .maybeSingle()
+
+      if (existing) {
+        if (existing.islamic_studies_teacher_id) {
+          // Update to remove only Quran teacher
+          await supabase
+            .from('teacher_students')
+            .update({ quran_teacher_id: null })
+            .eq('student_id', studentId)
+        } else {
+          // Delete the entire record if no Islamic Studies teacher
+          await supabase
+            .from('teacher_students')
+            .delete()
+            .eq('student_id', studentId)
+        }
+      }
+
+      await loadTeacherData(teacher.id)
+      
+      toast({
+        title: 'Success',
+        description: 'Student unassigned from Quran.',
+      })
+    } catch (err: any) {
+      toast({
+        title: 'Error',
+        description: err.message || 'Failed to unassign student',
+        variant: 'destructive',
+      })
+    }
+  }
+
+  const handleUnassignIslamicStudiesStudent = async (studentId: number) => {
+    if (!teacher || !confirm('Are you sure you want to unassign this student from Islamic Studies?')) return
+
+    try {
+      // Check if student has Quran teacher
+      const { data: existing } = await supabase
+        .from('teacher_students')
+        .select('*')
+        .eq('student_id', studentId)
+        .maybeSingle()
+
+      if (existing) {
+        if (existing.quran_teacher_id) {
+          // Update to remove only Islamic Studies teacher
+          await supabase
+            .from('teacher_students')
+            .update({ islamic_studies_teacher_id: null })
+            .eq('student_id', studentId)
+        } else {
+          // Delete the entire record if no Quran teacher
+          await supabase
+            .from('teacher_students')
+            .delete()
+            .eq('student_id', studentId)
+        }
+      }
+
+      await loadTeacherData(teacher.id)
+      
+      toast({
+        title: 'Success',
+        description: 'Student unassigned from Islamic Studies.',
+      })
+    } catch (err: any) {
+      toast({
+        title: 'Error',
+        description: err.message || 'Failed to unassign student',
+        variant: 'destructive',
+      })
+    }
+  }
+
+  const handleTeacherViewClick = async (teacherData: any) => {
+    setSelectedTeacherForView(teacherData)
+    setShowTeacherViewDialog(true)
+    
+    try {
+      // Load Quran students
+      const { data: quranData } = await supabase
+        .from('teacher_students')
+        .select(`
+          student_id,
+          students (
+            id,
+            first_name,
+            last_name,
+            grade,
+            program,
+            quran_level
+          )
+        `)
+        .eq('quran_teacher_id', teacherData.id)
+      
+      const quranStudentList = (quranData || [])
+        .map((ts: any) => ts.students)
+        .filter(Boolean)
+      setTeacherViewQuranStudents(quranStudentList)
+
+      // Load Islamic Studies students
+      const { data: islamicStudiesData } = await supabase
+        .from('teacher_students')
+        .select(`
+          student_id,
+          students (
+            id,
+            first_name,
+            last_name,
+            grade,
+            program,
+            quran_level
+          )
+        `)
+        .eq('islamic_studies_teacher_id', teacherData.id)
+      
+      const islamicStudiesStudentList = (islamicStudiesData || [])
+        .map((ts: any) => ts.students)
+        .filter(Boolean)
+      setTeacherViewIslamicStudiesStudents(islamicStudiesStudentList)
+    } catch (err) {
+      console.error('Error loading teacher students:', err)
     }
   }
 
@@ -1043,22 +1374,42 @@ const TeacherPortal: React.FC = () => {
             </Alert>
           )}
 
-          {/* Program Filter */}
-          <div className="mb-4 flex justify-end">
-            <Select value={programFilter} onValueChange={setProgramFilter}>
-              <SelectTrigger className="w-[200px]">
-                <SelectValue placeholder="Filter by program" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Programs</SelectItem>
-                <SelectItem value="A">Program A</SelectItem>
-                <SelectItem value="B">Program B</SelectItem>
-                <SelectItem value="none">Not Set</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          {/* Tabs for My Students and All Teachers */}
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="mb-6">
+              <TabsTrigger value="my-students">My Students</TabsTrigger>
+              <TabsTrigger value="all-teachers">All Teachers</TabsTrigger>
+            </TabsList>
 
-          {/* Students List - Two Sections */}
+            {/* My Students Tab */}
+            <TabsContent value="my-students" className="space-y-4">
+              <div className="flex justify-between items-center">
+                <h2 className="text-xl font-semibold">My Assigned Students</h2>
+                <Button onClick={() => {
+                  setShowAssignStudentsDialog(true)
+                  loadAllStudents()
+                }}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Assign Students to Me
+                </Button>
+              </div>
+
+              {/* Program Filter */}
+              <div className="flex justify-end">
+                <Select value={programFilter} onValueChange={setProgramFilter}>
+                  <SelectTrigger className="w-[200px]">
+                    <SelectValue placeholder="Filter by program" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Programs</SelectItem>
+                    <SelectItem value="A">Program A</SelectItem>
+                    <SelectItem value="B">Program B</SelectItem>
+                    <SelectItem value="none">Not Set</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Students List - Two Sections */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Quran Students */}
             <Card>
@@ -1089,20 +1440,38 @@ const TeacherPortal: React.FC = () => {
                       .map((student) => (
                       <div
                         key={`quran-${student.id}`}
-                        onClick={() => handleStudentClick(student)}
-                        className="border rounded-lg p-4 cursor-pointer hover:bg-gray-50 transition-colors"
+                        className="border rounded-lg p-4 hover:bg-gray-50 transition-colors"
                       >
-                        <h3 className="font-semibold text-lg">
-                          {student.first_name} {student.last_name}
-                        </h3>
-                        <p className="text-sm text-gray-600">
-                          {student.grade} • {student.program ? `Program ${student.program}` : 'Program Not Set'} • ID: {student.student_id || `STU-${student.id.toString().padStart(4, '0')}`}
-                        </p>
-                        {student.current_school && (
-                          <p className="text-sm text-gray-500 mt-1">
-                            {student.current_school}
+                        <div
+                          onClick={() => handleStudentClick(student)}
+                          className="cursor-pointer"
+                        >
+                          <h3 className="font-semibold text-lg">
+                            {student.first_name} {student.last_name}
+                          </h3>
+                          <p className="text-sm text-gray-600">
+                            {student.grade} • {student.program ? `Program ${student.program}` : 'Program Not Set'} • ID: {student.student_id || `STU-${student.id.toString().padStart(4, '0')}`}
                           </p>
-                        )}
+                          {student.current_school && (
+                            <p className="text-sm text-gray-500 mt-1">
+                              {student.current_school}
+                            </p>
+                          )}
+                        </div>
+                        <div className="mt-2 flex justify-end">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleUnassignQuranStudent(student.id)
+                            }}
+                            className="text-red-600 hover:text-red-700"
+                          >
+                            <Trash2 className="h-4 w-4 mr-1" />
+                            Unassign
+                          </Button>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -1139,20 +1508,38 @@ const TeacherPortal: React.FC = () => {
                       .map((student) => (
                       <div
                         key={`islamic-${student.id}`}
-                        onClick={() => handleStudentClick(student)}
-                        className="border rounded-lg p-4 cursor-pointer hover:bg-gray-50 transition-colors"
+                        className="border rounded-lg p-4 hover:bg-gray-50 transition-colors"
                       >
-                        <h3 className="font-semibold text-lg">
-                          {student.first_name} {student.last_name}
-                        </h3>
-                        <p className="text-sm text-gray-600">
-                          {student.grade} • {student.program ? `Program ${student.program}` : 'Program Not Set'} • ID: {student.student_id || `STU-${student.id.toString().padStart(4, '0')}`}
-                        </p>
-                        {student.current_school && (
-                          <p className="text-sm text-gray-500 mt-1">
-                            {student.current_school}
+                        <div
+                          onClick={() => handleStudentClick(student)}
+                          className="cursor-pointer"
+                        >
+                          <h3 className="font-semibold text-lg">
+                            {student.first_name} {student.last_name}
+                          </h3>
+                          <p className="text-sm text-gray-600">
+                            {student.grade} • {student.program ? `Program ${student.program}` : 'Program Not Set'} • ID: {student.student_id || `STU-${student.id.toString().padStart(4, '0')}`}
                           </p>
-                        )}
+                          {student.current_school && (
+                            <p className="text-sm text-gray-500 mt-1">
+                              {student.current_school}
+                            </p>
+                          )}
+                        </div>
+                        <div className="mt-2 flex justify-end">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleUnassignIslamicStudiesStudent(student.id)
+                            }}
+                            className="text-red-600 hover:text-red-700"
+                          >
+                            <Trash2 className="h-4 w-4 mr-1" />
+                            Unassign
+                          </Button>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -1160,6 +1547,48 @@ const TeacherPortal: React.FC = () => {
               </CardContent>
             </Card>
           </div>
+            </TabsContent>
+
+            {/* All Teachers Tab */}
+            <TabsContent value="all-teachers" className="space-y-4">
+              <h2 className="text-xl font-semibold">All Teachers and Their Students</h2>
+              {loading ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                  <span className="ml-2">Loading teachers...</span>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {allTeachers.map((t) => (
+                    <Card
+                      key={t.id}
+                      className="cursor-pointer hover:shadow-md transition-shadow"
+                      onClick={() => handleTeacherViewClick(t)}
+                    >
+                      <CardHeader>
+                        <CardTitle className="text-lg">
+                          {t.first_name} {t.last_name}
+                        </CardTitle>
+                        <CardDescription>{t.email}</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-gray-600">Quran Students:</span>
+                            <Badge variant="outline">{t.quran_student_count || 0}</Badge>
+                          </div>
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-gray-600">Islamic Studies Students:</span>
+                            <Badge variant="outline">{t.islamic_studies_student_count || 0}</Badge>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
 
@@ -1964,6 +2393,241 @@ const TeacherPortal: React.FC = () => {
                 )}
               </Button>
             </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Assign Students Dialog */}
+      <Dialog open={showAssignStudentsDialog} onOpenChange={setShowAssignStudentsDialog}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Assign Students to Me</DialogTitle>
+            <DialogDescription>
+              Select students to assign to yourself for Quran and/or Islamic Studies.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            {/* Filters */}
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <Label>Program</Label>
+                <Select value={assignProgramFilter} onValueChange={setAssignProgramFilter}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Programs</SelectItem>
+                    <SelectItem value="A">Program A</SelectItem>
+                    <SelectItem value="B">Program B</SelectItem>
+                    <SelectItem value="none">Not Set</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Grade</Label>
+                <Select value={assignGradeFilter} onValueChange={setAssignGradeFilter}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Grades</SelectItem>
+                    <SelectItem value="Prep">Prep</SelectItem>
+                    <SelectItem value="Grade 1">Grade 1</SelectItem>
+                    <SelectItem value="Grade 2">Grade 2</SelectItem>
+                    <SelectItem value="Grade 3">Grade 3</SelectItem>
+                    <SelectItem value="Grade 4">Grade 4</SelectItem>
+                    <SelectItem value="Grade 5">Grade 5</SelectItem>
+                    <SelectItem value="Grade 6">Grade 6</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Quran Level</Label>
+                <Select value={assignQuranLevelFilter} onValueChange={setAssignQuranLevelFilter}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Levels</SelectItem>
+                    <SelectItem value="Iqra 1">Iqra 1</SelectItem>
+                    <SelectItem value="Iqra 2">Iqra 2</SelectItem>
+                    <SelectItem value="Iqra 3">Iqra 3</SelectItem>
+                    <SelectItem value="Iqra 4">Iqra 4</SelectItem>
+                    <SelectItem value="Iqra 5">Iqra 5</SelectItem>
+                    <SelectItem value="Iqra 6">Iqra 6</SelectItem>
+                    <SelectItem value="Quran">Quran</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Two columns for Quran and Islamic Studies */}
+            <div className="grid grid-cols-2 gap-4">
+              {/* Quran Students */}
+              <div className="space-y-2">
+                <Label className="text-base font-semibold">Assign for Quran</Label>
+                <div className="border rounded-lg p-3 max-h-96 overflow-y-auto space-y-2">
+                  {allStudents
+                    .filter((s) => {
+                      // Filter out students already assigned to this teacher for Quran
+                      if (quranAssignedStudentIds.has(s.id)) return false
+                      if (assignProgramFilter !== 'all' && assignProgramFilter !== 'none' && s.program !== assignProgramFilter) return false
+                      if (assignProgramFilter === 'none' && s.program) return false
+                      if (assignGradeFilter !== 'all' && s.grade !== assignGradeFilter) return false
+                      if (assignQuranLevelFilter !== 'all' && s.quran_level !== assignQuranLevelFilter) return false
+                      return true
+                    })
+                    .map((student) => {
+                      const isSelected = selectedStudentsForQuran.includes(student.id)
+                      return (
+                        <div
+                          key={student.id}
+                          className="flex items-center space-x-2 p-2 rounded hover:bg-gray-50 cursor-pointer"
+                          onClick={() => {
+                            if (isSelected) {
+                              setSelectedStudentsForQuran(selectedStudentsForQuran.filter(id => id !== student.id))
+                            } else {
+                              setSelectedStudentsForQuran([...selectedStudentsForQuran, student.id])
+                            }
+                          }}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => {}}
+                            className="cursor-pointer"
+                          />
+                          <span className="text-sm">
+                            {student.first_name} {student.last_name} ({student.grade})
+                          </span>
+                        </div>
+                      )
+                    })}
+                </div>
+                <Button
+                  onClick={handleAssignQuranStudents}
+                  disabled={selectedStudentsForQuran.length === 0}
+                  className="w-full"
+                >
+                  Assign {selectedStudentsForQuran.length} Student(s) for Quran
+                </Button>
+              </div>
+
+              {/* Islamic Studies Students */}
+              <div className="space-y-2">
+                <Label className="text-base font-semibold">Assign for Islamic Studies</Label>
+                <div className="border rounded-lg p-3 max-h-96 overflow-y-auto space-y-2">
+                  {allStudents
+                    .filter((s) => {
+                      // Filter out students already assigned to this teacher for Islamic Studies
+                      if (islamicStudiesAssignedStudentIds.has(s.id)) return false
+                      if (assignProgramFilter !== 'all' && assignProgramFilter !== 'none' && s.program !== assignProgramFilter) return false
+                      if (assignProgramFilter === 'none' && s.program) return false
+                      if (assignGradeFilter !== 'all' && s.grade !== assignGradeFilter) return false
+                      if (assignQuranLevelFilter !== 'all' && s.quran_level !== assignQuranLevelFilter) return false
+                      return true
+                    })
+                    .map((student) => {
+                      const isSelected = selectedStudentsForIslamicStudies.includes(student.id)
+                      return (
+                        <div
+                          key={student.id}
+                          className="flex items-center space-x-2 p-2 rounded hover:bg-gray-50 cursor-pointer"
+                          onClick={() => {
+                            if (isSelected) {
+                              setSelectedStudentsForIslamicStudies(selectedStudentsForIslamicStudies.filter(id => id !== student.id))
+                            } else {
+                              setSelectedStudentsForIslamicStudies([...selectedStudentsForIslamicStudies, student.id])
+                            }
+                          }}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => {}}
+                            className="cursor-pointer"
+                          />
+                          <span className="text-sm">
+                            {student.first_name} {student.last_name} ({student.grade})
+                          </span>
+                        </div>
+                      )
+                    })}
+                </div>
+                <Button
+                  onClick={handleAssignIslamicStudiesStudents}
+                  disabled={selectedStudentsForIslamicStudies.length === 0}
+                  className="w-full"
+                >
+                  Assign {selectedStudentsForIslamicStudies.length} Student(s) for Islamic Studies
+                </Button>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Teacher View Dialog */}
+      <Dialog open={showTeacherViewDialog} onOpenChange={setShowTeacherViewDialog}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {selectedTeacherForView?.first_name} {selectedTeacherForView?.last_name}'s Students
+            </DialogTitle>
+            <DialogDescription>
+              View all students assigned to this teacher.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-2 gap-4 py-4">
+            {/* Quran Students */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Quran Students</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {teacherViewQuranStudents.length === 0 ? (
+                  <p className="text-gray-500 text-sm">No Quran students assigned.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {teacherViewQuranStudents.map((student) => (
+                      <div key={student.id} className="border rounded p-2">
+                        <p className="font-medium text-sm">
+                          {student.first_name} {student.last_name}
+                        </p>
+                        <p className="text-xs text-gray-600">
+                          {student.grade} • {student.program ? `Program ${student.program}` : 'Program Not Set'}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Islamic Studies Students */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Islamic Studies Students</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {teacherViewIslamicStudiesStudents.length === 0 ? (
+                  <p className="text-gray-500 text-sm">No Islamic Studies students assigned.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {teacherViewIslamicStudiesStudents.map((student) => (
+                      <div key={student.id} className="border rounded p-2">
+                        <p className="font-medium text-sm">
+                          {student.first_name} {student.last_name}
+                        </p>
+                        <p className="text-xs text-gray-600">
+                          {student.grade} • {student.program ? `Program ${student.program}` : 'Program Not Set'}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </div>
         </DialogContent>
       </Dialog>
