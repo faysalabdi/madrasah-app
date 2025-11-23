@@ -32,6 +32,7 @@ interface Student {
   grade: string
   parent_id: number
   program: string | null
+  quran_level: string | null
   hasPaidTermFees?: boolean
   lastPaymentDate?: string
 }
@@ -146,10 +147,24 @@ const AdminPortal: React.FC = () => {
     notes: '',
   })
 
-  // Student assignment
-  const [selectedQuranTeacher, setSelectedQuranTeacher] = useState<string>('')
-  const [selectedIslamicStudiesTeacher, setSelectedIslamicStudiesTeacher] = useState<string>('')
-  const [selectedStudents, setSelectedStudents] = useState<number[]>([])
+  // Teacher student assignment (per teacher dialog)
+  const [showTeacherAssignmentDialog, setShowTeacherAssignmentDialog] = useState(false)
+  const [selectedTeacherForAssignment, setSelectedTeacherForAssignment] = useState<Teacher | null>(null)
+  const [quranStudents, setQuranStudents] = useState<Student[]>([])
+  const [islamicStudiesStudents, setIslamicStudiesStudents] = useState<Student[]>([])
+  const [selectedStudentsForQuran, setSelectedStudentsForQuran] = useState<number[]>([])
+  const [selectedStudentsForIslamicStudies, setSelectedStudentsForIslamicStudies] = useState<number[]>([])
+  const [selectedQuranStudentsToDelete, setSelectedQuranStudentsToDelete] = useState<number[]>([])
+  const [selectedIslamicStudiesStudentsToDelete, setSelectedIslamicStudiesStudentsToDelete] = useState<number[]>([])
+  
+  // Filters for teacher assignment dialog
+  const [assignmentProgramFilter, setAssignmentProgramFilter] = useState<string>('all')
+  const [assignmentGradeFilter, setAssignmentGradeFilter] = useState<string>('all')
+  const [assignmentQuranLevelFilter, setAssignmentQuranLevelFilter] = useState<string>('all')
+  
+  // Filters for Students tab
+  const [studentsGradeFilter, setStudentsGradeFilter] = useState<string>('all')
+  const [studentsQuranLevelFilter, setStudentsQuranLevelFilter] = useState<string>('all')
   
   // Program filtering
   const [programFilter, setProgramFilter] = useState<string>('all') // 'all', 'A', 'B', 'none'
@@ -1130,11 +1145,79 @@ const AdminPortal: React.FC = () => {
     }
   }
 
-  const handleAssignStudents = async () => {
-    if (!selectedQuranTeacher || !selectedIslamicStudiesTeacher || selectedStudents.length === 0) {
+  const handleTeacherClickForAssignment = async (teacher: Teacher) => {
+    setSelectedTeacherForAssignment(teacher)
+    setShowTeacherAssignmentDialog(true)
+    
+    // Load current student assignments for this teacher
+    try {
+      // Load Quran students (where this teacher is the Quran teacher)
+      // Exclude students where both teachers are the same (they should only appear in IS list if both are set)
+      const { data: quranData } = await supabase
+        .from('teacher_students')
+        .select(`
+          student_id,
+          quran_teacher_id,
+          islamic_studies_teacher_id,
+          students (
+            id,
+            first_name,
+            last_name,
+            grade,
+            program,
+            quran_level
+          )
+        `)
+        .eq('quran_teacher_id', teacher.id)
+      
+      // Include all students where this teacher is the Quran teacher
+      // (IS teacher can be NULL or a different teacher)
+      const quranStudentList = (quranData || [])
+        .map((ts: any) => ts.students)
+        .filter(Boolean)
+      setQuranStudents(quranStudentList)
+
+      // Load Islamic Studies students (where this teacher is the Islamic Studies teacher)
+      const { data: islamicStudiesData } = await supabase
+        .from('teacher_students')
+        .select(`
+          student_id,
+          quran_teacher_id,
+          islamic_studies_teacher_id,
+          students (
+            id,
+            first_name,
+            last_name,
+            grade,
+            program,
+            quran_level
+          )
+        `)
+        .eq('islamic_studies_teacher_id', teacher.id)
+      
+      // Include all students where this teacher is the Islamic Studies teacher
+      // (Quran teacher can be NULL or a different teacher)
+      const islamicStudiesStudentList = (islamicStudiesData || [])
+        .map((ts: any) => ts.students)
+        .filter(Boolean)
+      setIslamicStudiesStudents(islamicStudiesStudentList)
+
+      setSelectedStudentsForQuran([])
+      setSelectedStudentsForIslamicStudies([])
+    } catch (err: any) {
       toast({
         title: 'Error',
-        description: 'Please select both Quran and Islamic Studies teachers and at least one student',
+        description: err.message || 'Failed to load student assignments',
+        variant: 'destructive',
+      })
+    }
+  }
+
+  const handleAssignQuranStudents = async () => {
+    if (!selectedTeacherForAssignment || selectedStudentsForQuran.length === 0) {
+      toast({
+        title: 'Error',
+        description: 'Please select at least one student',
         variant: 'destructive',
       })
       return
@@ -1143,36 +1226,336 @@ const AdminPortal: React.FC = () => {
     try {
       setLoading(true)
 
-      // Remove existing assignments for these students
-      await supabase
-        .from('teacher_students')
-        .delete()
-        .in('student_id', selectedStudents)
+      // For each selected student, update or create the teacher_students record
+      for (const studentId of selectedStudentsForQuran) {
+        // Check if student already has a teacher_students record
+        const { data: existing } = await supabase
+          .from('teacher_students')
+          .select('id, islamic_studies_teacher_id')
+          .eq('student_id', studentId)
+          .maybeSingle()
 
-      // Create new assignments with both teachers
-      const assignments = selectedStudents.map(studentId => ({
-        quran_teacher_id: parseInt(selectedQuranTeacher),
-        islamic_studies_teacher_id: parseInt(selectedIslamicStudiesTeacher),
-        student_id: studentId,
-      }))
-
-      const { error } = await supabase.from('teacher_students').insert(assignments)
-
-      if (error) throw error
+        if (existing) {
+          // Update existing record - only change the Quran teacher, preserve Islamic Studies teacher
+          const { error } = await supabase
+            .from('teacher_students')
+            .update({ quran_teacher_id: selectedTeacherForAssignment.id })
+            .eq('id', existing.id)
+          
+          if (error) throw error
+        } else {
+          // Create new record - only set Quran teacher, leave IS teacher as NULL
+          const { error } = await supabase
+            .from('teacher_students')
+            .insert({
+              student_id: studentId,
+              quran_teacher_id: selectedTeacherForAssignment.id,
+              islamic_studies_teacher_id: null,
+            })
+          
+          if (error) throw error
+        }
+      }
 
       toast({
         title: 'Success',
-        description: `Assigned ${selectedStudents.length} student(s) to teachers.`,
+        description: `Assigned ${selectedStudentsForQuran.length} student(s) to ${selectedTeacherForAssignment.first_name} ${selectedTeacherForAssignment.last_name} for Quran.`,
       })
 
-      setSelectedQuranTeacher('')
-      setSelectedIslamicStudiesTeacher('')
-      setSelectedStudents([])
+      setSelectedStudentsForQuran([])
+      await handleTeacherClickForAssignment(selectedTeacherForAssignment) // Reload assignments
       loadDashboardData()
     } catch (err: any) {
       toast({
         title: 'Error',
         description: err.message || 'Failed to assign students',
+        variant: 'destructive',
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleAssignIslamicStudiesStudents = async () => {
+    if (!selectedTeacherForAssignment || selectedStudentsForIslamicStudies.length === 0) {
+      toast({
+        title: 'Error',
+        description: 'Please select at least one student',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    try {
+      setLoading(true)
+
+      // For each selected student, update or create the teacher_students record
+      for (const studentId of selectedStudentsForIslamicStudies) {
+        // Check if student already has a teacher_students record
+        const { data: existing } = await supabase
+          .from('teacher_students')
+          .select('id, quran_teacher_id')
+          .eq('student_id', studentId)
+          .maybeSingle()
+
+        if (existing) {
+          // Update existing record - only change the Islamic Studies teacher, preserve Quran teacher
+          const { error } = await supabase
+            .from('teacher_students')
+            .update({ islamic_studies_teacher_id: selectedTeacherForAssignment.id })
+            .eq('id', existing.id)
+          
+          if (error) throw error
+        } else {
+          // Create new record - only set Islamic Studies teacher, leave Quran teacher as NULL
+          const { error } = await supabase
+            .from('teacher_students')
+            .insert({
+              student_id: studentId,
+              quran_teacher_id: null,
+              islamic_studies_teacher_id: selectedTeacherForAssignment.id,
+            })
+          
+          if (error) throw error
+        }
+      }
+
+      toast({
+        title: 'Success',
+        description: `Assigned ${selectedStudentsForIslamicStudies.length} student(s) to ${selectedTeacherForAssignment.first_name} ${selectedTeacherForAssignment.last_name} for Islamic Studies.`,
+      })
+
+      setSelectedStudentsForIslamicStudies([])
+      await handleTeacherClickForAssignment(selectedTeacherForAssignment) // Reload assignments
+      loadDashboardData()
+    } catch (err: any) {
+      toast({
+        title: 'Error',
+        description: err.message || 'Failed to assign students',
+        variant: 'destructive',
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleUnassignQuranStudent = async (studentId: number) => {
+    if (!selectedTeacherForAssignment) return
+
+    if (!confirm('Are you sure you want to unassign this student from Quran class?')) {
+      return
+    }
+
+    try {
+      setLoading(true)
+
+      // Get the current record
+      const { data: existing } = await supabase
+        .from('teacher_students')
+        .select('id, islamic_studies_teacher_id')
+        .eq('student_id', studentId)
+        .eq('quran_teacher_id', selectedTeacherForAssignment.id)
+        .maybeSingle()
+
+      if (existing) {
+        // If student has an Islamic Studies teacher, set Quran teacher to NULL
+        // (This keeps the record but removes the Quran assignment)
+        if (existing.islamic_studies_teacher_id) {
+          // Update to set Quran teacher to NULL, keep IS teacher
+          const { error } = await supabase
+            .from('teacher_students')
+            .update({ quran_teacher_id: null })
+            .eq('id', existing.id)
+          
+          if (error) throw error
+        } else {
+          // No IS teacher, delete the entire record
+          const { error } = await supabase
+            .from('teacher_students')
+            .delete()
+            .eq('id', existing.id)
+          
+          if (error) throw error
+        }
+      }
+
+      toast({
+        title: 'Success',
+        description: 'Student unassigned from Quran class.',
+      })
+
+      await handleTeacherClickForAssignment(selectedTeacherForAssignment) // Reload assignments
+      loadDashboardData()
+    } catch (err: any) {
+      toast({
+        title: 'Error',
+        description: err.message || 'Failed to unassign student',
+        variant: 'destructive',
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleUnassignIslamicStudiesStudent = async (studentId: number) => {
+    if (!selectedTeacherForAssignment) return
+
+    if (!confirm('Are you sure you want to unassign this student from Islamic Studies class?')) {
+      return
+    }
+
+    try {
+      setLoading(true)
+
+      // Get the current record
+      const { data: existing } = await supabase
+        .from('teacher_students')
+        .select('id, quran_teacher_id')
+        .eq('student_id', studentId)
+        .eq('islamic_studies_teacher_id', selectedTeacherForAssignment.id)
+        .maybeSingle()
+
+      if (existing) {
+        // If student has a Quran teacher, set IS teacher to NULL
+        // (This keeps the record but removes the IS assignment)
+        if (existing.quran_teacher_id) {
+          // Update to set IS teacher to NULL, keep Quran teacher
+          const { error } = await supabase
+            .from('teacher_students')
+            .update({ islamic_studies_teacher_id: null })
+            .eq('id', existing.id)
+          
+          if (error) throw error
+        } else {
+          // No Quran teacher, delete the entire record
+          const { error } = await supabase
+            .from('teacher_students')
+            .delete()
+            .eq('id', existing.id)
+          
+          if (error) throw error
+        }
+      }
+
+      toast({
+        title: 'Success',
+        description: 'Student unassigned from Islamic Studies class.',
+      })
+
+      await handleTeacherClickForAssignment(selectedTeacherForAssignment) // Reload assignments
+      loadDashboardData()
+    } catch (err: any) {
+      toast({
+        title: 'Error',
+        description: err.message || 'Failed to unassign student',
+        variant: 'destructive',
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleBulkUnassignQuranStudents = async () => {
+    if (!selectedTeacherForAssignment || selectedQuranStudentsToDelete.length === 0) return
+
+    if (!confirm(`Are you sure you want to unassign ${selectedQuranStudentsToDelete.length} student(s) from Quran class?`)) {
+      return
+    }
+
+    try {
+      setLoading(true)
+
+      for (const studentId of selectedQuranStudentsToDelete) {
+        const { data: existing } = await supabase
+          .from('teacher_students')
+          .select('id, islamic_studies_teacher_id')
+          .eq('student_id', studentId)
+          .eq('quran_teacher_id', selectedTeacherForAssignment.id)
+          .maybeSingle()
+
+        if (existing) {
+          if (existing.islamic_studies_teacher_id) {
+            // Has IS teacher, set Quran teacher to NULL
+            await supabase
+              .from('teacher_students')
+              .update({ quran_teacher_id: null })
+              .eq('id', existing.id)
+          } else {
+            // No IS teacher, delete the entire record
+            await supabase
+              .from('teacher_students')
+              .delete()
+              .eq('id', existing.id)
+          }
+        }
+      }
+
+      toast({
+        title: 'Success',
+        description: `Unassigned ${selectedQuranStudentsToDelete.length} student(s) from Quran class.`,
+      })
+
+      setSelectedQuranStudentsToDelete([])
+      await handleTeacherClickForAssignment(selectedTeacherForAssignment)
+      loadDashboardData()
+    } catch (err: any) {
+      toast({
+        title: 'Error',
+        description: err.message || 'Failed to unassign students',
+        variant: 'destructive',
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleBulkUnassignIslamicStudiesStudents = async () => {
+    if (!selectedTeacherForAssignment || selectedIslamicStudiesStudentsToDelete.length === 0) return
+
+    if (!confirm(`Are you sure you want to unassign ${selectedIslamicStudiesStudentsToDelete.length} student(s) from Islamic Studies class?`)) {
+      return
+    }
+
+    try {
+      setLoading(true)
+
+      for (const studentId of selectedIslamicStudiesStudentsToDelete) {
+        const { data: existing } = await supabase
+          .from('teacher_students')
+          .select('id, quran_teacher_id')
+          .eq('student_id', studentId)
+          .eq('islamic_studies_teacher_id', selectedTeacherForAssignment.id)
+          .maybeSingle()
+
+        if (existing) {
+          if (existing.quran_teacher_id) {
+            // Has Quran teacher, set IS teacher to NULL
+            await supabase
+              .from('teacher_students')
+              .update({ islamic_studies_teacher_id: null })
+              .eq('id', existing.id)
+          } else {
+            // No Quran teacher, delete the entire record
+            await supabase
+              .from('teacher_students')
+              .delete()
+              .eq('id', existing.id)
+          }
+        }
+      }
+
+      toast({
+        title: 'Success',
+        description: `Unassigned ${selectedIslamicStudiesStudentsToDelete.length} student(s) from Islamic Studies class.`,
+      })
+
+      setSelectedIslamicStudiesStudentsToDelete([])
+      await handleTeacherClickForAssignment(selectedTeacherForAssignment)
+      loadDashboardData()
+    } catch (err: any) {
+      toast({
+        title: 'Error',
+        description: err.message || 'Failed to unassign students',
         variant: 'destructive',
       })
     } finally {
@@ -1863,7 +2246,7 @@ const AdminPortal: React.FC = () => {
                 <CardHeader>
                   <CardTitle>All Teachers</CardTitle>
                   <CardDescription>
-                    Click on a teacher's name to view and manage their attendance records
+                    Click on a teacher's name to view attendance records, or use the buttons to manage student assignments
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -1885,6 +2268,16 @@ const AdminPortal: React.FC = () => {
                             )}
                           </div>
                           <div className="flex items-center gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleTeacherClickForAssignment(teacher)}
+                              disabled={loading}
+                              className="gap-2"
+                            >
+                              <User className="h-4 w-4" />
+                              Assign Students
+                            </Button>
                             {isAdmin ? (
                               <Badge variant="default" className="bg-purple-600">Admin</Badge>
                             ) : (
@@ -2076,6 +2469,426 @@ const AdminPortal: React.FC = () => {
                   )}
                 </DialogContent>
               </Dialog>
+
+              {/* Teacher Student Assignment Dialog */}
+              <Dialog open={showTeacherAssignmentDialog} onOpenChange={setShowTeacherAssignmentDialog}>
+                <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+                  {!selectedTeacherForAssignment ? (
+                    <div className="py-12 text-center">
+                      <p className="text-gray-500">No teacher selected</p>
+                    </div>
+                  ) : (
+                    <>
+                      <DialogHeader>
+                        <DialogTitle className="text-2xl">
+                          Assign Students: {selectedTeacherForAssignment.first_name} {selectedTeacherForAssignment.last_name}
+                        </DialogTitle>
+                        <DialogDescription>
+                          Manage student assignments for Quran (First Hour) and Islamic Studies (Second Hour)
+                        </DialogDescription>
+                      </DialogHeader>
+
+                      {/* Filters */}
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4 p-4 bg-gray-50 rounded-lg">
+                        <div className="space-y-2">
+                          <Label>Filter by Program</Label>
+                          <Select value={assignmentProgramFilter} onValueChange={setAssignmentProgramFilter}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="All Programs" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="all">All Programs</SelectItem>
+                              <SelectItem value="A">Program A</SelectItem>
+                              <SelectItem value="B">Program B</SelectItem>
+                              <SelectItem value="none">Not Set</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Filter by Grade</Label>
+                          <Select value={assignmentGradeFilter} onValueChange={setAssignmentGradeFilter}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="All Grades" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="all">All Grades</SelectItem>
+                              <SelectItem value="Prep">Prep</SelectItem>
+                              <SelectItem value="Grade 1">Grade 1</SelectItem>
+                              <SelectItem value="Grade 2">Grade 2</SelectItem>
+                              <SelectItem value="Grade 3">Grade 3</SelectItem>
+                              <SelectItem value="Grade 4">Grade 4</SelectItem>
+                              <SelectItem value="Grade 5">Grade 5</SelectItem>
+                              <SelectItem value="Grade 6">Grade 6</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Filter by Quran Level</Label>
+                          <Select value={assignmentQuranLevelFilter} onValueChange={setAssignmentQuranLevelFilter}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="All Levels" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="all">All Levels</SelectItem>
+                              <SelectItem value="Iqra 1">Iqra 1</SelectItem>
+                              <SelectItem value="Iqra 2">Iqra 2</SelectItem>
+                              <SelectItem value="Iqra 3">Iqra 3</SelectItem>
+                              <SelectItem value="Iqra 4">Iqra 4</SelectItem>
+                              <SelectItem value="Iqra 5">Iqra 5</SelectItem>
+                              <SelectItem value="Iqra 6">Iqra 6</SelectItem>
+                              <SelectItem value="Quran">Quran</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+                        {/* Quran Students Section */}
+                        <Card>
+                          <CardHeader>
+                            <CardTitle>Quran Students (First Hour)</CardTitle>
+                            <CardDescription>Students assigned for Quran studies</CardDescription>
+                          </CardHeader>
+                          <CardContent className="space-y-4">
+                            {/* Current Quran Students */}
+                            <div>
+                              <div className="flex items-center justify-between mb-2">
+                                <Label>Currently Assigned ({quranStudents.filter((s: any) => {
+                                  if (assignmentProgramFilter !== 'all') {
+                                    if (assignmentProgramFilter === 'none' && s.program) return false
+                                    if (assignmentProgramFilter !== 'none' && s.program !== assignmentProgramFilter) return false
+                                  }
+                                  if (assignmentGradeFilter !== 'all' && s.grade !== assignmentGradeFilter) return false
+                                  if (assignmentQuranLevelFilter !== 'all' && s.quran_level !== assignmentQuranLevelFilter) return false
+                                  return true
+                                }).length})</Label>
+                                {selectedQuranStudentsToDelete.length > 0 && (
+                                  <Button
+                                    variant="destructive"
+                                    size="sm"
+                                    onClick={handleBulkUnassignQuranStudents}
+                                    disabled={loading}
+                                  >
+                                    Remove Selected ({selectedQuranStudentsToDelete.length})
+                                  </Button>
+                                )}
+                              </div>
+                              {quranStudents.length === 0 ? (
+                                <p className="text-sm text-gray-500 py-4">No students assigned yet.</p>
+                              ) : (
+                                <>
+                                  <div className="space-y-1 max-h-48 overflow-y-auto border rounded-lg p-2">
+                                    {quranStudents
+                                      .filter((s: any) => {
+                                        if (assignmentProgramFilter !== 'all') {
+                                          if (assignmentProgramFilter === 'none' && s.program) return false
+                                          if (assignmentProgramFilter !== 'none' && s.program !== assignmentProgramFilter) return false
+                                        }
+                                        if (assignmentGradeFilter !== 'all' && s.grade !== assignmentGradeFilter) return false
+                                        if (assignmentQuranLevelFilter !== 'all' && s.quran_level !== assignmentQuranLevelFilter) return false
+                                        return true
+                                      })
+                                      .map((student: any) => {
+                                        const isSelected = selectedQuranStudentsToDelete.includes(student.id)
+                                        return (
+                                          <div
+                                            key={student.id}
+                                            className={`flex items-center space-x-2 p-2 rounded ${
+                                              isSelected ? 'bg-red-50' : 'hover:bg-gray-50'
+                                            }`}
+                                          >
+                                            <input
+                                              type="checkbox"
+                                              checked={isSelected}
+                                              onChange={(e) => {
+                                                e.stopPropagation()
+                                                if (isSelected) {
+                                                  setSelectedQuranStudentsToDelete(selectedQuranStudentsToDelete.filter(id => id !== student.id))
+                                                } else {
+                                                  setSelectedQuranStudentsToDelete([...selectedQuranStudentsToDelete, student.id])
+                                                }
+                                              }}
+                                              className="cursor-pointer"
+                                            />
+                                            <div className="flex-1">
+                                              <p className="font-medium text-sm">
+                                                {student.first_name} {student.last_name}
+                                              </p>
+                                              <p className="text-xs text-gray-600">
+                                                {student.grade} • {student.program ? `Program ${student.program}` : 'No Program'}
+                                                {student.quran_level && ` • ${student.quran_level}`}
+                                              </p>
+                                            </div>
+                                          </div>
+                                        )
+                                      })}
+                                  </div>
+                                  {quranStudents.filter((s: any) => {
+                                    if (assignmentProgramFilter !== 'all') {
+                                      if (assignmentProgramFilter === 'none' && s.program) return false
+                                      if (assignmentProgramFilter !== 'none' && s.program !== assignmentProgramFilter) return false
+                                    }
+                                    if (assignmentGradeFilter !== 'all' && s.grade !== assignmentGradeFilter) return false
+                                    if (assignmentQuranLevelFilter !== 'all' && s.quran_level !== assignmentQuranLevelFilter) return false
+                                    return true
+                                  }).length === 0 && quranStudents.length > 0 && (
+                                    <p className="text-sm text-gray-500 py-2 text-center">No students match the current filters.</p>
+                                  )}
+                                </>
+                              )}
+                            </div>
+
+                            {/* Assign New Quran Students */}
+                            <div>
+                              <Label className="mb-2 block">Assign New Students</Label>
+                              <div className="border rounded-lg p-2 max-h-48 overflow-y-auto">
+                                {students
+                                  .filter((s) => {
+                                    // Not already assigned
+                                    if (quranStudents.some((qs: any) => qs.id === s.id)) return false
+                                    // Apply filters
+                                    if (assignmentProgramFilter !== 'all') {
+                                      if (assignmentProgramFilter === 'none' && s.program) return false
+                                      if (assignmentProgramFilter !== 'none' && s.program !== assignmentProgramFilter) return false
+                                    }
+                                    if (assignmentGradeFilter !== 'all' && s.grade !== assignmentGradeFilter) return false
+                                    if (assignmentQuranLevelFilter !== 'all' && s.quran_level !== assignmentQuranLevelFilter) return false
+                                    return true
+                                  })
+                                  .map((student) => {
+                                    const isSelected = selectedStudentsForQuran.includes(student.id)
+                                    return (
+                                      <div
+                                        key={student.id}
+                                        className={`flex items-center space-x-2 p-2 rounded cursor-pointer ${
+                                          isSelected ? 'bg-primary/10' : 'hover:bg-gray-50'
+                                        }`}
+                                        onClick={() => {
+                                          if (isSelected) {
+                                            setSelectedStudentsForQuran(selectedStudentsForQuran.filter(id => id !== student.id))
+                                          } else {
+                                            setSelectedStudentsForQuran([...selectedStudentsForQuran, student.id])
+                                          }
+                                        }}
+                                      >
+                                        <input
+                                          type="checkbox"
+                                          checked={isSelected}
+                                          onChange={() => {}}
+                                          className="cursor-pointer"
+                                        />
+                                        <div className="flex-1">
+                                          <p className="font-medium text-sm">
+                                            {student.first_name} {student.last_name}
+                                          </p>
+                                          <p className="text-xs text-gray-600">
+                                            {student.grade} • {student.program ? `Program ${student.program}` : 'No Program'}
+                                            {student.quran_level && ` • ${student.quran_level}`}
+                                          </p>
+                                        </div>
+                                      </div>
+                                    )
+                                  })}
+                                {students.filter((s) => {
+                                  if (quranStudents.some((qs: any) => qs.id === s.id)) return false
+                                  if (assignmentProgramFilter !== 'all') {
+                                    if (assignmentProgramFilter === 'none' && s.program) return false
+                                    if (assignmentProgramFilter !== 'none' && s.program !== assignmentProgramFilter) return false
+                                  }
+                                  if (assignmentGradeFilter !== 'all' && s.grade !== assignmentGradeFilter) return false
+                                  if (assignmentQuranLevelFilter !== 'all' && s.quran_level !== assignmentQuranLevelFilter) return false
+                                  return true
+                                }).length === 0 && (
+                                  <p className="text-sm text-gray-500 py-4 text-center">No students available to assign.</p>
+                                )}
+                              </div>
+                              <Button
+                                onClick={handleAssignQuranStudents}
+                                disabled={selectedStudentsForQuran.length === 0 || loading}
+                                className="w-full mt-2"
+                                size="sm"
+                              >
+                                Assign {selectedStudentsForQuran.length} Student{selectedStudentsForQuran.length !== 1 ? 's' : ''} for Quran
+                              </Button>
+                            </div>
+                          </CardContent>
+                        </Card>
+
+                        {/* Islamic Studies Students Section */}
+                        <Card>
+                          <CardHeader>
+                            <CardTitle>Islamic Studies Students (Second Hour)</CardTitle>
+                            <CardDescription>Students assigned for Islamic Studies</CardDescription>
+                          </CardHeader>
+                          <CardContent className="space-y-4">
+                            {/* Current Islamic Studies Students */}
+                            <div>
+                              <div className="flex items-center justify-between mb-2">
+                                <Label>Currently Assigned ({islamicStudiesStudents.filter((s: any) => {
+                                  if (assignmentProgramFilter !== 'all') {
+                                    if (assignmentProgramFilter === 'none' && s.program) return false
+                                    if (assignmentProgramFilter !== 'none' && s.program !== assignmentProgramFilter) return false
+                                  }
+                                  if (assignmentGradeFilter !== 'all' && s.grade !== assignmentGradeFilter) return false
+                                  if (assignmentQuranLevelFilter !== 'all' && s.quran_level !== assignmentQuranLevelFilter) return false
+                                  return true
+                                }).length})</Label>
+                                {selectedIslamicStudiesStudentsToDelete.length > 0 && (
+                                  <Button
+                                    variant="destructive"
+                                    size="sm"
+                                    onClick={handleBulkUnassignIslamicStudiesStudents}
+                                    disabled={loading}
+                                  >
+                                    Remove Selected ({selectedIslamicStudiesStudentsToDelete.length})
+                                  </Button>
+                                )}
+                              </div>
+                              {islamicStudiesStudents.length === 0 ? (
+                                <p className="text-sm text-gray-500 py-4">No students assigned yet.</p>
+                              ) : (
+                                <>
+                                  <div className="space-y-1 max-h-48 overflow-y-auto border rounded-lg p-2">
+                                    {islamicStudiesStudents
+                                      .filter((s: any) => {
+                                        if (assignmentProgramFilter !== 'all') {
+                                          if (assignmentProgramFilter === 'none' && s.program) return false
+                                          if (assignmentProgramFilter !== 'none' && s.program !== assignmentProgramFilter) return false
+                                        }
+                                        if (assignmentGradeFilter !== 'all' && s.grade !== assignmentGradeFilter) return false
+                                        if (assignmentQuranLevelFilter !== 'all' && s.quran_level !== assignmentQuranLevelFilter) return false
+                                        return true
+                                      })
+                                      .map((student: any) => {
+                                        const isSelected = selectedIslamicStudiesStudentsToDelete.includes(student.id)
+                                        return (
+                                          <div
+                                            key={student.id}
+                                            className={`flex items-center space-x-2 p-2 rounded ${
+                                              isSelected ? 'bg-red-50' : 'hover:bg-gray-50'
+                                            }`}
+                                          >
+                                            <input
+                                              type="checkbox"
+                                              checked={isSelected}
+                                              onChange={(e) => {
+                                                e.stopPropagation()
+                                                if (isSelected) {
+                                                  setSelectedIslamicStudiesStudentsToDelete(selectedIslamicStudiesStudentsToDelete.filter(id => id !== student.id))
+                                                } else {
+                                                  setSelectedIslamicStudiesStudentsToDelete([...selectedIslamicStudiesStudentsToDelete, student.id])
+                                                }
+                                              }}
+                                              className="cursor-pointer"
+                                            />
+                                            <div className="flex-1">
+                                              <p className="font-medium text-sm">
+                                                {student.first_name} {student.last_name}
+                                              </p>
+                                              <p className="text-xs text-gray-600">
+                                                {student.grade} • {student.program ? `Program ${student.program}` : 'No Program'}
+                                                {student.quran_level && ` • ${student.quran_level}`}
+                                              </p>
+                                            </div>
+                                          </div>
+                                        )
+                                      })}
+                                  </div>
+                                  {islamicStudiesStudents.filter((s: any) => {
+                                    if (assignmentProgramFilter !== 'all') {
+                                      if (assignmentProgramFilter === 'none' && s.program) return false
+                                      if (assignmentProgramFilter !== 'none' && s.program !== assignmentProgramFilter) return false
+                                    }
+                                    if (assignmentGradeFilter !== 'all' && s.grade !== assignmentGradeFilter) return false
+                                    if (assignmentQuranLevelFilter !== 'all' && s.quran_level !== assignmentQuranLevelFilter) return false
+                                    return true
+                                  }).length === 0 && islamicStudiesStudents.length > 0 && (
+                                    <p className="text-sm text-gray-500 py-2 text-center">No students match the current filters.</p>
+                                  )}
+                                </>
+                              )}
+                            </div>
+
+                            {/* Assign New Islamic Studies Students */}
+                            <div>
+                              <Label className="mb-2 block">Assign New Students</Label>
+                              <div className="border rounded-lg p-2 max-h-48 overflow-y-auto">
+                                {students
+                                  .filter((s) => {
+                                    // Not already assigned
+                                    if (islamicStudiesStudents.some((iss: any) => iss.id === s.id)) return false
+                                    // Apply filters
+                                    if (assignmentProgramFilter !== 'all') {
+                                      if (assignmentProgramFilter === 'none' && s.program) return false
+                                      if (assignmentProgramFilter !== 'none' && s.program !== assignmentProgramFilter) return false
+                                    }
+                                    if (assignmentGradeFilter !== 'all' && s.grade !== assignmentGradeFilter) return false
+                                    if (assignmentQuranLevelFilter !== 'all' && s.quran_level !== assignmentQuranLevelFilter) return false
+                                    return true
+                                  })
+                                  .map((student) => {
+                                    const isSelected = selectedStudentsForIslamicStudies.includes(student.id)
+                                    return (
+                                      <div
+                                        key={student.id}
+                                        className={`flex items-center space-x-2 p-2 rounded cursor-pointer ${
+                                          isSelected ? 'bg-primary/10' : 'hover:bg-gray-50'
+                                        }`}
+                                        onClick={() => {
+                                          if (isSelected) {
+                                            setSelectedStudentsForIslamicStudies(selectedStudentsForIslamicStudies.filter(id => id !== student.id))
+                                          } else {
+                                            setSelectedStudentsForIslamicStudies([...selectedStudentsForIslamicStudies, student.id])
+                                          }
+                                        }}
+                                      >
+                                        <input
+                                          type="checkbox"
+                                          checked={isSelected}
+                                          onChange={() => {}}
+                                          className="cursor-pointer"
+                                        />
+                                        <div className="flex-1">
+                                          <p className="font-medium text-sm">
+                                            {student.first_name} {student.last_name}
+                                          </p>
+                                          <p className="text-xs text-gray-600">
+                                            {student.grade} • {student.program ? `Program ${student.program}` : 'No Program'}
+                                            {student.quran_level && ` • ${student.quran_level}`}
+                                          </p>
+                                        </div>
+                                      </div>
+                                    )
+                                  })}
+                                {students.filter((s) => {
+                                  if (islamicStudiesStudents.some((iss: any) => iss.id === s.id)) return false
+                                  if (assignmentProgramFilter !== 'all') {
+                                    if (assignmentProgramFilter === 'none' && s.program) return false
+                                    if (assignmentProgramFilter !== 'none' && s.program !== assignmentProgramFilter) return false
+                                  }
+                                  if (assignmentGradeFilter !== 'all' && s.grade !== assignmentGradeFilter) return false
+                                  if (assignmentQuranLevelFilter !== 'all' && s.quran_level !== assignmentQuranLevelFilter) return false
+                                  return true
+                                }).length === 0 && (
+                                  <p className="text-sm text-gray-500 py-4 text-center">No students available to assign.</p>
+                                )}
+                              </div>
+                              <Button
+                                onClick={handleAssignIslamicStudiesStudents}
+                                disabled={selectedStudentsForIslamicStudies.length === 0 || loading}
+                                className="w-full mt-2"
+                                size="sm"
+                              >
+                                Assign {selectedStudentsForIslamicStudies.length} Student{selectedStudentsForIslamicStudies.length !== 1 ? 's' : ''} for Islamic Studies
+                              </Button>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      </div>
+                    </>
+                  )}
+                </DialogContent>
+              </Dialog>
             </TabsContent>
 
             {/* Students Tab */}
@@ -2083,33 +2896,76 @@ const AdminPortal: React.FC = () => {
               {/* Students List with Payment Status */}
               <Card>
                 <CardHeader>
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <CardTitle>All Students</CardTitle>
-                      <CardDescription>
-                        View all students and their term fee payment status
-                      </CardDescription>
+                  <div>
+                    <CardTitle>All Students</CardTitle>
+                    <CardDescription>
+                      View all students and their term fee payment status
+                    </CardDescription>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                    <div className="space-y-2">
+                      <Label>Filter by Program</Label>
+                      <Select value={programFilter} onValueChange={setProgramFilter}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="All Programs" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Programs</SelectItem>
+                          <SelectItem value="A">Program A</SelectItem>
+                          <SelectItem value="B">Program B</SelectItem>
+                          <SelectItem value="none">Not Set</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
-                    <Select value={programFilter} onValueChange={setProgramFilter}>
-                      <SelectTrigger className="w-[200px]">
-                        <SelectValue placeholder="Filter by program" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Programs</SelectItem>
-                        <SelectItem value="A">Program A</SelectItem>
-                        <SelectItem value="B">Program B</SelectItem>
-                        <SelectItem value="none">Not Set</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <div className="space-y-2">
+                      <Label>Filter by Grade</Label>
+                      <Select value={studentsGradeFilter} onValueChange={setStudentsGradeFilter}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="All Grades" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Grades</SelectItem>
+                          <SelectItem value="Prep">Prep</SelectItem>
+                          <SelectItem value="Grade 1">Grade 1</SelectItem>
+                          <SelectItem value="Grade 2">Grade 2</SelectItem>
+                          <SelectItem value="Grade 3">Grade 3</SelectItem>
+                          <SelectItem value="Grade 4">Grade 4</SelectItem>
+                          <SelectItem value="Grade 5">Grade 5</SelectItem>
+                          <SelectItem value="Grade 6">Grade 6</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Filter by Quran Level</Label>
+                      <Select value={studentsQuranLevelFilter} onValueChange={setStudentsQuranLevelFilter}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="All Levels" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Levels</SelectItem>
+                          <SelectItem value="Iqra 1">Iqra 1</SelectItem>
+                          <SelectItem value="Iqra 2">Iqra 2</SelectItem>
+                          <SelectItem value="Iqra 3">Iqra 3</SelectItem>
+                          <SelectItem value="Iqra 4">Iqra 4</SelectItem>
+                          <SelectItem value="Iqra 5">Iqra 5</SelectItem>
+                          <SelectItem value="Iqra 6">Iqra 6</SelectItem>
+                          <SelectItem value="Quran">Quran</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-2">
                     {students
                       .filter((student) => {
-                        if (programFilter === 'all') return true
-                        if (programFilter === 'none') return !student.program
-                        return student.program === programFilter
+                        if (programFilter !== 'all') {
+                          if (programFilter === 'none' && student.program) return false
+                          if (programFilter !== 'none' && student.program !== programFilter) return false
+                        }
+                        if (studentsGradeFilter !== 'all' && student.grade !== studentsGradeFilter) return false
+                        if (studentsQuranLevelFilter !== 'all' && student.quran_level !== studentsQuranLevelFilter) return false
+                        return true
                       })
                       .map((student) => {
                       const parent = parents.find(p => p.id === student.parent_id)
@@ -2136,6 +2992,7 @@ const AdminPortal: React.FC = () => {
                               </div>
                               <p className="text-sm text-gray-600">
                                 {student.grade} • {student.program ? `Program ${student.program}` : 'Program Not Set'} • {parent?.parent1_first_name} {parent?.parent1_last_name}
+                                {student.quran_level && ` • ${student.quran_level}`}
                               </p>
                               {student.lastPaymentDate && (
                                 <p className="text-xs text-gray-500 mt-1">
@@ -2160,113 +3017,6 @@ const AdminPortal: React.FC = () => {
                 </CardContent>
               </Card>
 
-              {/* Assign Students to Teachers */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Assign Students to Teachers</CardTitle>
-                  <CardDescription>
-                    Select Quran teacher (First Hour) and Islamic Studies teacher (Second Hour) for students
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>Quran Teacher (First Hour)</Label>
-                      <Select value={selectedQuranTeacher} onValueChange={setSelectedQuranTeacher}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Choose Quran teacher" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {teachers.map((teacher) => (
-                            <SelectItem key={teacher.id} value={teacher.id.toString()}>
-                              {teacher.first_name} {teacher.last_name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Islamic Studies Teacher (Second Hour)</Label>
-                      <Select value={selectedIslamicStudiesTeacher} onValueChange={setSelectedIslamicStudiesTeacher}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Choose Islamic Studies teacher" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {teachers.map((teacher) => (
-                            <SelectItem key={teacher.id} value={teacher.id.toString()}>
-                              {teacher.first_name} {teacher.last_name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Select Students (Multiple)</Label>
-                    <div className="border rounded-lg p-4 max-h-96 overflow-y-auto">
-                      {students.map((student) => {
-                        const parent = parents.find(p => p.id === student.parent_id)
-                        const isSelected = selectedStudents.includes(student.id)
-                        return (
-                          <div
-                            key={student.id}
-                            className={`flex items-center space-x-2 p-2 rounded cursor-pointer ${
-                              isSelected ? 'bg-primary/10' : 'hover:bg-gray-50'
-                            }`}
-                            onClick={() => {
-                              if (isSelected) {
-                                setSelectedStudents(selectedStudents.filter(id => id !== student.id))
-                              } else {
-                                setSelectedStudents([...selectedStudents, student.id])
-                              }
-                            }}
-                          >
-                            <input
-                              type="checkbox"
-                              checked={isSelected}
-                              onChange={() => {}}
-                              className="cursor-pointer"
-                            />
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2">
-                                <p className="font-medium">
-                                  {student.first_name} {student.last_name}
-                                </p>
-                                {student.hasPaidTermFees ? (
-                                  <Badge variant="default" className="bg-green-100 text-green-800 border-green-300">
-                                    Paid
-                                  </Badge>
-                                ) : (
-                                  <Badge variant="secondary" className="bg-red-100 text-red-800 border-red-300">
-                                    Unpaid
-                                  </Badge>
-                                )}
-                              </div>
-                              <p className="text-sm text-gray-600">
-                                {student.grade} • {parent?.parent1_first_name} {parent?.parent1_last_name}
-                                {student.lastPaymentDate && (
-                                  <span className="ml-2 text-xs">
-                                    (Last paid: {new Date(student.lastPaymentDate).toLocaleDateString()})
-                                  </span>
-                                )}
-                              </p>
-                            </div>
-                          </div>
-                        )
-                      })}
-                    </div>
-                  </div>
-
-                  <Button
-                    onClick={handleAssignStudents}
-                    disabled={!selectedQuranTeacher || !selectedIslamicStudiesTeacher || selectedStudents.length === 0 || loading}
-                    className="w-full"
-                  >
-                    Assign {selectedStudents.length} Student(s) to Teachers
-                  </Button>
-                </CardContent>
-              </Card>
             </TabsContent>
 
             {/* Parents Tab */}
