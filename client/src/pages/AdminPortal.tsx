@@ -116,6 +116,14 @@ const AdminPortal: React.FC = () => {
   const [invoices, setInvoices] = useState<any[]>([])
   const [loadingInvoices, setLoadingInvoices] = useState(false)
   
+  // Email
+  const [emailSubject, setEmailSubject] = useState('')
+  const [emailMessage, setEmailMessage] = useState('')
+  const [sendToAllParents, setSendToAllParents] = useState(false)
+  const [sendingEmail, setSendingEmail] = useState(false)
+  const [selectedParentEmails, setSelectedParentEmails] = useState<string[]>([])
+  const [emailSearchTerm, setEmailSearchTerm] = useState('')
+  
   // Bulk Invoice
   const [showBulkInvoiceDialog, setShowBulkInvoiceDialog] = useState(false)
   const [bulkInvoiceDays, setBulkInvoiceDays] = useState(30)
@@ -1813,6 +1821,7 @@ const AdminPortal: React.FC = () => {
               <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
               <TabsTrigger value="payments">Payments</TabsTrigger>
               <TabsTrigger value="invoices">Invoices</TabsTrigger>
+              <TabsTrigger value="email">Email</TabsTrigger>
               <TabsTrigger value="teachers">Teachers</TabsTrigger>
               <TabsTrigger value="students">Students</TabsTrigger>
               <TabsTrigger value="parents">Parents</TabsTrigger>
@@ -2304,6 +2313,265 @@ const AdminPortal: React.FC = () => {
                   </Card>
                 </div>
               )}
+            </TabsContent>
+
+            {/* Email Tab */}
+            <TabsContent value="email" className="mt-6">
+              <div className="mb-4">
+                <h2 className="text-2xl font-bold">Send Email</h2>
+                <p className="text-gray-600 mt-1">
+                  Send emails to parents using Resend. You can send to specific recipients or all parents.
+                </p>
+              </div>
+              
+              <Card>
+                <CardHeader>
+                  <CardTitle>Compose Email</CardTitle>
+                  <CardDescription>
+                    Fill in the details below to send an email
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <div className="space-y-3">
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id="send-to-all"
+                          checked={sendToAllParents}
+                          onCheckedChange={(checked) => {
+                            setSendToAllParents(checked === true)
+                            if (checked) {
+                              setSelectedParentEmails([])
+                            }
+                          }}
+                        />
+                        <Label htmlFor="send-to-all" className="cursor-pointer">
+                          Send to all parents
+                        </Label>
+                      </div>
+                      {!sendToAllParents && (
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <Label>Select Parent Email(s)</Label>
+                            {selectedParentEmails.length > 0 && (
+                              <Badge variant="secondary">
+                                {selectedParentEmails.length} selected
+                              </Badge>
+                            )}
+                          </div>
+                          <Input
+                            placeholder="Search parents by name or email..."
+                            value={emailSearchTerm}
+                            onChange={(e) => setEmailSearchTerm(e.target.value)}
+                            className="mb-2"
+                          />
+                          <div className="border rounded-lg p-3 max-h-64 overflow-y-auto space-y-2">
+                            {parents
+                              .filter((p) => {
+                                if (!emailSearchTerm) return true
+                                const search = emailSearchTerm.toLowerCase()
+                                const name = `${p.parent1_first_name} ${p.parent1_last_name}`.toLowerCase()
+                                const email = (p.parent1_email || '').toLowerCase()
+                                return name.includes(search) || email.includes(search)
+                              })
+                              .filter((p) => p.parent1_email) // Only show parents with emails
+                              .map((parent) => {
+                                const email = parent.parent1_email || ''
+                                const isSelected = selectedParentEmails.includes(email)
+                                return (
+                                  <div
+                                    key={parent.id}
+                                    className="flex items-center space-x-2 p-2 rounded hover:bg-gray-50 cursor-pointer"
+                                    onClick={() => {
+                                      if (isSelected) {
+                                        setSelectedParentEmails(selectedParentEmails.filter(e => e !== email))
+                                      } else {
+                                        setSelectedParentEmails([...selectedParentEmails, email])
+                                      }
+                                    }}
+                                  >
+                                    <input
+                                      type="checkbox"
+                                      checked={isSelected}
+                                      onChange={() => {}}
+                                      className="cursor-pointer"
+                                    />
+                                    <div className="flex-1">
+                                      <span className="text-sm font-medium">
+                                        {parent.parent1_first_name} {parent.parent1_last_name}
+                                      </span>
+                                      <span className="text-sm text-gray-600 ml-2">
+                                        ({email})
+                                      </span>
+                                    </div>
+                                  </div>
+                                )
+                              })}
+                            {parents.filter((p) => {
+                              if (!emailSearchTerm) return p.parent1_email
+                              const search = emailSearchTerm.toLowerCase()
+                              const name = `${p.parent1_first_name} ${p.parent1_last_name}`.toLowerCase()
+                              const email = (p.parent1_email || '').toLowerCase()
+                              return (name.includes(search) || email.includes(search)) && p.parent1_email
+                            }).length === 0 && (
+                              <p className="text-sm text-gray-500 text-center py-4">
+                                No parents found matching your search.
+                              </p>
+                            )}
+                          </div>
+                          <div className="flex gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                const allEmails = parents
+                                  .filter(p => p.parent1_email)
+                                  .map(p => p.parent1_email!)
+                                setSelectedParentEmails(allEmails)
+                              }}
+                            >
+                              Select All
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setSelectedParentEmails([])}
+                            >
+                              Clear Selection
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                      {sendToAllParents && (
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                          <p className="text-sm text-blue-800">
+                            This email will be sent to all parents in the database ({parents.filter(p => p.parent1_email).length} parents with email addresses).
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="email-subject">Subject *</Label>
+                    <Input
+                      id="email-subject"
+                      placeholder="Email subject"
+                      value={emailSubject}
+                      onChange={(e) => setEmailSubject(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="email-message">Message *</Label>
+                    <Textarea
+                      id="email-message"
+                      placeholder="Enter your message here. You can use line breaks for formatting."
+                      value={emailMessage}
+                      onChange={(e) => setEmailMessage(e.target.value)}
+                      rows={10}
+                    />
+                    <p className="text-xs text-gray-500">
+                      The message will be formatted as HTML. Line breaks will be preserved.
+                    </p>
+                  </div>
+
+                  <div className="flex justify-end gap-2 pt-4">
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setEmailSubject('')
+                        setEmailMessage('')
+                        setSelectedParentEmails([])
+                        setEmailSearchTerm('')
+                        setSendToAllParents(false)
+                      }}
+                    >
+                      Clear
+                    </Button>
+                    <Button
+                      onClick={async () => {
+                        if (!emailSubject.trim() || !emailMessage.trim()) {
+                          toast({
+                            title: 'Error',
+                            description: 'Please fill in both subject and message.',
+                            variant: 'destructive',
+                          })
+                          return
+                        }
+
+                        if (!sendToAllParents && selectedParentEmails.length === 0) {
+                          toast({
+                            title: 'Error',
+                            description: 'Please select at least one parent email or select "Send to all parents".',
+                            variant: 'destructive',
+                          })
+                          return
+                        }
+
+                        setSendingEmail(true)
+                        try {
+                          const recipients = sendToAllParents ? [] : selectedParentEmails
+
+                          const response = await fetch(
+                            `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-email`,
+                            {
+                              method: 'POST',
+                              headers: {
+                                'Content-Type': 'application/json',
+                                Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+                              },
+                              body: JSON.stringify({
+                                to: recipients,
+                                subject: emailSubject,
+                                message: emailMessage,
+                                sendToAllParents,
+                              }),
+                            }
+                          )
+
+                          if (!response.ok) {
+                            const errorData = await response.json().catch(() => ({}))
+                            throw new Error(errorData.error || 'Failed to send email')
+                          }
+
+                          const data = await response.json()
+                          
+                          toast({
+                            title: 'Success',
+                            description: `Email sent successfully! ${data.succeeded || 0} succeeded, ${data.failed || 0} failed.`,
+                          })
+
+                          // Clear form
+                          setEmailSubject('')
+                          setEmailMessage('')
+                          setSelectedParentEmails([])
+                          setEmailSearchTerm('')
+                          setSendToAllParents(false)
+                        } catch (err: any) {
+                          toast({
+                            title: 'Error',
+                            description: err.message || 'Failed to send email',
+                            variant: 'destructive',
+                          })
+                        } finally {
+                          setSendingEmail(false)
+                        }
+                      }}
+                      disabled={sendingEmail}
+                    >
+                      {sendingEmail ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Sending...
+                        </>
+                      ) : (
+                        'Send Email'
+                      )}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
             </TabsContent>
 
             {/* Teachers Tab */}
