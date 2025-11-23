@@ -157,6 +157,9 @@ Deno.serve(async (req) => {
 })
 
 function buildHtmlEmail(message: string): string {
+  const frontendUrl = Deno.env.get("FRONTEND_URL") || "https://madrasahabubakr.com.au"
+  const logoUrl = `${frontendUrl}/logo.png`
+  
   return `
 <!DOCTYPE html>
 <html>
@@ -165,17 +168,39 @@ function buildHtmlEmail(message: string): string {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Madrasah Abu Bakr As-Siddiq</title>
 </head>
-<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-  <div style="background-color: #1a472a; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0;">
-    <h1 style="margin: 0;">Madrasah Abu Bakr As-Siddiq</h1>
-  </div>
-  <div style="background-color: #f9f9f9; padding: 30px; border-radius: 0 0 8px 8px; border: 1px solid #ddd;">
-    <div style="white-space: pre-wrap; margin-bottom: 20px;">${message.replace(/\n/g, '<br>')}</div>
-    <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; text-align: center; color: #666; font-size: 12px;">
-      <p>This is an email from Madrasah Abu Bakr As-Siddiq.</p>
-      <p>If you have any questions, please contact us at madrasahabubakr1@gmail.com</p>
-    </div>
-  </div>
+<body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f5f5f5;">
+  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #f5f5f5;">
+    <tr>
+      <td align="center" style="padding: 40px 20px;">
+        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" style="max-width: 600px; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+          <!-- Header with Logo -->
+          <tr>
+            <td style="background-color: #1a472a; padding: 30px 20px; text-align: center;">
+              <img src="${logoUrl}" alt="Madrasah Abu Bakr As-Siddiq" style="max-width: 200px; height: auto; margin-bottom: 10px;" />
+              <h1 style="margin: 0; color: #ffffff; font-size: 24px; font-weight: 600;">Madrasah Abu Bakr As-Siddiq</h1>
+            </td>
+          </tr>
+          <!-- Content -->
+          <tr>
+            <td style="padding: 40px 30px; background-color: #ffffff;">
+              <div style="color: #333333; font-size: 16px; line-height: 1.6; white-space: pre-wrap;">${message.replace(/\n/g, '<br>')}</div>
+            </td>
+          </tr>
+          <!-- Footer -->
+          <tr>
+            <td style="background-color: #f9f9f9; padding: 20px 30px; border-top: 1px solid #e5e5e5; text-align: center;">
+              <p style="margin: 0 0 10px 0; color: #666666; font-size: 12px; line-height: 1.5;">
+                This is an email from Madrasah Abu Bakr As-Siddiq.
+              </p>
+              <p style="margin: 0; color: #666666; font-size: 12px; line-height: 1.5;">
+                If you have any questions, please contact us at <a href="mailto:madrasahabubakr1@gmail.com" style="color: #1a472a; text-decoration: none;">madrasahabubakr1@gmail.com</a>
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
 </body>
 </html>
   `.trim()
