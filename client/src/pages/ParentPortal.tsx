@@ -92,6 +92,8 @@ const ParentPortal: React.FC = () => {
   const [behaviorNotes, setBehaviorNotes] = useState<any[]>([])
   const [homework, setHomework] = useState<any[]>([])
   const [studentNotes, setStudentNotes] = useState<any[]>([])
+  const [quranTeacher, setQuranTeacher] = useState<{ first_name: string; last_name: string } | null>(null)
+  const [islamicStudiesTeacher, setIslamicStudiesTeacher] = useState<{ first_name: string; last_name: string } | null>(null)
 
   useEffect(() => {
     // Check authentication and restore session
@@ -296,6 +298,26 @@ const ParentPortal: React.FC = () => {
         .eq('student_id', student.id)
         .order('date', { ascending: false })
         .limit(20)
+
+      // Load teacher assignments
+      const { data: teacherAssignments } = await supabase
+        .from('teacher_students')
+        .select(`
+          quran_teacher_id,
+          islamic_studies_teacher_id,
+          quran_teacher:teachers!teacher_students_quran_teacher_id_fkey(first_name, last_name),
+          islamic_studies_teacher:teachers!teacher_students_islamic_studies_teacher_id_fkey(first_name, last_name)
+        `)
+        .eq('student_id', student.id)
+        .maybeSingle()
+
+      if (teacherAssignments) {
+        setQuranTeacher(teacherAssignments.quran_teacher as any || null)
+        setIslamicStudiesTeacher(teacherAssignments.islamic_studies_teacher as any || null)
+      } else {
+        setQuranTeacher(null)
+        setIslamicStudiesTeacher(null)
+      }
 
       setBehaviorNotes(behaviorData || [])
 
@@ -976,6 +998,38 @@ const ParentPortal: React.FC = () => {
                     ) : (
                       <p className="text-gray-500 text-center py-4">Behavior standing not set yet.</p>
                     )}
+                  </CardContent>
+                </Card>
+
+                {/* Teacher Assignments Card */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <UserCheck className="h-5 w-5 text-primary" />
+                      Teachers
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div>
+                      <p className="text-sm text-gray-600 mb-1">Quran Teacher (First Hour)</p>
+                      {quranTeacher ? (
+                        <p className="font-semibold text-lg">
+                          {quranTeacher.first_name} {quranTeacher.last_name}
+                        </p>
+                      ) : (
+                        <p className="text-gray-500">Not assigned yet</p>
+                      )}
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600 mb-1">Islamic Studies Teacher (Second Hour)</p>
+                      {islamicStudiesTeacher ? (
+                        <p className="font-semibold text-lg">
+                          {islamicStudiesTeacher.first_name} {islamicStudiesTeacher.last_name}
+                        </p>
+                      ) : (
+                        <p className="text-gray-500">Not assigned yet</p>
+                      )}
+                    </div>
                   </CardContent>
                 </Card>
               </div>

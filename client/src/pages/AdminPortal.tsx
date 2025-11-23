@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
-import { Loader2, Trash2, Calendar, BookOpen, FileText, UserCheck, Search, User, LogOut, Settings } from 'lucide-react'
+import { Loader2, Trash2, Calendar, BookOpen, FileText, UserCheck, Search, User, LogOut, Settings, Plus } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -122,9 +122,9 @@ const AdminPortal: React.FC = () => {
   const [teacherAttendance, setTeacherAttendance] = useState<any[]>([])
   const [showTeacherAttendanceDialog, setShowTeacherAttendanceDialog] = useState(false)
   const [selectedTeacherForAttendance, setSelectedTeacherForAttendance] = useState<Teacher | null>(null)
-  const [attendanceDate, setAttendanceDate] = useState(new Date().toISOString().split('T')[0])
+  const [teacherAttendanceDate, setTeacherAttendanceDate] = useState(new Date().toISOString().split('T')[0])
   const [attendanceHours, setAttendanceHours] = useState('2.00')
-  const [attendanceNotes, setAttendanceNotes] = useState('')
+  const [teacherAttendanceNotes, setTeacherAttendanceNotes] = useState('')
   
   // Account Settings
   const [newEmail, setNewEmail] = useState('')
@@ -162,6 +162,25 @@ const AdminPortal: React.FC = () => {
   const [studentHomework, setStudentHomework] = useState<any[]>([])
   const [studentBehaviorNotes, setStudentBehaviorNotes] = useState<any[]>([])
   const [studentNotes, setStudentNotes] = useState<any[]>([])
+
+  // Admin record creation state (similar to TeacherPortal)
+  const [showAttendanceDialog, setShowAttendanceDialog] = useState(false)
+  const [attendanceDate, setAttendanceDate] = useState(new Date().toISOString().split('T')[0])
+  const [attendanceStatus, setAttendanceStatus] = useState('present_with_uniform')
+  const [attendanceNotes, setAttendanceNotes] = useState('')
+
+  const [showHomeworkDialog, setShowHomeworkDialog] = useState(false)
+  const [homeworkTitle, setHomeworkTitle] = useState('')
+  const [homeworkDescription, setHomeworkDescription] = useState('')
+  const [homeworkDueDate, setHomeworkDueDate] = useState('')
+
+  const [showBehaviorDialog, setShowBehaviorDialog] = useState(false)
+  const [behaviorType, setBehaviorType] = useState('positive')
+  const [behaviorTitle, setBehaviorTitle] = useState('')
+  const [behaviorDescription, setBehaviorDescription] = useState('')
+
+  const [showNoteDialog, setShowNoteDialog] = useState(false)
+  const [noteText, setNoteText] = useState('')
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -246,6 +265,148 @@ const AdminPortal: React.FC = () => {
     await loadStudentRecords(student.id)
   }
 
+  // Admin record creation handlers (similar to TeacherPortal but with null teacher_id)
+  const handleMarkAttendance = async () => {
+    if (!selectedStudentForDetail) return
+
+    try {
+      const { error } = await supabase
+        .from('attendance')
+        .upsert({
+          student_id: selectedStudentForDetail.id,
+          teacher_id: null, // Admin-created records have null teacher_id
+          date: attendanceDate,
+          status: attendanceStatus,
+          notes: attendanceNotes || null,
+        }, {
+          onConflict: 'student_id,date'
+        })
+
+      if (error) throw error
+
+      setShowAttendanceDialog(false)
+      setAttendanceDate(new Date().toISOString().split('T')[0])
+      setAttendanceStatus('present_with_uniform')
+      setAttendanceNotes('')
+      await loadStudentRecords(selectedStudentForDetail.id)
+      
+      toast({
+        title: 'Success',
+        description: 'Attendance recorded successfully.',
+      })
+    } catch (err: any) {
+      toast({
+        title: 'Error',
+        description: err.message || 'Failed to mark attendance',
+        variant: 'destructive',
+      })
+    }
+  }
+
+  const handleAddBehaviorNote = async () => {
+    if (!selectedStudentForDetail) return
+
+    try {
+      const { error } = await supabase
+        .from('behavior_notes')
+        .insert({
+          student_id: selectedStudentForDetail.id,
+          teacher_id: null, // Admin-created records have null teacher_id
+          date: new Date().toISOString().split('T')[0],
+          type: behaviorType,
+          title: behaviorTitle,
+          description: behaviorDescription,
+        })
+
+      if (error) throw error
+
+      setShowBehaviorDialog(false)
+      setBehaviorType('positive')
+      setBehaviorTitle('')
+      setBehaviorDescription('')
+      await loadStudentRecords(selectedStudentForDetail.id)
+      
+      toast({
+        title: 'Success',
+        description: 'Behavior note added successfully.',
+      })
+    } catch (err: any) {
+      toast({
+        title: 'Error',
+        description: err.message || 'Failed to add behavior note',
+        variant: 'destructive',
+      })
+    }
+  }
+
+  const handleAddHomework = async () => {
+    if (!selectedStudentForDetail) return
+
+    try {
+      const { error } = await supabase
+        .from('homework')
+        .insert({
+          student_id: selectedStudentForDetail.id,
+          teacher_id: null, // Admin-created records have null teacher_id
+          title: homeworkTitle,
+          description: homeworkDescription || null,
+          assigned_date: new Date().toISOString().split('T')[0],
+          due_date: homeworkDueDate || null,
+          completed: false,
+        })
+
+      if (error) throw error
+
+      setShowHomeworkDialog(false)
+      setHomeworkTitle('')
+      setHomeworkDescription('')
+      setHomeworkDueDate('')
+      await loadStudentRecords(selectedStudentForDetail.id)
+      
+      toast({
+        title: 'Success',
+        description: 'Homework added successfully.',
+      })
+    } catch (err: any) {
+      toast({
+        title: 'Error',
+        description: err.message || 'Failed to add homework',
+        variant: 'destructive',
+      })
+    }
+  }
+
+  const handleAddNote = async () => {
+    if (!selectedStudentForDetail) return
+
+    try {
+      const { error } = await supabase
+        .from('student_notes')
+        .insert({
+          student_id: selectedStudentForDetail.id,
+          teacher_id: null, // Admin-created records have null teacher_id
+          note: noteText,
+        })
+
+      if (error) throw error
+
+      setShowNoteDialog(false)
+      setNoteText('')
+      await loadStudentRecords(selectedStudentForDetail.id)
+      
+      toast({
+        title: 'Success',
+        description: 'Note added successfully.',
+      })
+    } catch (err: any) {
+      toast({
+        title: 'Error',
+        description: err.message || 'Failed to add note',
+        variant: 'destructive',
+      })
+    }
+  }
+
   const loadTeacherAttendance = async (teacherId: number) => {
     try {
       const { data, error } = await supabase
@@ -276,9 +437,9 @@ const AdminPortal: React.FC = () => {
         .from('teacher_attendance')
         .upsert({
           teacher_id: selectedTeacherForAttendance.id,
-          date: attendanceDate,
+          date: teacherAttendanceDate,
           hours: parseFloat(attendanceHours) || 2.00,
-          notes: attendanceNotes || null,
+          notes: teacherAttendanceNotes || null,
         }, {
           onConflict: 'teacher_id,date'
         })
@@ -1789,8 +1950,8 @@ const AdminPortal: React.FC = () => {
                                 <Input
                                   id="attendance-date"
                                   type="date"
-                                  value={attendanceDate}
-                                  onChange={(e) => setAttendanceDate(e.target.value)}
+                                  value={teacherAttendanceDate}
+                                  onChange={(e) => setTeacherAttendanceDate(e.target.value)}
                                 />
                               </div>
                               <div className="space-y-2">
@@ -1812,8 +1973,8 @@ const AdminPortal: React.FC = () => {
                                 <Input
                                   id="attendance-notes"
                                   type="text"
-                                  value={attendanceNotes}
-                                  onChange={(e) => setAttendanceNotes(e.target.value)}
+                                  value={teacherAttendanceNotes}
+                                  onChange={(e) => setTeacherAttendanceNotes(e.target.value)}
                                   placeholder=""
                                 />
                               </div>
@@ -2655,6 +2816,12 @@ const AdminPortal: React.FC = () => {
 
                       {/* Attendance Tab */}
                       <TabsContent value="attendance" className="mt-6">
+                        <div className="flex justify-end mb-4">
+                          <Button onClick={() => setShowAttendanceDialog(true)} size="sm" className="gap-2">
+                            <Calendar className="h-4 w-4" />
+                            Mark Attendance
+                          </Button>
+                        </div>
                         <div className="space-y-3">
                           {studentAttendance.length === 0 ? (
                             <p className="text-gray-500 text-center py-8">No attendance records found.</p>
@@ -2680,7 +2847,7 @@ const AdminPortal: React.FC = () => {
                                       <div className="flex-1">
                                         <p className="text-sm text-gray-600">
                                           {new Date(record.date).toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}
-                                          {teacher && ` • Teacher: ${teacher.first_name} ${teacher.last_name}`}
+                                          {teacher ? ` • Teacher: ${teacher.first_name} ${teacher.last_name}` : ' • Admin'}
                                         </p>
                                         {record.notes && (
                                           <p className="text-sm text-gray-700 mt-1">{record.notes}</p>
@@ -2700,6 +2867,12 @@ const AdminPortal: React.FC = () => {
 
                       {/* Homework Tab */}
                       <TabsContent value="homework" className="mt-6">
+                        <div className="flex justify-end mb-4">
+                          <Button onClick={() => setShowHomeworkDialog(true)} size="sm" className="gap-2">
+                            <BookOpen className="h-4 w-4" />
+                            Add Homework
+                          </Button>
+                        </div>
                         <div className="space-y-3">
                           {studentHomework.length === 0 ? (
                             <p className="text-gray-500 text-center py-8">No homework assignments found.</p>
@@ -2729,7 +2902,7 @@ const AdminPortal: React.FC = () => {
                                               Completed: {new Date(hw.completion_date).toLocaleDateString()}
                                             </span>
                                           )}
-                                          {teacher && <span>Teacher: {teacher.first_name} {teacher.last_name}</span>}
+                                          {teacher ? <span>Teacher: {teacher.first_name} {teacher.last_name}</span> : <span>Admin</span>}
                                         </div>
                                       </div>
                                       <Badge variant={hw.completed ? 'default' : isOverdue ? 'destructive' : 'secondary'}>
@@ -2746,6 +2919,12 @@ const AdminPortal: React.FC = () => {
 
                       {/* Behavior Tab */}
                       <TabsContent value="behavior" className="mt-6">
+                        <div className="flex justify-end mb-4">
+                          <Button onClick={() => setShowBehaviorDialog(true)} size="sm" className="gap-2">
+                            <FileText className="h-4 w-4" />
+                            Add Behavior Note
+                          </Button>
+                        </div>
                         <div className="space-y-3">
                           {studentBehaviorNotes.length === 0 ? (
                             <p className="text-gray-500 text-center py-8">No behavior notes found.</p>
@@ -2761,7 +2940,7 @@ const AdminPortal: React.FC = () => {
                                         <p className="text-sm text-gray-700 mb-2">{note.description}</p>
                                         <p className="text-xs text-gray-500">
                                           {new Date(note.date).toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}
-                                          {teacher && ` • Teacher: ${teacher.first_name} ${teacher.last_name}`}
+                                          {teacher ? ` • Teacher: ${teacher.first_name} ${teacher.last_name}` : ' • Admin'}
                                         </p>
                                       </div>
                                       <Badge
@@ -2785,6 +2964,12 @@ const AdminPortal: React.FC = () => {
 
                       {/* Notes Tab */}
                       <TabsContent value="notes" className="mt-6">
+                        <div className="flex justify-end mb-4">
+                          <Button onClick={() => setShowNoteDialog(true)} size="sm" className="gap-2">
+                            <FileText className="h-4 w-4" />
+                            Add Note
+                          </Button>
+                        </div>
                         <div className="space-y-3">
                           {studentNotes.length === 0 ? (
                             <p className="text-gray-500 text-center py-8">No general notes found.</p>
@@ -2799,7 +2984,7 @@ const AdminPortal: React.FC = () => {
                                         <p className="text-gray-800 whitespace-pre-wrap mb-2">{note.note}</p>
                                         <p className="text-xs text-gray-500">
                                           {new Date(note.created_at).toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                                          {teacher && ` • Teacher: ${teacher.first_name} ${teacher.last_name}`}
+                                          {teacher ? ` • Teacher: ${teacher.first_name} ${teacher.last_name}` : ' • Admin'}
                                         </p>
                                       </div>
                                     </div>
@@ -2923,6 +3108,191 @@ const AdminPortal: React.FC = () => {
                       </Button>
                     </CardContent>
                   </Card>
+                </div>
+              </DialogContent>
+            </Dialog>
+
+            {/* Attendance Dialog */}
+            <Dialog open={showAttendanceDialog} onOpenChange={setShowAttendanceDialog}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Mark Attendance</DialogTitle>
+                  <DialogDescription>
+                    Record attendance for {selectedStudentForDetail?.first_name} {selectedStudentForDetail?.last_name}
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <div className="space-y-2">
+                    <Label>Date</Label>
+                    <Input
+                      type="date"
+                      value={attendanceDate}
+                      onChange={(e) => setAttendanceDate(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Status</Label>
+                    <Select value={attendanceStatus} onValueChange={setAttendanceStatus}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="present_with_uniform">Present with Uniform</SelectItem>
+                        <SelectItem value="present_no_uniform">Present No Uniform</SelectItem>
+                        <SelectItem value="late_uniform">Late Uniform</SelectItem>
+                        <SelectItem value="late_no_uniform">Late No Uniform</SelectItem>
+                        <SelectItem value="absent_with_excuse">Absent with Excuse</SelectItem>
+                        <SelectItem value="absent_no_excuse">Absent No Excuse</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Notes (Optional)</Label>
+                    <Textarea
+                      value={attendanceNotes}
+                      onChange={(e) => setAttendanceNotes(e.target.value)}
+                      placeholder="Additional notes..."
+                      rows={3}
+                    />
+                  </div>
+                  <div className="flex justify-end gap-2">
+                    <Button variant="outline" onClick={() => setShowAttendanceDialog(false)}>
+                      Cancel
+                    </Button>
+                    <Button onClick={handleMarkAttendance}>
+                      Mark Attendance
+                    </Button>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
+
+            {/* Homework Dialog */}
+            <Dialog open={showHomeworkDialog} onOpenChange={setShowHomeworkDialog}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Add Homework</DialogTitle>
+                  <DialogDescription>
+                    Assign homework to {selectedStudentForDetail?.first_name} {selectedStudentForDetail?.last_name}
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <div className="space-y-2">
+                    <Label>Title *</Label>
+                    <Input
+                      value={homeworkTitle}
+                      onChange={(e) => setHomeworkTitle(e.target.value)}
+                      placeholder="Homework title"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Description (Optional)</Label>
+                    <Textarea
+                      value={homeworkDescription}
+                      onChange={(e) => setHomeworkDescription(e.target.value)}
+                      placeholder="Homework description..."
+                      rows={3}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Due Date (Optional)</Label>
+                    <Input
+                      type="date"
+                      value={homeworkDueDate}
+                      onChange={(e) => setHomeworkDueDate(e.target.value)}
+                    />
+                  </div>
+                  <div className="flex justify-end gap-2">
+                    <Button variant="outline" onClick={() => setShowHomeworkDialog(false)}>
+                      Cancel
+                    </Button>
+                    <Button onClick={handleAddHomework} disabled={!homeworkTitle}>
+                      Add Homework
+                    </Button>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
+
+            {/* Behavior Note Dialog */}
+            <Dialog open={showBehaviorDialog} onOpenChange={setShowBehaviorDialog}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Add Behavior Note</DialogTitle>
+                  <DialogDescription>
+                    Record a behavior note for {selectedStudentForDetail?.first_name} {selectedStudentForDetail?.last_name}
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <div className="space-y-2">
+                    <Label>Type</Label>
+                    <Select value={behaviorType} onValueChange={setBehaviorType}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="positive">Positive</SelectItem>
+                        <SelectItem value="concern">Concern</SelectItem>
+                        <SelectItem value="incident">Incident</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Title *</Label>
+                    <Input
+                      value={behaviorTitle}
+                      onChange={(e) => setBehaviorTitle(e.target.value)}
+                      placeholder="Note title"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Description *</Label>
+                    <Textarea
+                      value={behaviorDescription}
+                      onChange={(e) => setBehaviorDescription(e.target.value)}
+                      placeholder="Describe the behavior..."
+                      rows={4}
+                    />
+                  </div>
+                  <div className="flex justify-end gap-2">
+                    <Button variant="outline" onClick={() => setShowBehaviorDialog(false)}>
+                      Cancel
+                    </Button>
+                    <Button onClick={handleAddBehaviorNote} disabled={!behaviorTitle || !behaviorDescription}>
+                      Add Note
+                    </Button>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
+
+            {/* General Note Dialog */}
+            <Dialog open={showNoteDialog} onOpenChange={setShowNoteDialog}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Add Note</DialogTitle>
+                  <DialogDescription>
+                    Add a general note for {selectedStudentForDetail?.first_name} {selectedStudentForDetail?.last_name}
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <div className="space-y-2">
+                    <Label>Note *</Label>
+                    <Textarea
+                      value={noteText}
+                      onChange={(e) => setNoteText(e.target.value)}
+                      placeholder="Enter your note..."
+                      rows={6}
+                    />
+                  </div>
+                  <div className="flex justify-end gap-2">
+                    <Button variant="outline" onClick={() => setShowNoteDialog(false)}>
+                      Cancel
+                    </Button>
+                    <Button onClick={handleAddNote} disabled={!noteText.trim()}>
+                      Add Note
+                    </Button>
+                  </div>
                 </div>
               </DialogContent>
             </Dialog>
