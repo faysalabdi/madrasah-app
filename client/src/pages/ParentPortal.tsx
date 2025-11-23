@@ -92,6 +92,7 @@ const ParentPortal: React.FC = () => {
   const [behaviorNotes, setBehaviorNotes] = useState<any[]>([])
   const [homework, setHomework] = useState<any[]>([])
   const [studentNotes, setStudentNotes] = useState<any[]>([])
+  const [classContent, setClassContent] = useState<any[]>([])
   const [quranTeacher, setQuranTeacher] = useState<{ first_name: string; last_name: string } | null>(null)
   const [islamicStudiesTeacher, setIslamicStudiesTeacher] = useState<{ first_name: string; last_name: string } | null>(null)
 
@@ -340,6 +341,16 @@ const ParentPortal: React.FC = () => {
         .limit(50)
 
       setStudentNotes(notesData || [])
+
+      // Load class content
+      const { data: classContentData } = await supabase
+        .from('class_content')
+        .select('*')
+        .eq('student_id', student.id)
+        .order('date', { ascending: false })
+        .order('created_at', { ascending: false })
+
+      setClassContent(classContentData || [])
     } catch (err) {
       console.error('Error loading student details:', err)
     }
@@ -922,7 +933,7 @@ const ParentPortal: React.FC = () => {
           </DialogHeader>
 
           <Tabs defaultValue="profile" className="w-full mt-4">
-            <TabsList className="grid w-full grid-cols-5 h-12">
+            <TabsList className="flex-wrap h-auto w-full">
               <TabsTrigger value="profile" className="flex items-center gap-2">
                 <UserCheck className="h-4 w-4" />
                 Profile
@@ -942,6 +953,10 @@ const ParentPortal: React.FC = () => {
               <TabsTrigger value="notes" className="flex items-center gap-2">
                 <FileText className="h-4 w-4" />
                 Notes
+              </TabsTrigger>
+              <TabsTrigger value="class-content" className="flex items-center gap-2">
+                <BookOpen className="h-4 w-4" />
+                Class Content
               </TabsTrigger>
             </TabsList>
 
@@ -1307,6 +1322,64 @@ const ParentPortal: React.FC = () => {
                               {new Date(note.created_at).toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                             </p>
                             <p className="text-gray-800 whitespace-pre-wrap">{note.note}</p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </TabsContent>
+
+            {/* Class Content Tab */}
+            <TabsContent value="class-content" className="mt-6 space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold flex items-center gap-2">
+                  <BookOpen className="h-5 w-5 text-primary" />
+                  Class Content History
+                </h3>
+                <Badge variant="outline">{classContent.length} entries</Badge>
+              </div>
+              {classContent.length === 0 ? (
+                <Card>
+                  <CardContent className="py-8 text-center">
+                    <BookOpen className="h-12 w-12 mx-auto text-gray-400 mb-2" />
+                    <p className="text-gray-500">No class content recorded yet.</p>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="space-y-3">
+                  {classContent.map((content) => (
+                    <Card key={content.id} className="hover:shadow-md transition-shadow">
+                      <CardContent className="p-4">
+                        <div className="flex items-start justify-between gap-4 mb-2">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              <Badge variant="outline">
+                                {content.subject === 'quran' ? 'Quran' : 'Islamic Studies'}
+                              </Badge>
+                              {content.sub_subject && (
+                                <Badge variant="secondary">
+                                  {content.sub_subject.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}
+                                </Badge>
+                              )}
+                              <span className="text-sm text-gray-500">
+                                {new Date(content.date).toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}
+                              </span>
+                              {content.label && (
+                                <Badge 
+                                  variant={
+                                    content.label === 'needs_revision' ? 'destructive' :
+                                    content.label === 'exam_content' ? 'default' :
+                                    content.label === 'important' ? 'secondary' :
+                                    'outline'
+                                  }
+                                >
+                                  {content.label.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}
+                                </Badge>
+                              )}
+                            </div>
+                            <p className="text-gray-800 whitespace-pre-wrap">{content.content}</p>
                           </div>
                         </div>
                       </CardContent>

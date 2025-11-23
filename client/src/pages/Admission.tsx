@@ -265,7 +265,7 @@ export default function Admission() {
                   className={`bg-primary-light bg-opacity-10 p-4 rounded-lg border border-primary-light ${feesEntry?.isIntersecting ? "animate-fadeIn" : ""}`}
                 >
                   <h4 className="font-bold text-primary mb-2">
-                    Fees Structure Per School Term – Due By Week 7
+                    Fees Structure Per School Term
                   </h4>
                   <div className="text-sm space-y-2">
                     <div className="space-y-1">

@@ -245,6 +245,7 @@ const TeacherPortal: React.FC = () => {
   const [behaviorNotes, setBehaviorNotes] = useState<BehaviorNote[]>([])
   const [homework, setHomework] = useState<Homework[]>([])
   const [studentNotes, setStudentNotes] = useState<StudentNote[]>([])
+  const [classContent, setClassContent] = useState<any[]>([])
   const [loadingStudentDetails, setLoadingStudentDetails] = useState(false)
   
   // Dialog states
@@ -253,6 +254,7 @@ const TeacherPortal: React.FC = () => {
   const [showBehaviorDialog, setShowBehaviorDialog] = useState(false)
   const [showHomeworkDialog, setShowHomeworkDialog] = useState(false)
   const [showNoteDialog, setShowNoteDialog] = useState(false)
+  const [showClassContentDialog, setShowClassContentDialog] = useState(false)
   
   // Form states
   const [attendanceDate, setAttendanceDate] = useState(new Date().toISOString().split('T')[0])
@@ -266,6 +268,12 @@ const TeacherPortal: React.FC = () => {
   const [homeworkTitle, setHomeworkTitle] = useState('')
   const [homeworkDescription, setHomeworkDescription] = useState('')
   const [homeworkDueDate, setHomeworkDueDate] = useState('')
+  
+  const [classContentDate, setClassContentDate] = useState(new Date().toISOString().split('T')[0])
+  const [classContentSubject, setClassContentSubject] = useState<'quran' | 'islamic_studies'>('quran')
+  const [classContentSubSubject, setClassContentSubSubject] = useState<'surah_and_dua' | 'fiqh' | 'islamic_curriculum' | ''>('')
+  const [classContentText, setClassContentText] = useState('')
+  const [classContentLabel, setClassContentLabel] = useState<'needs_revision' | 'exam_content' | 'important' | 'completed' | ''>('')
   
   const [noteText, setNoteText] = useState('')
   
@@ -796,6 +804,16 @@ const TeacherPortal: React.FC = () => {
         .limit(20)
 
       setStudentNotes(notesData || [])
+
+      // Load class content
+      const { data: classContentData } = await supabase
+        .from('class_content')
+        .select('*')
+        .eq('student_id', studentId)
+        .order('date', { ascending: false })
+        .order('created_at', { ascending: false })
+
+      setClassContent(classContentData || [])
       setError(null) // Clear any previous errors
     } catch (err) {
       console.error('Error loading student details:', err)
@@ -1191,6 +1209,102 @@ const TeacherPortal: React.FC = () => {
       loadStudentDetails(selectedStudent.id)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to add note')
+    }
+  }
+
+  const handleAddClassContent = async () => {
+    if (!selectedStudent || !teacher) return
+
+    if (!classContentText.trim()) {
+      toast({
+        title: 'Error',
+        description: 'Please enter the content that was covered.',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    try {
+      // Validate sub-subject for Islamic Studies
+      if (classContentSubject === 'islamic_studies' && !classContentSubSubject) {
+        toast({
+          title: 'Error',
+          description: 'Please select a sub-subject for Islamic Studies.',
+          variant: 'destructive',
+        })
+        return
+      }
+
+      const { error } = await supabase
+        .from('class_content')
+        .insert({
+          student_id: selectedStudent.id,
+          teacher_id: teacher.id,
+          date: classContentDate,
+          subject: classContentSubject,
+          sub_subject: classContentSubject === 'islamic_studies' ? classContentSubSubject : null,
+          content: classContentText,
+          label: classContentLabel || null,
+        })
+
+      if (error) throw error
+
+      // Get parent information for email notification
+      const { data: parent } = await supabase
+        .from('parents')
+        .select('parent1_email, parent1_first_name, parent1_last_name')
+        .eq('id', selectedStudent.parent_id)
+        .single()
+
+      if (parent?.parent1_email) {
+        const studentName = `${selectedStudent.first_name} ${selectedStudent.last_name}`
+        const parentName = `${parent.parent1_first_name} ${parent.parent1_last_name}`
+        const subjectLabel = classContentSubject === 'quran' ? 'Quran' : 'Islamic Studies'
+        const subSubjectLabel = classContentSubSubject 
+          ? classContentSubSubject.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())
+          : ''
+        const labelText = classContentLabel 
+          ? classContentLabel.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())
+          : ''
+        
+        const htmlMessage = `
+          <p>Assalamu Alaikum ${parentName},</p>
+          <p>This is to inform you about what was covered in class for ${studentName}.</p>
+          <p><strong>Date:</strong> ${new Date(classContentDate).toLocaleDateString()}</p>
+          <p><strong>Subject:</strong> ${subjectLabel}</p>
+          ${subSubjectLabel ? `<p><strong>Sub-Subject:</strong> ${subSubjectLabel}</p>` : ''}
+          ${labelText ? `<p><strong>Label:</strong> ${labelText}</p>` : ''}
+          <p><strong>Content Covered:</strong></p>
+          <p>${classContentText.replace(/\n/g, '<br>')}</p>
+          <p>Please check the parent portal for the full history.</p>
+          <p>Jazakallahu Khairan,<br>Madrasah Abu Bakr As-Siddiq Team</p>
+        `
+
+        await sendNotification(
+          parent.parent1_email,
+          parentName,
+          studentName,
+          'note',
+          `Class Content Update - ${subjectLabel} - ${studentName}`,
+          undefined,
+          htmlMessage
+        )
+      }
+
+      setShowClassContentDialog(false)
+      setClassContentDate(new Date().toISOString().split('T')[0])
+      setClassContentSubject('quran')
+      setClassContentSubSubject('')
+      setClassContentText('')
+      setClassContentLabel('')
+      loadStudentDetails(selectedStudent.id)
+      
+      toast({
+        title: 'Success',
+        description: 'Class content added successfully. Parent has been notified.',
+      })
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to add class content')
     }
   }
 
@@ -1622,7 +1736,7 @@ const TeacherPortal: React.FC = () => {
               </DialogHeader>
 
           <Tabs defaultValue="profile" className="w-full mt-4">
-            <TabsList className="grid w-full grid-cols-5 h-12">
+            <TabsList className="flex-wrap h-auto w-full">
               <TabsTrigger value="profile" className="flex items-center gap-2">
                 <UserCheck className="h-4 w-4" />
                 Profile
@@ -1642,6 +1756,10 @@ const TeacherPortal: React.FC = () => {
               <TabsTrigger value="notes" className="flex items-center gap-2">
                 <FileText className="h-4 w-4" />
                 Notes
+              </TabsTrigger>
+              <TabsTrigger value="class-content" className="flex items-center gap-2">
+                <BookOpen className="h-4 w-4" />
+                Class Content
               </TabsTrigger>
             </TabsList>
 
@@ -1996,6 +2114,70 @@ const TeacherPortal: React.FC = () => {
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </TabsContent>
+
+            {/* Class Content Tab */}
+            <TabsContent value="class-content" className="mt-6 space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold flex items-center gap-2">
+                  <BookOpen className="h-5 w-5 text-primary" />
+                  Class Content History
+                </h3>
+                <Button onClick={() => setShowClassContentDialog(true)} size="sm" className="gap-2">
+                  <Plus className="h-4 w-4" />
+                  Add Class Content
+                </Button>
+              </div>
+              {classContent.length === 0 ? (
+                <Card>
+                  <CardContent className="py-8 text-center">
+                    <BookOpen className="h-12 w-12 mx-auto text-gray-400 mb-2" />
+                    <p className="text-gray-500">No class content recorded yet.</p>
+                    <Button onClick={() => setShowClassContentDialog(true)} className="mt-4" size="sm">
+                      Add First Entry
+                    </Button>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="space-y-3">
+                  {classContent.map((content) => (
+                    <Card key={content.id} className="hover:shadow-md transition-shadow">
+                      <CardContent className="p-4">
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              <Badge variant="outline">
+                                {content.subject === 'quran' ? 'Quran' : 'Islamic Studies'}
+                              </Badge>
+                              {content.sub_subject && (
+                                <Badge variant="secondary">
+                                  {content.sub_subject.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}
+                                </Badge>
+                              )}
+                              <span className="text-sm text-gray-500">
+                                {new Date(content.date).toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}
+                              </span>
+                              {content.label && (
+                                <Badge 
+                                  variant={
+                                    content.label === 'needs_revision' ? 'destructive' :
+                                    content.label === 'exam_content' ? 'default' :
+                                    content.label === 'important' ? 'secondary' :
+                                    'outline'
+                                  }
+                                >
+                                  {content.label.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}
+                                </Badge>
+                              )}
+                            </div>
+                            <p className="text-gray-800 whitespace-pre-wrap">{content.content}</p>
+                          </div>
                         </div>
                       </CardContent>
                     </Card>
@@ -2391,6 +2573,98 @@ const TeacherPortal: React.FC = () => {
                 ) : (
                   'Update Password'
                 )}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Class Content Dialog */}
+      <Dialog open={showClassContentDialog} onOpenChange={setShowClassContentDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add Class Content</DialogTitle>
+            <DialogDescription>
+              Record what was covered in class for {selectedStudent?.first_name} {selectedStudent?.last_name}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="class-content-date">Date</Label>
+              <Input
+                id="class-content-date"
+                type="date"
+                value={classContentDate}
+                onChange={(e) => setClassContentDate(e.target.value)}
+              />
+            </div>
+            <div>
+              <Label htmlFor="class-content-subject">Subject</Label>
+              <Select value={classContentSubject} onValueChange={(v: 'quran' | 'islamic_studies') => {
+                setClassContentSubject(v)
+                if (v === 'quran') {
+                  setClassContentSubSubject('') // Clear sub-subject when switching to Quran
+                }
+              }}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="quran">Quran</SelectItem>
+                  <SelectItem value="islamic_studies">Islamic Studies</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {classContentSubject === 'islamic_studies' && (
+              <div>
+                <Label htmlFor="class-content-sub-subject">Sub-Subject *</Label>
+                <Select 
+                  value={classContentSubSubject || 'none'} 
+                  onValueChange={(v) => setClassContentSubSubject(v === 'none' ? '' : v as any)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select sub-subject" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Select...</SelectItem>
+                    <SelectItem value="surah_and_dua">Surah and Dua</SelectItem>
+                    <SelectItem value="fiqh">Fiqh</SelectItem>
+                    <SelectItem value="islamic_curriculum">Islamic Curriculum</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+            <div>
+              <Label htmlFor="class-content-text">Content Covered *</Label>
+              <Textarea
+                id="class-content-text"
+                value={classContentText}
+                onChange={(e) => setClassContentText(e.target.value)}
+                placeholder="Describe what was covered in class today..."
+                rows={6}
+              />
+            </div>
+            <div>
+              <Label htmlFor="class-content-label">Label (optional)</Label>
+              <Select value={classContentLabel || 'none'} onValueChange={(v) => setClassContentLabel(v === 'none' ? '' : v as any)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a label" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">None</SelectItem>
+                  <SelectItem value="needs_revision">Needs Revision</SelectItem>
+                  <SelectItem value="exam_content">Exam Content</SelectItem>
+                  <SelectItem value="important">Important</SelectItem>
+                  <SelectItem value="completed">Completed</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setShowClassContentDialog(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleAddClassContent}>
+                Save
               </Button>
             </div>
           </div>
