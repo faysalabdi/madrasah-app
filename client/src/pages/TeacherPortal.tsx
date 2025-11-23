@@ -1320,8 +1320,101 @@ const TeacherPortal: React.FC = () => {
       if (error) throw error
 
       loadStudentDetails(selectedStudent.id)
+      
+      toast({
+        title: 'Success',
+        description: 'Note deleted successfully.',
+      })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to delete note')
+    }
+  }
+
+  const handleDeleteAttendance = async (attendanceId: number) => {
+    if (!selectedStudent || !confirm('Are you sure you want to delete this attendance record?')) return
+
+    try {
+      const { error } = await supabase
+        .from('attendance')
+        .delete()
+        .eq('id', attendanceId)
+
+      if (error) throw error
+
+      loadStudentDetails(selectedStudent.id)
+      
+      toast({
+        title: 'Success',
+        description: 'Attendance record deleted successfully.',
+      })
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete attendance record')
+    }
+  }
+
+  const handleDeleteBehaviorNote = async (behaviorId: number) => {
+    if (!selectedStudent || !confirm('Are you sure you want to delete this behavior note?')) return
+
+    try {
+      const { error } = await supabase
+        .from('behavior_notes')
+        .delete()
+        .eq('id', behaviorId)
+
+      if (error) throw error
+
+      loadStudentDetails(selectedStudent.id)
+      
+      toast({
+        title: 'Success',
+        description: 'Behavior note deleted successfully.',
+      })
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete behavior note')
+    }
+  }
+
+  const handleDeleteHomework = async (homeworkId: number) => {
+    if (!selectedStudent || !confirm('Are you sure you want to delete this homework assignment?')) return
+
+    try {
+      const { error } = await supabase
+        .from('homework')
+        .delete()
+        .eq('id', homeworkId)
+
+      if (error) throw error
+
+      loadStudentDetails(selectedStudent.id)
+      
+      toast({
+        title: 'Success',
+        description: 'Homework assignment deleted successfully.',
+      })
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete homework assignment')
+    }
+  }
+
+  const handleDeleteClassContent = async (contentId: number) => {
+    if (!selectedStudent || !confirm('Are you sure you want to delete this class content entry?')) return
+
+    try {
+      const { error } = await supabase
+        .from('class_content')
+        .delete()
+        .eq('id', contentId)
+
+      if (error) throw error
+
+      loadStudentDetails(selectedStudent.id)
+      
+      toast({
+        title: 'Success',
+        description: 'Class content deleted successfully.',
+      })
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete class content')
     }
   }
 
@@ -1939,9 +2032,19 @@ const TeacherPortal: React.FC = () => {
                                 )}
                               </div>
                             </div>
-                            <Badge className={`${getStatusColor(record.status)} border font-medium`}>
-                              {getStatusLabel(record.status)}
-                            </Badge>
+                            <div className="flex items-center gap-2">
+                              <Badge className={`${getStatusColor(record.status)} border font-medium`}>
+                                {getStatusLabel(record.status)}
+                              </Badge>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDeleteAttendance(record.id)}
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50 shrink-0"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
                           </div>
                         </CardContent>
                       </Card>
@@ -2009,9 +2112,19 @@ const TeacherPortal: React.FC = () => {
                                 )}
                               </div>
                             </div>
-                            <Badge variant={hw.completed ? 'default' : isOverdue ? 'destructive' : 'secondary'}>
-                              {hw.completed ? 'Completed' : isOverdue ? 'Overdue' : 'Pending'}
-                            </Badge>
+                            <div className="flex items-center gap-2">
+                              <Badge variant={hw.completed ? 'default' : isOverdue ? 'destructive' : 'secondary'}>
+                                {hw.completed ? 'Completed' : isOverdue ? 'Overdue' : 'Pending'}
+                              </Badge>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDeleteHomework(hw.id)}
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50 shrink-0"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
                           </div>
                         </CardContent>
                       </Card>
@@ -2055,16 +2168,26 @@ const TeacherPortal: React.FC = () => {
                             </p>
                             <p className="text-sm text-gray-700">{note.description}</p>
                           </div>
-                          <Badge
-                            variant={
-                              note.type === 'positive' ? 'default' :
-                              note.type === 'concern' ? 'secondary' :
-                              'destructive'
-                            }
-                            className="shrink-0"
-                          >
-                            {note.type.charAt(0).toUpperCase() + note.type.slice(1)}
-                          </Badge>
+                          <div className="flex items-center gap-2">
+                            <Badge
+                              variant={
+                                note.type === 'positive' ? 'default' :
+                                note.type === 'concern' ? 'secondary' :
+                                'destructive'
+                              }
+                              className="shrink-0"
+                            >
+                              {note.type.charAt(0).toUpperCase() + note.type.slice(1)}
+                            </Badge>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDeleteBehaviorNote(note.id)}
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50 shrink-0"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </div>
                       </CardContent>
                     </Card>
@@ -2178,6 +2301,14 @@ const TeacherPortal: React.FC = () => {
                             </div>
                             <p className="text-gray-800 whitespace-pre-wrap">{content.content}</p>
                           </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeleteClassContent(content.id)}
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50 shrink-0"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
                         </div>
                       </CardContent>
                     </Card>

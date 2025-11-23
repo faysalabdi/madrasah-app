@@ -181,6 +181,7 @@ const AdminPortal: React.FC = () => {
   // Filters for Students tab
   const [studentsGradeFilter, setStudentsGradeFilter] = useState<string>('all')
   const [studentsQuranLevelFilter, setStudentsQuranLevelFilter] = useState<string>('all')
+  const [studentsPaymentFilter, setStudentsPaymentFilter] = useState<string>('all') // 'all', 'paid', 'unpaid'
   
   // Program filtering
   const [programFilter, setProgramFilter] = useState<string>('all') // 'all', 'A', 'B', 'none'
@@ -3308,7 +3309,7 @@ const AdminPortal: React.FC = () => {
                       View all students and their term fee payment status
                     </CardDescription>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4">
                     <div className="space-y-2">
                       <Label>Filter by Program</Label>
                       <Select value={programFilter} onValueChange={setProgramFilter}>
@@ -3359,6 +3360,19 @@ const AdminPortal: React.FC = () => {
                         </SelectContent>
                       </Select>
                     </div>
+                    <div className="space-y-2">
+                      <Label>Filter by Payment Status</Label>
+                      <Select value={studentsPaymentFilter} onValueChange={setStudentsPaymentFilter}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="All Students" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Students</SelectItem>
+                          <SelectItem value="paid">Paid</SelectItem>
+                          <SelectItem value="unpaid">Unpaid</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent>
@@ -3371,6 +3385,10 @@ const AdminPortal: React.FC = () => {
                         }
                         if (studentsGradeFilter !== 'all' && student.grade !== studentsGradeFilter) return false
                         if (studentsQuranLevelFilter !== 'all' && student.quran_level !== studentsQuranLevelFilter) return false
+                        if (studentsPaymentFilter !== 'all') {
+                          if (studentsPaymentFilter === 'paid' && !student.hasPaidTermFees) return false
+                          if (studentsPaymentFilter === 'unpaid' && student.hasPaidTermFees) return false
+                        }
                         return true
                       })
                       .map((student) => {
