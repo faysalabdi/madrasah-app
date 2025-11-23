@@ -22,6 +22,7 @@ import {
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Textarea } from '@/components/ui/textarea'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { useToast } from '@/hooks/use-toast'
 
 interface Student {
@@ -111,13 +112,20 @@ const AdminPortal: React.FC = () => {
   const [payments, setPayments] = useState<Payment[]>([])
   const [paymentDateFilter, setPaymentDateFilter] = useState<string>('all') // 'all', '7days', '30days', '90days', '1year'
   
+  // Invoices
+  const [invoices, setInvoices] = useState<any[]>([])
+  const [loadingInvoices, setLoadingInvoices] = useState(false)
+  
   // Bulk Invoice
   const [showBulkInvoiceDialog, setShowBulkInvoiceDialog] = useState(false)
   const [bulkInvoiceDays, setBulkInvoiceDays] = useState(30)
-  const [bulkInvoiceSendEmails, setBulkInvoiceSendEmails] = useState(true)
   const [bulkInvoiceLoading, setBulkInvoiceLoading] = useState(false)
   const [selectedParentsForInvoice, setSelectedParentsForInvoice] = useState<number[]>([])
   const [bulkInvoiceMode, setBulkInvoiceMode] = useState<'all' | 'selected'>('all')
+  const [bulkInvoiceTermFees, setBulkInvoiceTermFees] = useState(true)
+  const [bulkInvoiceBooks, setBulkInvoiceBooks] = useState(false)
+  const [bulkInvoiceSelectedStudents, setBulkInvoiceSelectedStudents] = useState<{ [parentId: number]: number[] }>({}) // parentId -> array of student IDs
+  const [bulkInvoiceAllStudents, setBulkInvoiceAllStudents] = useState(true) // If true, invoice all students; if false, use selected students
   
   // Teacher Attendance
   const [teacherAttendance, setTeacherAttendance] = useState<any[]>([])
@@ -231,9 +239,42 @@ const AdminPortal: React.FC = () => {
       // User is an admin, load dashboard
       loadDashboardData()
       loadAdmins()
+      loadInvoices()
     }
     checkAuth()
   }, [setLocation])
+
+  const loadInvoices = async () => {
+    try {
+      setLoadingInvoices(true)
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/list-invoices`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+        },
+        body: JSON.stringify({ limit: 100 }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to load invoices')
+      }
+
+      const data = await response.json()
+      if (data.success) {
+        setInvoices(data.invoices || [])
+      }
+    } catch (error: any) {
+      console.error('Error loading invoices:', error)
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to load invoices',
+        variant: 'destructive',
+      })
+    } finally {
+      setLoadingInvoices(false)
+    }
+  }
 
   const loadStudentRecords = async (studentId: number) => {
     try {
@@ -1768,9 +1809,10 @@ const AdminPortal: React.FC = () => {
           )}
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-6">
+            <TabsList className="flex-wrap h-auto w-full">
               <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
               <TabsTrigger value="payments">Payments</TabsTrigger>
+              <TabsTrigger value="invoices">Invoices</TabsTrigger>
               <TabsTrigger value="teachers">Teachers</TabsTrigger>
               <TabsTrigger value="students">Students</TabsTrigger>
               <TabsTrigger value="parents">Parents</TabsTrigger>
@@ -2166,6 +2208,102 @@ const AdminPortal: React.FC = () => {
                   })()}
                 </CardContent>
               </Card>
+            </TabsContent>
+
+            {/* Invoices Tab */}
+            <TabsContent value="invoices" className="mt-6">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-2xl font-bold">Sent Invoices</h2>
+                <Button onClick={loadInvoices} disabled={loadingInvoices}>
+                  {loadingInvoices ? 'Loading...' : 'Refresh'}
+                </Button>
+              </div>
+              
+              {loadingInvoices ? (
+                <div className="flex justify-center items-center py-12">
+                  <div className="text-gray-500">Loading invoices...</div>
+                </div>
+              ) : invoices.length === 0 ? (
+                <Card>
+                  <CardContent className="py-12 text-center text-gray-500">
+                    No invoices found.
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="space-y-4">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>All Invoices</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="overflow-x-auto">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Invoice #</TableHead>
+                              <TableHead>Parent</TableHead>
+                              <TableHead>Amount</TableHead>
+                              <TableHead>Status</TableHead>
+                              <TableHead>Due Date</TableHead>
+                              <TableHead>Created</TableHead>
+                              <TableHead>Actions</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {invoices.map((invoice: any) => {
+                              const amount = (invoice.amount_due || 0) / 100
+                              const status = invoice.status
+                              const dueDate = invoice.due_date ? new Date(invoice.due_date * 1000).toLocaleDateString() : 'N/A'
+                              const createdDate = new Date(invoice.created * 1000).toLocaleDateString()
+                              const invoiceUrl = invoice.hosted_invoice_url || invoice.invoice_pdf
+                              
+                              return (
+                                <TableRow key={invoice.id}>
+                                  <TableCell className="font-mono text-sm">
+                                    {invoice.number || invoice.id.substring(0, 12)}
+                                  </TableCell>
+                                  <TableCell>
+                                    {invoice.parent 
+                                      ? `${invoice.parent.parent1_first_name} ${invoice.parent.parent1_last_name}`
+                                      : 'Unknown Parent'
+                                    }
+                                  </TableCell>
+                                  <TableCell>${amount.toFixed(2)}</TableCell>
+                                  <TableCell>
+                                    <Badge 
+                                      variant={
+                                        status === 'paid' ? 'default' :
+                                        status === 'open' ? 'secondary' :
+                                        status === 'draft' ? 'outline' :
+                                        'destructive'
+                                      }
+                                    >
+                                      {status}
+                                    </Badge>
+                                  </TableCell>
+                                  <TableCell>{dueDate}</TableCell>
+                                  <TableCell>{createdDate}</TableCell>
+                                  <TableCell>
+                                    {invoiceUrl && (
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => window.open(invoiceUrl, '_blank')}
+                                      >
+                                        View
+                                      </Button>
+                                    )}
+                                  </TableCell>
+                                </TableRow>
+                              )
+                            })}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              )}
             </TabsContent>
 
             {/* Teachers Tab */}
@@ -3157,7 +3295,7 @@ const AdminPortal: React.FC = () => {
               
               {/* Bulk Invoice Dialog */}
               <Dialog open={showBulkInvoiceDialog} onOpenChange={setShowBulkInvoiceDialog}>
-                <DialogContent>
+                <DialogContent className="max-h-[90vh] overflow-y-auto">
                   <DialogHeader>
                     <DialogTitle>
                       {bulkInvoiceMode === 'all' ? 'Bulk Invoice All Parents' : `Invoice Selected Parents (${selectedParentsForInvoice.length})`}
@@ -3170,33 +3308,164 @@ const AdminPortal: React.FC = () => {
                     </DialogDescription>
                   </DialogHeader>
                   <div className="space-y-4 py-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="days-until-due">Days Until Due</Label>
-                      <Input
-                        id="days-until-due"
-                        type="number"
-                        min="0"
-                        max="365"
-                        value={bulkInvoiceDays}
-                        onChange={(e) => setBulkInvoiceDays(parseInt(e.target.value) || 30)}
-                      />
-                      <p className="text-xs text-gray-500">
-                        Number of days until the invoice is due. Set to 0 for immediate payment.
+                    {/* Clear indication of who will be invoiced */}
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                      <p className="text-sm font-medium text-blue-900 mb-1">
+                        {bulkInvoiceMode === 'all' 
+                          ? '📧 Invoicing: ALL parents with Stripe customer IDs'
+                          : `📧 Invoicing: ${selectedParentsForInvoice.length} selected parent(s)`
+                        }
                       </p>
+                      {bulkInvoiceMode === 'selected' && (
+                        <p className="text-xs text-blue-700 mt-1">
+                          Only the parents you selected will receive invoices.
+                        </p>
+                      )}
+                      {bulkInvoiceMode === 'all' && (
+                        <p className="text-xs text-blue-700 mt-1">
+                          All parents who have a Stripe customer ID will receive invoices.
+                        </p>
+                      )}
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id="send-emails"
-                        checked={bulkInvoiceSendEmails}
-                        onCheckedChange={(checked) => setBulkInvoiceSendEmails(checked === true)}
-                      />
-                      <Label htmlFor="send-emails" className="cursor-pointer">
-                        Send invoice emails to parents
-                      </Label>
+                    
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Label>What to Invoice For</Label>
+                        <div className="space-y-2">
+                          <div className="flex items-center space-x-2">
+                            <Checkbox
+                              id="invoice-term-fees"
+                              checked={bulkInvoiceTermFees}
+                              onCheckedChange={(checked) => setBulkInvoiceTermFees(checked === true)}
+                            />
+                            <Label htmlFor="invoice-term-fees" className="cursor-pointer">
+                              Term Fees (per student)
+                            </Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <Checkbox
+                              id="invoice-books"
+                              checked={bulkInvoiceBooks}
+                              onCheckedChange={(checked) => setBulkInvoiceBooks(checked === true)}
+                            />
+                            <Label htmlFor="invoice-books" className="cursor-pointer">
+                              Books
+                            </Label>
+                          </div>
+                        </div>
+                        {!bulkInvoiceTermFees && !bulkInvoiceBooks && (
+                          <p className="text-xs text-red-600 mt-1">
+                            Please select at least one item to invoice for.
+                          </p>
+                        )}
+                      </div>
+                      
+                      {/* Student Selection - only show if term fees are selected */}
+                      {bulkInvoiceTermFees && (
+                        <div className="space-y-2">
+                          <div className="flex items-center space-x-2 mb-2">
+                            <Checkbox
+                              id="invoice-all-students"
+                              checked={bulkInvoiceAllStudents}
+                              onCheckedChange={(checked) => {
+                                setBulkInvoiceAllStudents(checked === true)
+                                if (checked) {
+                                  setBulkInvoiceSelectedStudents({}) // Clear selections
+                                }
+                              }}
+                            />
+                            <Label htmlFor="invoice-all-students" className="cursor-pointer">
+                              Invoice all students for each parent
+                            </Label>
+                          </div>
+                          {!bulkInvoiceAllStudents && (
+                            <div className="space-y-2 max-h-64 overflow-y-auto border rounded-lg p-3">
+                              <Label className="text-sm font-medium">Select Students to Invoice</Label>
+                              <p className="text-xs text-gray-500 mb-2">
+                                {bulkInvoiceMode === 'all' 
+                                  ? 'Select which students to invoice for each parent. If a parent is not expanded, all their students will be invoiced.'
+                                  : 'Select which students to invoice for the selected parents.'
+                                }
+                              </p>
+                              {bulkInvoiceMode === 'selected' ? (
+                                // Show students for selected parents only
+                                selectedParentsForInvoice.map((parentId) => {
+                                  const parent = parents.find(p => p.id === parentId)
+                                  const parentStudents = students.filter(s => s.parent_id === parentId)
+                                  const selectedForParent = bulkInvoiceSelectedStudents[parentId] || []
+                                  
+                                  return (
+                                    <div key={parentId} className="border-b pb-2 mb-2 last:border-b-0 last:pb-0 last:mb-0">
+                                      <p className="font-medium text-sm mb-2">
+                                        {parent?.parent1_first_name} {parent?.parent1_last_name}
+                                      </p>
+                                      <div className="space-y-1 pl-4">
+                                        {parentStudents.map((student) => {
+                                          const isSelected = selectedForParent.includes(student.id)
+                                          return (
+                                            <div
+                                              key={student.id}
+                                              className="flex items-center space-x-2 p-1 rounded hover:bg-gray-50 cursor-pointer"
+                                              onClick={() => {
+                                                const current = bulkInvoiceSelectedStudents[parentId] || []
+                                                if (isSelected) {
+                                                  setBulkInvoiceSelectedStudents({
+                                                    ...bulkInvoiceSelectedStudents,
+                                                    [parentId]: current.filter(id => id !== student.id)
+                                                  })
+                                                } else {
+                                                  setBulkInvoiceSelectedStudents({
+                                                    ...bulkInvoiceSelectedStudents,
+                                                    [parentId]: [...current, student.id]
+                                                  })
+                                                }
+                                              }}
+                                            >
+                                              <input
+                                                type="checkbox"
+                                                checked={isSelected}
+                                                onChange={() => {}}
+                                                className="cursor-pointer"
+                                              />
+                                              <span className="text-sm">
+                                                {student.first_name} {student.last_name} ({student.grade})
+                                              </span>
+                                            </div>
+                                          )
+                                        })}
+                                      </div>
+                                    </div>
+                                  )
+                                })
+                              ) : (
+                                <p className="text-sm text-gray-500 text-center py-4">
+                                  Student selection is only available when invoicing selected parents.
+                                </p>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="days-until-due">Days Until Due</Label>
+                        <Input
+                          id="days-until-due"
+                          type="number"
+                          min="0"
+                          max="365"
+                          value={bulkInvoiceDays}
+                          onChange={(e) => setBulkInvoiceDays(parseInt(e.target.value) || 30)}
+                        />
+                        <p className="text-xs text-gray-500">
+                          Number of days until the invoice is due. Set to 0 for immediate payment.
+                        </p>
+                      </div>
                     </div>
+                    
                     <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
                       <p className="text-sm text-yellow-800">
-                        <strong>Note:</strong> This will create invoices for all parents with Stripe customer IDs. 
+                        <strong>Note:</strong> Invoice emails will be sent automatically to all parents. 
                         Stripe will attempt to automatically charge saved payment methods. 
                         Parents without saved payment methods will receive an invoice to pay manually.
                       </p>
@@ -3215,16 +3484,48 @@ const AdminPortal: React.FC = () => {
                             return
                           }
                           
+                          // Validate that at least one item is selected
+                          if (!bulkInvoiceTermFees && !bulkInvoiceBooks) {
+                            toast({
+                              title: 'Error',
+                              description: 'Please select at least one item to invoice for (Term Fees or Books).',
+                              variant: 'destructive',
+                            })
+                            return
+                          }
+                          
+                          // Validate student selection if term fees are selected and not invoicing all students
+                          if (bulkInvoiceTermFees && !bulkInvoiceAllStudents && bulkInvoiceMode === 'selected') {
+                            const hasSelectedStudents = selectedParentsForInvoice.some(
+                              parentId => (bulkInvoiceSelectedStudents[parentId] || []).length > 0
+                            )
+                            if (!hasSelectedStudents) {
+                              toast({
+                                title: 'Error',
+                                description: 'Please select at least one student to invoice for term fees.',
+                                variant: 'destructive',
+                              })
+                              return
+                            }
+                          }
+                          
                           setBulkInvoiceLoading(true)
                           try {
                             const requestBody: any = {
                               daysUntilDue: bulkInvoiceDays,
-                              sendEmails: bulkInvoiceSendEmails,
+                              sendEmails: true, // Always send emails
+                              invoiceTermFees: bulkInvoiceTermFees,
+                              invoiceBooks: bulkInvoiceBooks,
+                              invoiceAllStudents: bulkInvoiceAllStudents,
                             }
                             
                             // Add parent IDs if invoicing selected parents
                             if (bulkInvoiceMode === 'selected') {
                               requestBody.parentIds = selectedParentsForInvoice
+                              // Add student selections if not invoicing all students
+                              if (!bulkInvoiceAllStudents) {
+                                requestBody.studentSelections = bulkInvoiceSelectedStudents
+                              }
                             }
                             
                             const response = await fetch(
@@ -3239,26 +3540,39 @@ const AdminPortal: React.FC = () => {
                               }
                             )
 
-                            if (!response.ok) {
-                              const errorData = await response.json().catch(() => ({}))
-                              throw new Error(errorData.error || 'Failed to create bulk invoices')
-                            }
-
                             const data = await response.json()
                             
-                            if (data.failed && data.failed.length > 0) {
+                            // Check for error response (either from non-ok status or error field)
+                            if (!response.ok || data.error) {
                               toast({
-                                title: 'Partial Success',
-                                description: `Created ${data.succeeded || 0} invoice(s) successfully. ${data.failed.length} failed. Check console for details.`,
-                                variant: 'default',
+                                title: 'Error',
+                                description: data.error || `Failed to create invoices (${response.status})`,
+                                variant: 'destructive',
                               })
-                              console.log('Failed invoices:', data.results.failed)
+                              console.error('Bulk invoice error:', data)
+                            } else if (data.failed && data.failed.length > 0) {
+                              // Get the first error message to show
+                              const firstError = data.results?.failed?.[0] || data.failed?.[0]
+                              const errorMessage = firstError?.error || 'Unknown error'
+                              const parentName = firstError?.parentName || 'Unknown parent'
+                              
+                              toast({
+                                title: data.succeeded > 0 ? 'Partial Success' : 'Error',
+                                description: data.succeeded > 0 
+                                  ? `Created ${data.succeeded} invoice(s) successfully. ${data.failed.length} failed. First error: ${parentName} - ${errorMessage}`
+                                  : `Failed to create invoices. Error: ${parentName} - ${errorMessage}`,
+                                variant: data.succeeded > 0 ? 'default' : 'destructive',
+                              })
+                              console.log('Failed invoices:', data.results?.failed || data.failed)
                             } else {
                               toast({
                                 title: 'Success',
-                                description: `Successfully created ${data.succeeded || 0} invoice(s) for all parents.`,
+                                description: `Successfully created ${data.succeeded || 0} invoice(s) for ${data.total || 0} parent(s).`,
                               })
                             }
+                            
+                            // Log full response for debugging
+                            console.log('Bulk invoice response:', data)
                             
                             setShowBulkInvoiceDialog(false)
                             setSelectedParentsForInvoice([]) // Clear selection after invoicing
