@@ -149,8 +149,8 @@ export default function Programs() {
                   Schedule:
                 </h3>
                 <ul className="list-disc pl-4 space-y-1 text-sm">
-                  <li><strong>Program A:</strong> Saturday 10:00 AM - 11:00 AM, Tuesday 5:30 PM - 6:30 PM, Thursday 5:30 PM - 6:30 PM (By Level)</li>
-                  <li><strong>Program B:</strong> Monday 5:30 PM - 6:30 PM, Wednesday 5:30 PM - 6:30 PM, Friday 5:30 PM - 6:30 PM (By Level)</li>
+                  <li><strong>Program A:</strong> Saturday 10:00 AM - 11:00 AM, Tuesday 5:30 PM - 7:30 PM, Thursday 5:30 PM - 7:30 PM (By Level)</li>
+                  <li><strong>Program B:</strong> Monday 5:30 PM - 7:30 PM, Wednesday 5:30 PM - 7:30 PM, Friday 5:30 PM - 7:30 PM (By Level)</li>
                 </ul>
               </div>
               <div className="pl-4 mt-4">
