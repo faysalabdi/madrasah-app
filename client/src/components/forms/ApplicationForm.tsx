@@ -7,6 +7,7 @@ interface ChildInfo {
   gender: string;
   currentSchool: string;
   yearLevel: string;
+  program: string; // 'A' or 'B'
   medicalIssues: string; // 'yes' or 'no'
   medicalDetails: string;
 }
@@ -40,6 +41,7 @@ const initialChildState: ChildInfo = {
   gender: '',
   currentSchool: '',
   yearLevel: '',
+  program: 'A', // Default to Program A
   medicalIssues: 'no',
   medicalDetails: '',
 };
@@ -244,6 +246,13 @@ const ApplicationForm: React.FC<ApplicationFormProps> = ({ onSubmitSuccess }) =>
               <option value="Grade 4">Grade 4</option>
               <option value="Grade 5">Grade 5</option>
               <option value="Grade 6">Grade 6</option>
+            </select>
+          </div>
+          <div>
+            <label htmlFor={`child${index}_program`} className="block text-sm font-medium text-gray-700 mb-1">Program (Required)</label>
+            <select name="program" id={`child${index}_program`} value={child.program} onChange={(e) => handleChildInputChange(index, e)} required className="w-full border border-neutral-border rounded px-3 py-2 bg-white">
+              <option value="A">Program A (Saturday, Tuesday, Thursday)</option>
+              <option value="B">Program B (Monday, Wednesday, Friday)</option>
             </select>
           </div>
           <div className="md:col-span-2">

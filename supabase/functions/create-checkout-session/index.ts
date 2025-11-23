@@ -247,6 +247,7 @@ serve(async (req) => {
               gender: child.gender || null,
               grade: child.yearLevel || "",
               current_school: child.currentSchool || "",
+              program: child.program || "A", // Default to Program A if not specified
               medical_issues: child.medicalIssues === "yes" ? "yes" : "no",
               medical_details: child.medicalDetails || null,
             }

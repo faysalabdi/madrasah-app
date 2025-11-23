@@ -166,6 +166,7 @@ interface Student {
   date_of_birth: string | null
   gender: string | null
   current_school: string | null
+  program: string | null
   quran_level: string | null
   quran_page: number | null
   quran_surah: string | null
@@ -218,6 +219,7 @@ const TeacherPortal: React.FC = () => {
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [programFilter, setProgramFilter] = useState<string>('all') // 'all', 'A', 'B', 'none'
   
   // Student detail data
   const [attendance, setAttendance] = useState<Attendance[]>([])
@@ -328,6 +330,7 @@ const TeacherPortal: React.FC = () => {
             date_of_birth,
             gender,
             current_school,
+            program,
             quran_level,
             quran_page,
             quran_surah,
@@ -354,6 +357,7 @@ const TeacherPortal: React.FC = () => {
             date_of_birth,
             gender,
             current_school,
+            program,
             quran_level,
             quran_page,
             quran_surah,
@@ -1039,6 +1043,21 @@ const TeacherPortal: React.FC = () => {
             </Alert>
           )}
 
+          {/* Program Filter */}
+          <div className="mb-4 flex justify-end">
+            <Select value={programFilter} onValueChange={setProgramFilter}>
+              <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder="Filter by program" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Programs</SelectItem>
+                <SelectItem value="A">Program A</SelectItem>
+                <SelectItem value="B">Program B</SelectItem>
+                <SelectItem value="none">Not Set</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
           {/* Students List - Two Sections */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Quran Students */}
@@ -1053,11 +1072,21 @@ const TeacherPortal: React.FC = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {quranStudents.length === 0 ? (
+                {quranStudents.filter((s) => {
+                  if (programFilter === 'all') return true
+                  if (programFilter === 'none') return !s.program
+                  return s.program === programFilter
+                }).length === 0 ? (
                   <p className="text-gray-500">No Quran students assigned yet.</p>
                 ) : (
                   <div className="grid grid-cols-1 gap-3">
-                    {quranStudents.map((student) => (
+                    {quranStudents
+                      .filter((s) => {
+                        if (programFilter === 'all') return true
+                        if (programFilter === 'none') return !s.program
+                        return s.program === programFilter
+                      })
+                      .map((student) => (
                       <div
                         key={`quran-${student.id}`}
                         onClick={() => handleStudentClick(student)}
@@ -1067,7 +1096,7 @@ const TeacherPortal: React.FC = () => {
                           {student.first_name} {student.last_name}
                         </h3>
                         <p className="text-sm text-gray-600">
-                          {student.grade} • ID: {student.student_id || `STU-${student.id.toString().padStart(4, '0')}`}
+                          {student.grade} • {student.program ? `Program ${student.program}` : 'Program Not Set'} • ID: {student.student_id || `STU-${student.id.toString().padStart(4, '0')}`}
                         </p>
                         {student.current_school && (
                           <p className="text-sm text-gray-500 mt-1">
@@ -1093,11 +1122,21 @@ const TeacherPortal: React.FC = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {islamicStudiesStudents.length === 0 ? (
+                {islamicStudiesStudents.filter((s) => {
+                  if (programFilter === 'all') return true
+                  if (programFilter === 'none') return !s.program
+                  return s.program === programFilter
+                }).length === 0 ? (
                   <p className="text-gray-500">No Islamic Studies students assigned yet.</p>
                 ) : (
                   <div className="grid grid-cols-1 gap-3">
-                    {islamicStudiesStudents.map((student) => (
+                    {islamicStudiesStudents
+                      .filter((s) => {
+                        if (programFilter === 'all') return true
+                        if (programFilter === 'none') return !s.program
+                        return s.program === programFilter
+                      })
+                      .map((student) => (
                       <div
                         key={`islamic-${student.id}`}
                         onClick={() => handleStudentClick(student)}
@@ -1107,7 +1146,7 @@ const TeacherPortal: React.FC = () => {
                           {student.first_name} {student.last_name}
                         </h3>
                         <p className="text-sm text-gray-600">
-                          {student.grade} • ID: {student.student_id || `STU-${student.id.toString().padStart(4, '0')}`}
+                          {student.grade} • {student.program ? `Program ${student.program}` : 'Program Not Set'} • ID: {student.student_id || `STU-${student.id.toString().padStart(4, '0')}`}
                         </p>
                         {student.current_school && (
                           <p className="text-sm text-gray-500 mt-1">

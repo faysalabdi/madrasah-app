@@ -317,16 +317,18 @@ export default function Admission() {
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 text-left">
               <div className="bg-white p-6 rounded-lg shadow-sm">
-                <h3 className="font-bold text-lg text-primary mb-2">Tuesday</h3>
-                <p>5:00 PM - 7:00 PM</p>
+                <h3 className="font-bold text-lg text-primary mb-2">Program A</h3>
+                <p className="text-sm text-gray-600 mb-2">Saturday, Tuesday, Thursday</p>
+                <p className="text-sm">Saturday: 10:00 AM - 12:00 PM</p>
+                <p className="text-sm">Tuesday: 5:30 PM - 7:30 PM</p>
+                <p className="text-sm">Thursday: 5:30 PM - 7:30 PM</p>
               </div>
               <div className="bg-white p-6 rounded-lg shadow-sm">
-                <h3 className="font-bold text-lg text-primary mb-2">Thursday</h3>
-                <p>5:00 PM - 7:00 PM</p>
-              </div>
-              <div className="bg-white p-6 rounded-lg shadow-sm">
-                <h3 className="font-bold text-lg text-primary mb-2">Saturday</h3>
-                <p>10:00 AM - 12:00 PM</p>
+                <h3 className="font-bold text-lg text-primary mb-2">Program B</h3>
+                <p className="text-sm text-gray-600 mb-2">Monday, Wednesday, Friday</p>
+                <p className="text-sm">Monday: 5:30 PM - 7:30 PM</p>
+                <p className="text-sm">Wednesday: 5:30 PM - 7:30 PM</p>
+                <p className="text-sm">Friday: 5:30 PM - 7:30 PM</p>
               </div>
             </div>
             <p className="text-sm">

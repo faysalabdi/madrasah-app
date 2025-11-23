@@ -31,6 +31,7 @@ interface Student {
   last_name: string
   grade: string
   parent_id: number
+  program: string | null
   hasPaidTermFees?: boolean
   lastPaymentDate?: string
 }
@@ -149,6 +150,9 @@ const AdminPortal: React.FC = () => {
   const [selectedQuranTeacher, setSelectedQuranTeacher] = useState<string>('')
   const [selectedIslamicStudiesTeacher, setSelectedIslamicStudiesTeacher] = useState<string>('')
   const [selectedStudents, setSelectedStudents] = useState<number[]>([])
+  
+  // Program filtering
+  const [programFilter, setProgramFilter] = useState<string>('all') // 'all', 'A', 'B', 'none'
 
   // Student Detail View
   const [selectedStudentForDetail, setSelectedStudentForDetail] = useState<Student | null>(null)
@@ -1918,14 +1922,35 @@ const AdminPortal: React.FC = () => {
               {/* Students List with Payment Status */}
               <Card>
                 <CardHeader>
-                  <CardTitle>All Students</CardTitle>
-                  <CardDescription>
-                    View all students and their term fee payment status
-                  </CardDescription>
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <CardTitle>All Students</CardTitle>
+                      <CardDescription>
+                        View all students and their term fee payment status
+                      </CardDescription>
+                    </div>
+                    <Select value={programFilter} onValueChange={setProgramFilter}>
+                      <SelectTrigger className="w-[200px]">
+                        <SelectValue placeholder="Filter by program" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Programs</SelectItem>
+                        <SelectItem value="A">Program A</SelectItem>
+                        <SelectItem value="B">Program B</SelectItem>
+                        <SelectItem value="none">Not Set</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-2">
-                    {students.map((student) => {
+                    {students
+                      .filter((student) => {
+                        if (programFilter === 'all') return true
+                        if (programFilter === 'none') return !student.program
+                        return student.program === programFilter
+                      })
+                      .map((student) => {
                       const parent = parents.find(p => p.id === student.parent_id)
                       return (
                         <div key={student.id} className="border rounded-lg p-3">
@@ -1949,7 +1974,7 @@ const AdminPortal: React.FC = () => {
                                 )}
                               </div>
                               <p className="text-sm text-gray-600">
-                                {student.grade} • {parent?.parent1_first_name} {parent?.parent1_last_name}
+                                {student.grade} • {student.program ? `Program ${student.program}` : 'Program Not Set'} • {parent?.parent1_first_name} {parent?.parent1_last_name}
                               </p>
                               {student.lastPaymentDate && (
                                 <p className="text-xs text-gray-500 mt-1">
@@ -2555,9 +2580,58 @@ const AdminPortal: React.FC = () => {
                         {selectedStudentForDetail.first_name} {selectedStudentForDetail.last_name}
                       </DialogTitle>
                       <DialogDescription className="text-base">
-                        Grade {selectedStudentForDetail.grade} • Student ID: {selectedStudentForDetail.student_id || `STU-${selectedStudentForDetail.id.toString().padStart(4, '0')}`}
+                        Grade {selectedStudentForDetail.grade} • {selectedStudentForDetail.program ? `Program ${selectedStudentForDetail.program}` : 'Program Not Set'} • Student ID: {selectedStudentForDetail.student_id || `STU-${selectedStudentForDetail.id.toString().padStart(4, '0')}`}
                       </DialogDescription>
                     </DialogHeader>
+
+                    {/* Program Edit Section */}
+                    <Card className="mt-4">
+                      <CardHeader>
+                        <CardTitle>Edit Program</CardTitle>
+                        <CardDescription>Update the student's program assignment</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="flex items-center gap-4">
+                          <Select
+                            value={selectedStudentForDetail.program || 'none'}
+                            onValueChange={async (value) => {
+                              const newProgram = value === 'none' ? null : value
+                              try {
+                                const { error } = await supabase
+                                  .from('students')
+                                  .update({ program: newProgram })
+                                  .eq('id', selectedStudentForDetail.id)
+                                
+                                if (error) throw error
+                                
+                                setSelectedStudentForDetail({ ...selectedStudentForDetail, program: newProgram })
+                                loadDashboardData()
+                                
+                                toast({
+                                  title: 'Success',
+                                  description: 'Program updated successfully.',
+                                })
+                              } catch (err: any) {
+                                toast({
+                                  title: 'Error',
+                                  description: err.message || 'Failed to update program',
+                                  variant: 'destructive',
+                                })
+                              }
+                            }}
+                          >
+                            <SelectTrigger className="w-[300px]">
+                              <SelectValue placeholder="Select program" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="none">Not Set</SelectItem>
+                              <SelectItem value="A">Program A (Saturday, Tuesday, Thursday)</SelectItem>
+                              <SelectItem value="B">Program B (Monday, Wednesday, Friday)</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </CardContent>
+                    </Card>
 
                     <Tabs defaultValue="attendance" className="w-full mt-4">
                       <TabsList className="grid w-full grid-cols-4 h-12">

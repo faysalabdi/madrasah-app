@@ -13,10 +13,12 @@ export default function Programs() {
 
         <div className="grid gap-8">
 
+        {/* Program A Schedule */}
         <div className="bg-white rounded-lg shadow-sm p-6">
-            <h2 className="text-2xl font-bold text-primary mb-4 font-amiri">
-              Madrasah Timetable
+            <h2 className="text-2xl font-bold text-primary mb-2 font-amiri">
+              Program A Schedule
             </h2>
+            <p className="text-sm text-gray-600 mb-4">Saturday, Tuesday, Thursday</p>
             <div className="overflow-x-auto">
               <table className="w-full border-collapse text-left">
                 <thead className="bg-primary text-white">
@@ -29,13 +31,27 @@ export default function Programs() {
                 </thead>
                 <tbody>
                   <tr className="border-b">
+                    <td rowSpan={2} className="py-3 px-4 border-r align-top">Saturday</td>
+                    <td className="py-3 px-4">10:00 AM - 11:00 AM</td>
+                    <td className="py-3 px-4">Quran/Iqra</td>
+                    <td className="py-3 px-4">By Level</td>
+                  </tr>
+                  <tr>
+                    <td className="py-3 px-4">11:00 AM - 12:00 PM</td>
+                    <td className="py-3 px-4">Islamic Studies (Course Book & Workbook)</td>
+                    <td className="py-3 px-4">By Grade</td>
+                  </tr>
+                  <tr className="border-b bg-neutral-background">
+                    <td colSpan={4} className="py-1 px-4"></td>
+                  </tr>
+                  <tr className="border-b">
                     <td rowSpan={2} className="py-3 px-4 border-r align-top">Tuesday</td>
-                    <td className="py-3 px-4">5:00 PM - 6:00 PM</td>
+                    <td className="py-3 px-4">5:30 PM - 6:30 PM</td>
                     <td className="py-3 px-4">Quran/Iqra</td>
                     <td className="py-3 px-4">By Level</td>
                   </tr>
                   <tr className="border-b">
-                    <td className="py-3 px-4">6:00 PM - 7:00 PM</td>
+                    <td className="py-3 px-4">6:30 PM - 7:30 PM</td>
                     <td className="py-3 px-4">Surahs/Dua Memorisation</td>
                     <td className="py-3 px-4">By Grade</td>
                   </tr>
@@ -44,12 +60,59 @@ export default function Programs() {
                   </tr>
                   <tr className="border-b">
                     <td rowSpan={2} className="py-3 px-4 border-r align-top">Thursday</td>
-                    <td className="py-3 px-4">5:00 PM - 6:00 PM</td>
+                    <td className="py-3 px-4">5:30 PM - 6:30 PM</td>
+                    <td className="py-3 px-4">Quran/Iqra</td>
+                    <td className="py-3 px-4">By Level</td>
+                  </tr>
+                  <tr>
+                    <td className="py-3 px-4">6:30 PM - 7:30 PM</td>
+                    <td className="py-3 px-4">Fiqh</td>
+                    <td className="py-3 px-4">By Grade</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Program B Schedule */}
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <h2 className="text-2xl font-bold text-primary mb-2 font-amiri">
+              Program B Schedule
+            </h2>
+            <p className="text-sm text-gray-600 mb-4">Monday, Wednesday, Friday</p>
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse text-left">
+                <thead className="bg-primary text-white">
+                  <tr>
+                    <th className="py-3 px-4 font-semibold">Day</th>
+                    <th className="py-3 px-4 font-semibold">Time</th>
+                    <th className="py-3 px-4 font-semibold">Subject</th>
+                    <th className="py-3 px-4 font-semibold">Grouping</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr className="border-b">
+                    <td rowSpan={2} className="py-3 px-4 border-r align-top">Monday</td>
+                    <td className="py-3 px-4">5:30 PM - 6:30 PM</td>
                     <td className="py-3 px-4">Quran/Iqra</td>
                     <td className="py-3 px-4">By Level</td>
                   </tr>
                   <tr className="border-b">
-                    <td className="py-3 px-4">6:00 PM - 7:00 PM</td>
+                    <td className="py-3 px-4">6:30 PM - 7:30 PM</td>
+                    <td className="py-3 px-4">Surahs/Dua Memorisation</td>
+                    <td className="py-3 px-4">By Grade</td>
+                  </tr>
+                  <tr className="border-b bg-neutral-background">
+                    <td colSpan={4} className="py-1 px-4"></td>
+                  </tr>
+                  <tr className="border-b">
+                    <td rowSpan={2} className="py-3 px-4 border-r align-top">Wednesday</td>
+                    <td className="py-3 px-4">5:30 PM - 6:30 PM</td>
+                    <td className="py-3 px-4">Quran/Iqra</td>
+                    <td className="py-3 px-4">By Level</td>
+                  </tr>
+                  <tr className="border-b">
+                    <td className="py-3 px-4">6:30 PM - 7:30 PM</td>
                     <td className="py-3 px-4">Fiqh</td>
                     <td className="py-3 px-4">By Grade</td>
                   </tr>
@@ -57,13 +120,13 @@ export default function Programs() {
                     <td colSpan={4} className="py-1 px-4"></td>
                   </tr>
                   <tr className="border-b">
-                    <td rowSpan={2} className="py-3 px-4 border-r align-top">Saturday</td>
-                    <td className="py-3 px-4">10:00 AM - 11:00 AM</td>
+                    <td rowSpan={2} className="py-3 px-4 border-r align-top">Friday</td>
+                    <td className="py-3 px-4">5:30 PM - 6:30 PM</td>
                     <td className="py-3 px-4">Quran/Iqra</td>
                     <td className="py-3 px-4">By Level</td>
                   </tr>
                   <tr>
-                    <td className="py-3 px-4">11:00 AM - 12:00 PM</td>
+                    <td className="py-3 px-4">6:30 PM - 7:30 PM</td>
                     <td className="py-3 px-4">Islamic Studies (Course Book & Workbook)</td>
                     <td className="py-3 px-4">By Grade</td>
                   </tr>
@@ -86,9 +149,8 @@ export default function Programs() {
                   Schedule:
                 </h3>
                 <ul className="list-disc pl-4 space-y-1 text-sm">
-                  <li>Tuesday: 5:00 PM - 6:00 PM (By Level)</li>
-                  <li>Thursday: 5:00 PM - 6:00 PM (By Level)</li>
-                  <li>Saturday: 10:00 AM - 11:00 AM (By Level)</li>
+                  <li><strong>Program A:</strong> Saturday 10:00 AM - 11:00 AM, Tuesday 5:30 PM - 6:30 PM, Thursday 5:30 PM - 6:30 PM (By Level)</li>
+                  <li><strong>Program B:</strong> Monday 5:30 PM - 6:30 PM, Wednesday 5:30 PM - 6:30 PM, Friday 5:30 PM - 6:30 PM (By Level)</li>
                 </ul>
               </div>
               <div className="pl-4 mt-4">
@@ -128,7 +190,8 @@ export default function Programs() {
                   Schedule:
                 </h3>
                 <ul className="list-disc pl-4 space-y-1 text-sm">
-                  <li>Saturday: 11:00 AM - 12:00 PM (Grouped by Grade)</li>
+                  <li><strong>Program A:</strong> Saturday 11:00 AM - 12:00 PM (Grouped by Grade)</li>
+                  <li><strong>Program B:</strong> Friday 6:30 PM - 7:30 PM (Grouped by Grade)</li>
                 </ul>
               </div>
               <div className="pl-4 mt-4">
@@ -165,7 +228,8 @@ export default function Programs() {
                   Schedule:
                 </h3>
                 <ul className="list-disc pl-4 space-y-1 text-sm">
-                  <li>Thursday: 6:00 PM - 7:00 PM (Grouped by Grade)</li>
+                  <li><strong>Program A:</strong> Thursday 6:30 PM - 7:30 PM (Grouped by Grade)</li>
+                  <li><strong>Program B:</strong> Wednesday 6:30 PM - 7:30 PM (Grouped by Grade)</li>
                 </ul>
               </div>
               <div className="pl-4 mt-4">
@@ -199,7 +263,8 @@ export default function Programs() {
                   Schedule:
                 </h3>
                 <ul className="list-disc pl-4 space-y-1 text-sm">
-                  <li>Tuesday: 6:00 PM - 7:00 PM (Grouped by Grade)</li>
+                  <li><strong>Program A:</strong> Tuesday 6:30 PM - 7:30 PM (Grouped by Grade)</li>
+                  <li><strong>Program B:</strong> Monday 6:30 PM - 7:30 PM (Grouped by Grade)</li>
                 </ul>
               </div>
               <div className="pl-4 mt-4">

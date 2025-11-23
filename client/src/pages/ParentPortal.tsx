@@ -30,6 +30,7 @@ interface Student {
   grade: string
   date_of_birth: string | null
   current_school: string | null
+  program: string | null
   quran_level: string | null
   quran_page: number | null
   quran_surah: string | null
@@ -641,7 +642,7 @@ const ParentPortal: React.FC = () => {
                               {student.first_name} {student.last_name}
                             </h3>
                             <p className="text-sm text-gray-600">
-                              {student.grade} • Student ID: {student.student_id || `STU-${student.id.toString().padStart(4, '0')}`}
+                              {student.grade} • {student.program ? `Program ${student.program}` : 'Program Not Set'} • Student ID: {student.student_id || `STU-${student.id.toString().padStart(4, '0')}`}
                             </p>
                             {student.quran_level && (
                               <p className="text-sm text-gray-500">
