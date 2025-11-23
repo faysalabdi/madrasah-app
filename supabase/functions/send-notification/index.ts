@@ -43,8 +43,9 @@ Deno.serve(async (req) => {
     // Build email subject if not provided
     const emailSubject = subject || getDefaultSubject(notificationType, studentName)
 
-    // Build HTML email if htmlMessage provided, otherwise use plain text
-    const emailHtml = htmlMessage || buildHtmlEmail(message || getDefaultMessage(notificationType, studentName, parentName))
+    // Build HTML email - always use the template, wrapping either htmlMessage or plain text message
+    const contentToWrap = htmlMessage || message || getDefaultMessage(notificationType, studentName, parentName)
+    const emailHtml = buildHtmlEmail(contentToWrap)
 
     // Send email via Resend API
     const emailResponse = await fetch("https://api.resend.com/emails", {
@@ -133,9 +134,15 @@ function getDefaultMessage(type: string, studentName?: string, parentName?: stri
   }
 }
 
-function buildHtmlEmail(message: string): string {
+function buildHtmlEmail(content: string): string {
   const frontendUrl = Deno.env.get("FRONTEND_URL") || "https://madrasahabubakr.com.au"
   const logoUrl = `${frontendUrl}/logo.png`
+  
+  // Check if content is already HTML (contains HTML tags) or plain text
+  const isHtml = /<[a-z][\s\S]*>/i.test(content)
+  
+  // If it's plain text, convert newlines to <br>, otherwise use as-is
+  const formattedContent = isHtml ? content : content.replace(/\n/g, '<br>')
   
   return `
 <!DOCTYPE html>
@@ -160,7 +167,7 @@ function buildHtmlEmail(message: string): string {
           <!-- Content -->
           <tr>
             <td style="padding: 40px 30px; background-color: #ffffff;">
-              <div style="color: #333333; font-size: 16px; line-height: 1.6; white-space: pre-wrap;">${message.replace(/\n/g, '<br>')}</div>
+              <div style="color: #333333; font-size: 16px; line-height: 1.6;">${formattedContent}</div>
             </td>
           </tr>
           <!-- Footer -->
