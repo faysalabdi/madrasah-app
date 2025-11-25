@@ -5,7 +5,125 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
-import { Loader2, Trash2, Calendar, BookOpen, FileText, UserCheck, Search, User, LogOut, Settings, Plus } from 'lucide-react'
+import { Loader2, Trash2, Calendar, BookOpen, FileText, UserCheck, Search, User, LogOut, Settings, Plus, Pencil, Download, KeyRound } from 'lucide-react'
+
+// Complete list of all 114 Surahs with their ayah counts
+const SURAHS = [
+  { number: 1, name: 'Al-Fatiha', ayahs: 7 },
+  { number: 2, name: 'Al-Baqarah', ayahs: 286 },
+  { number: 3, name: 'Ali Imran', ayahs: 200 },
+  { number: 4, name: 'An-Nisa', ayahs: 176 },
+  { number: 5, name: 'Al-Maidah', ayahs: 120 },
+  { number: 6, name: 'Al-Anam', ayahs: 165 },
+  { number: 7, name: 'Al-Araf', ayahs: 206 },
+  { number: 8, name: 'Al-Anfal', ayahs: 75 },
+  { number: 9, name: 'At-Tawbah', ayahs: 129 },
+  { number: 10, name: 'Yunus', ayahs: 109 },
+  { number: 11, name: 'Hud', ayahs: 123 },
+  { number: 12, name: 'Yusuf', ayahs: 111 },
+  { number: 13, name: 'Ar-Rad', ayahs: 43 },
+  { number: 14, name: 'Ibrahim', ayahs: 52 },
+  { number: 15, name: 'Al-Hijr', ayahs: 99 },
+  { number: 16, name: 'An-Nahl', ayahs: 128 },
+  { number: 17, name: 'Al-Isra', ayahs: 111 },
+  { number: 18, name: 'Al-Kahf', ayahs: 110 },
+  { number: 19, name: 'Maryam', ayahs: 98 },
+  { number: 20, name: 'Ta-Ha', ayahs: 135 },
+  { number: 21, name: 'Al-Anbiya', ayahs: 112 },
+  { number: 22, name: 'Al-Hajj', ayahs: 78 },
+  { number: 23, name: 'Al-Muminun', ayahs: 118 },
+  { number: 24, name: 'An-Nur', ayahs: 64 },
+  { number: 25, name: 'Al-Furqan', ayahs: 77 },
+  { number: 26, name: 'Ash-Shuara', ayahs: 227 },
+  { number: 27, name: 'An-Naml', ayahs: 93 },
+  { number: 28, name: 'Al-Qasas', ayahs: 88 },
+  { number: 29, name: 'Al-Ankabut', ayahs: 69 },
+  { number: 30, name: 'Ar-Rum', ayahs: 60 },
+  { number: 31, name: 'Luqman', ayahs: 34 },
+  { number: 32, name: 'As-Sajdah', ayahs: 30 },
+  { number: 33, name: 'Al-Ahzab', ayahs: 73 },
+  { number: 34, name: 'Saba', ayahs: 54 },
+  { number: 35, name: 'Fatir', ayahs: 45 },
+  { number: 36, name: 'Ya-Sin', ayahs: 83 },
+  { number: 37, name: 'As-Saffat', ayahs: 182 },
+  { number: 38, name: 'Sad', ayahs: 88 },
+  { number: 39, name: 'Az-Zumar', ayahs: 75 },
+  { number: 40, name: 'Ghafir', ayahs: 85 },
+  { number: 41, name: 'Fussilat', ayahs: 54 },
+  { number: 42, name: 'Ash-Shura', ayahs: 53 },
+  { number: 43, name: 'Az-Zukhruf', ayahs: 89 },
+  { number: 44, name: 'Ad-Dukhan', ayahs: 59 },
+  { number: 45, name: 'Al-Jathiyah', ayahs: 37 },
+  { number: 46, name: 'Al-Ahqaf', ayahs: 35 },
+  { number: 47, name: 'Muhammad', ayahs: 38 },
+  { number: 48, name: 'Al-Fath', ayahs: 29 },
+  { number: 49, name: 'Al-Hujurat', ayahs: 18 },
+  { number: 50, name: 'Qaf', ayahs: 45 },
+  { number: 51, name: 'Adh-Dhariyat', ayahs: 60 },
+  { number: 52, name: 'At-Tur', ayahs: 49 },
+  { number: 53, name: 'An-Najm', ayahs: 62 },
+  { number: 54, name: 'Al-Qamar', ayahs: 55 },
+  { number: 55, name: 'Ar-Rahman', ayahs: 78 },
+  { number: 56, name: 'Al-Waqiah', ayahs: 96 },
+  { number: 57, name: 'Al-Hadid', ayahs: 29 },
+  { number: 58, name: 'Al-Mujadila', ayahs: 22 },
+  { number: 59, name: 'Al-Hashr', ayahs: 24 },
+  { number: 60, name: 'Al-Mumtahanah', ayahs: 13 },
+  { number: 61, name: 'As-Saff', ayahs: 14 },
+  { number: 62, name: 'Al-Jumuah', ayahs: 11 },
+  { number: 63, name: 'Al-Munafiqun', ayahs: 11 },
+  { number: 64, name: 'At-Taghabun', ayahs: 18 },
+  { number: 65, name: 'At-Talaq', ayahs: 12 },
+  { number: 66, name: 'At-Tahrim', ayahs: 12 },
+  { number: 67, name: 'Al-Mulk', ayahs: 30 },
+  { number: 68, name: 'Al-Qalam', ayahs: 52 },
+  { number: 69, name: 'Al-Haqqah', ayahs: 52 },
+  { number: 70, name: 'Al-Maarij', ayahs: 44 },
+  { number: 71, name: 'Nuh', ayahs: 28 },
+  { number: 72, name: 'Al-Jinn', ayahs: 28 },
+  { number: 73, name: 'Al-Muzzammil', ayahs: 20 },
+  { number: 74, name: 'Al-Muddathir', ayahs: 56 },
+  { number: 75, name: 'Al-Qiyamah', ayahs: 40 },
+  { number: 76, name: 'Al-Insan', ayahs: 31 },
+  { number: 77, name: 'Al-Mursalat', ayahs: 50 },
+  { number: 78, name: 'An-Naba', ayahs: 40 },
+  { number: 79, name: 'An-Naziat', ayahs: 46 },
+  { number: 80, name: 'Abasa', ayahs: 42 },
+  { number: 81, name: 'At-Takwir', ayahs: 29 },
+  { number: 82, name: 'Al-Infitar', ayahs: 19 },
+  { number: 83, name: 'Al-Mutaffifin', ayahs: 36 },
+  { number: 84, name: 'Al-Inshiqaq', ayahs: 25 },
+  { number: 85, name: 'Al-Buruj', ayahs: 22 },
+  { number: 86, name: 'At-Tariq', ayahs: 17 },
+  { number: 87, name: 'Al-Ala', ayahs: 19 },
+  { number: 88, name: 'Al-Ghashiyah', ayahs: 26 },
+  { number: 89, name: 'Al-Fajr', ayahs: 30 },
+  { number: 90, name: 'Al-Balad', ayahs: 20 },
+  { number: 91, name: 'Ash-Shams', ayahs: 15 },
+  { number: 92, name: 'Al-Layl', ayahs: 21 },
+  { number: 93, name: 'Ad-Duha', ayahs: 11 },
+  { number: 94, name: 'Ash-Sharh', ayahs: 8 },
+  { number: 95, name: 'At-Tin', ayahs: 8 },
+  { number: 96, name: 'Al-Alaq', ayahs: 19 },
+  { number: 97, name: 'Al-Qadr', ayahs: 5 },
+  { number: 98, name: 'Al-Bayyinah', ayahs: 8 },
+  { number: 99, name: 'Az-Zalzalah', ayahs: 8 },
+  { number: 100, name: 'Al-Adiyat', ayahs: 11 },
+  { number: 101, name: 'Al-Qariah', ayahs: 11 },
+  { number: 102, name: 'At-Takathur', ayahs: 8 },
+  { number: 103, name: 'Al-Asr', ayahs: 3 },
+  { number: 104, name: 'Al-Humazah', ayahs: 9 },
+  { number: 105, name: 'Al-Fil', ayahs: 5 },
+  { number: 106, name: 'Quraysh', ayahs: 4 },
+  { number: 107, name: 'Al-Maun', ayahs: 7 },
+  { number: 108, name: 'Al-Kawthar', ayahs: 3 },
+  { number: 109, name: 'Al-Kafirun', ayahs: 6 },
+  { number: 110, name: 'An-Nasr', ayahs: 3 },
+  { number: 111, name: 'Al-Masad', ayahs: 5 },
+  { number: 112, name: 'Al-Ikhlas', ayahs: 4 },
+  { number: 113, name: 'Al-Falaq', ayahs: 5 },
+  { number: 114, name: 'An-Nas', ayahs: 6 },
+]
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -34,6 +152,10 @@ interface Student {
   parent_id: number
   program: string | null
   quran_level: string | null
+  quran_page: number | null
+  quran_surah: string | null
+  quran_ayah: string | null
+  behavior_standing: string | null
   hasPaidTermFees?: boolean
   lastPaymentDate?: string
 }
@@ -53,6 +175,9 @@ interface Teacher {
   last_name: string
   email: string
   mobile: string | null
+  quran_students_count?: number
+  islamic_studies_students_count?: number
+  total_students_count?: number
 }
 
 interface Payment {
@@ -182,9 +307,19 @@ const AdminPortal: React.FC = () => {
   const [studentsGradeFilter, setStudentsGradeFilter] = useState<string>('all')
   const [studentsQuranLevelFilter, setStudentsQuranLevelFilter] = useState<string>('all')
   const [studentsPaymentFilter, setStudentsPaymentFilter] = useState<string>('all') // 'all', 'paid', 'unpaid'
+  const [studentsSearchTerm, setStudentsSearchTerm] = useState<string>('')
   
   // Program filtering
   const [programFilter, setProgramFilter] = useState<string>('all') // 'all', 'A', 'B', 'none'
+  
+  // Search terms for Parents and Teachers
+  const [parentsSearchTerm, setParentsSearchTerm] = useState<string>('')
+  const [teachersSearchTerm, setTeachersSearchTerm] = useState<string>('')
+  
+  // CSV Import
+  const [showCSVImportDialog, setShowCSVImportDialog] = useState(false)
+  const [csvFile, setCsvFile] = useState<File | null>(null)
+  const [importingCSV, setImportingCSV] = useState(false)
 
   // Student Detail View
   const [selectedStudentForDetail, setSelectedStudentForDetail] = useState<Student | null>(null)
@@ -194,6 +329,20 @@ const AdminPortal: React.FC = () => {
   const [studentHomework, setStudentHomework] = useState<any[]>([])
   const [studentBehaviorNotes, setStudentBehaviorNotes] = useState<any[]>([])
   const [studentNotes, setStudentNotes] = useState<any[]>([])
+
+  // Edit dialogs
+  const [showEditStudentDialog, setShowEditStudentDialog] = useState(false)
+  const [editingStudent, setEditingStudent] = useState<Student | null>(null)
+  const [showEditParentDialog, setShowEditParentDialog] = useState(false)
+  const [editingParent, setEditingParent] = useState<Parent | null>(null)
+  const [showEditTeacherDialog, setShowEditTeacherDialog] = useState(false)
+  const [editingTeacher, setEditingTeacher] = useState<Teacher | null>(null)
+  const [showPasswordResetDialog, setShowPasswordResetDialog] = useState(false)
+  const [passwordResetEmail, setPasswordResetEmail] = useState('')
+  const [passwordResetNewPassword, setPasswordResetNewPassword] = useState('')
+  const [resettingPassword, setResettingPassword] = useState(false)
+  const [showEditPaymentDialog, setShowEditPaymentDialog] = useState(false)
+  const [editingPayment, setEditingPayment] = useState<Payment | null>(null)
 
   // Admin record creation state (similar to TeacherPortal)
   const [showAttendanceDialog, setShowAttendanceDialog] = useState(false)
@@ -823,6 +972,454 @@ const AdminPortal: React.FC = () => {
     }
   }
 
+  // Edit handlers
+  const handleEditStudent = async (student: Student) => {
+    setEditingStudent(student)
+    
+    // Load full student data including Quran fields
+    const { data: fullStudent } = await supabase
+      .from('students')
+      .select('quran_level, quran_page, quran_surah, quran_ayah, behavior_standing')
+      .eq('id', student.id)
+      .single()
+    
+    if (fullStudent) {
+      setEditingStudent({ ...student, ...fullStudent })
+      
+      // Set simple quran_level field
+      setQuranLevelSimple(fullStudent.quran_level || '')
+      
+      // Set Quran type and fields based on existing data
+      if (fullStudent.quran_surah && fullStudent.quran_ayah) {
+        setQuranType('quran')
+        setQuranSurah(fullStudent.quran_surah)
+        setQuranAyah(fullStudent.quran_ayah)
+        setQuranLevel('')
+        setQuranPage('')
+      } else if (fullStudent.quran_level && fullStudent.quran_page) {
+        setQuranType('iqra')
+        setQuranLevel(fullStudent.quran_level)
+        setQuranPage(fullStudent.quran_page.toString())
+        setQuranSurah('')
+        setQuranAyah('')
+      } else {
+        setQuranType('iqra')
+        setQuranLevel('')
+        setQuranPage('')
+        setQuranSurah('')
+        setQuranAyah('')
+      }
+      
+      setBehaviorStanding(fullStudent.behavior_standing || '')
+    }
+    
+    setShowEditStudentDialog(true)
+  }
+
+  const handleSaveStudent = async () => {
+    if (!editingStudent) return
+
+    try {
+      const updateData: any = {
+        first_name: editingStudent.first_name,
+        last_name: editingStudent.last_name,
+        grade: editingStudent.grade,
+        program: editingStudent.program || null,
+      }
+      
+      // Update simple quran_level field (this is the main quran_level column)
+      // This field is independent and should always be updated if changed
+      if (quranLevelSimple !== undefined) {
+        if (quranLevelSimple && quranLevelSimple !== 'none') {
+          updateData.quran_level = quranLevelSimple
+        } else {
+          updateData.quran_level = null
+        }
+      }
+      
+      // Update detailed Quran/Iqra tracking fields (these are separate from quran_level)
+      if (quranType === 'iqra') {
+        if (quranLevel && quranLevel !== 'none' && quranPage) {
+          updateData.quran_page = parseInt(quranPage)
+          // Clear Quran fields
+          updateData.quran_surah = null
+          updateData.quran_ayah = null
+        } else {
+          // Clear page if no level/page set
+          updateData.quran_page = null
+          updateData.quran_surah = null
+          updateData.quran_ayah = null
+        }
+      } else if (quranType === 'quran') {
+        if (quranSurah && quranAyah) {
+          updateData.quran_surah = quranSurah
+          updateData.quran_ayah = quranAyah
+          // Clear Iqra page field
+          updateData.quran_page = null
+        } else {
+          updateData.quran_surah = null
+          updateData.quran_ayah = null
+          updateData.quran_page = null
+        }
+      }
+      
+      // Update behavior standing
+      if (behaviorStanding && behaviorStanding !== 'none') {
+        updateData.behavior_standing = behaviorStanding
+      } else {
+        updateData.behavior_standing = null
+      }
+
+      const { error } = await supabase
+        .from('students')
+        .update(updateData)
+        .eq('id', editingStudent.id)
+
+      if (error) throw error
+
+      toast({
+        title: 'Success',
+        description: 'Student updated successfully.',
+      })
+
+      setShowEditStudentDialog(false)
+      setEditingStudent(null)
+      setQuranType('iqra')
+      setQuranLevel('')
+      setQuranPage('')
+      setQuranSurah('')
+      setQuranAyah('')
+      setQuranLevelSimple('')
+      setBehaviorStanding('')
+      loadDashboardData()
+    } catch (err: any) {
+      toast({
+        title: 'Error',
+        description: err.message || 'Failed to update student',
+        variant: 'destructive',
+      })
+    }
+  }
+
+  const handleEditParent = (parent: Parent) => {
+    setEditingParent(parent)
+    setShowEditParentDialog(true)
+  }
+
+  const handleSaveParent = async () => {
+    if (!editingParent) return
+
+    try {
+      const { error } = await supabase
+        .from('parents')
+        .update({
+          parent1_first_name: editingParent.parent1_first_name,
+          parent1_last_name: editingParent.parent1_last_name,
+          parent1_email: editingParent.parent1_email,
+          parent1_mobile: editingParent.parent1_mobile,
+        })
+        .eq('id', editingParent.id)
+
+      if (error) throw error
+
+      toast({
+        title: 'Success',
+        description: 'Parent updated successfully.',
+      })
+
+      setShowEditParentDialog(false)
+      setEditingParent(null)
+      loadDashboardData()
+    } catch (err: any) {
+      toast({
+        title: 'Error',
+        description: err.message || 'Failed to update parent',
+        variant: 'destructive',
+      })
+    }
+  }
+
+  const handleEditTeacher = (teacher: Teacher) => {
+    setEditingTeacher(teacher)
+    setShowEditTeacherDialog(true)
+  }
+
+  const handleSaveTeacher = async () => {
+    if (!editingTeacher) return
+
+    try {
+      const { error } = await supabase
+        .from('teachers')
+        .update({
+          first_name: editingTeacher.first_name,
+          last_name: editingTeacher.last_name,
+          email: editingTeacher.email,
+          mobile: editingTeacher.mobile || null,
+        })
+        .eq('id', editingTeacher.id)
+
+      if (error) throw error
+
+      toast({
+        title: 'Success',
+        description: 'Teacher updated successfully.',
+      })
+
+      setShowEditTeacherDialog(false)
+      setEditingTeacher(null)
+      loadDashboardData()
+    } catch (err: any) {
+      toast({
+        title: 'Error',
+        description: err.message || 'Failed to update teacher',
+        variant: 'destructive',
+      })
+    }
+  }
+
+  const handleResetPassword = async () => {
+    if (!passwordResetEmail || !passwordResetNewPassword) {
+      toast({
+        title: 'Error',
+        description: 'Please provide email and new password.',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    if (passwordResetNewPassword.length < 6) {
+      toast({
+        title: 'Error',
+        description: 'Password must be at least 6 characters long.',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    try {
+      setResettingPassword(true)
+
+      // Use Supabase Admin API to update password
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/reset-password`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          },
+          body: JSON.stringify({
+            email: passwordResetEmail,
+            newPassword: passwordResetNewPassword,
+          }),
+        }
+      )
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.error || 'Failed to reset password')
+      }
+
+      toast({
+        title: 'Success',
+        description: 'Password reset successfully.',
+      })
+
+      setShowPasswordResetDialog(false)
+      setPasswordResetEmail('')
+      setPasswordResetNewPassword('')
+    } catch (err: any) {
+      toast({
+        title: 'Error',
+        description: err.message || 'Failed to reset password',
+        variant: 'destructive',
+      })
+    } finally {
+      setResettingPassword(false)
+    }
+  }
+
+  const handleEditPayment = (payment: Payment) => {
+    setEditingPayment(payment)
+    setShowEditPaymentDialog(true)
+  }
+
+  const handleSavePayment = async () => {
+    if (!editingPayment) return
+
+    try {
+      const { error } = await supabase
+        .from('payments')
+        .update({
+          amount: editingPayment.amount,
+          status: editingPayment.status,
+          paid_term_fees: editingPayment.paid_term_fees,
+          paid_for_books: editingPayment.paid_for_books,
+        })
+        .eq('id', editingPayment.id)
+
+      if (error) throw error
+
+      toast({
+        title: 'Success',
+        description: 'Payment updated successfully.',
+      })
+
+      setShowEditPaymentDialog(false)
+      setEditingPayment(null)
+      loadDashboardData()
+    } catch (err: any) {
+      toast({
+        title: 'Error',
+        description: err.message || 'Failed to update payment',
+        variant: 'destructive',
+      })
+    }
+  }
+
+  // Export functions
+  const exportToCSV = (data: any[], filename: string, headers: string[]) => {
+    const csvContent = [
+      headers.join(','),
+      ...data.map(row => headers.map(header => {
+        const value = row[header] || ''
+        // Escape commas and quotes in CSV
+        if (typeof value === 'string' && (value.includes(',') || value.includes('"') || value.includes('\n'))) {
+          return `"${value.replace(/"/g, '""')}"`
+        }
+        return value
+      }).join(','))
+    ].join('\n')
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const link = document.createElement('a')
+    const url = URL.createObjectURL(blob)
+    link.setAttribute('href', url)
+    link.setAttribute('download', filename)
+    link.style.visibility = 'hidden'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
+
+  const handleExportStudents = () => {
+    const headers = ['ID', 'Student ID', 'First Name', 'Last Name', 'Grade', 'Program', 'Quran Level', 'Parent Name', 'Parent Email']
+    const data = students.map(s => {
+      const parent = parents.find(p => p.id === s.parent_id)
+      return {
+        'ID': s.id,
+        'Student ID': s.student_id || '',
+        'First Name': s.first_name,
+        'Last Name': s.last_name,
+        'Grade': s.grade,
+        'Program': s.program || '',
+        'Quran Level': s.quran_level || '',
+        'Parent Name': parent ? `${parent.parent1_first_name} ${parent.parent1_last_name}` : '',
+        'Parent Email': parent?.parent1_email || '',
+      }
+    })
+    exportToCSV(data, `students_export_${new Date().toISOString().split('T')[0]}.csv`, headers)
+    toast({
+      title: 'Success',
+      description: 'Students exported successfully.',
+    })
+  }
+
+  const handleExportParents = () => {
+    const headers = ['ID', 'Parent ID', 'First Name', 'Last Name', 'Email', 'Mobile', 'Stripe Customer ID']
+    const data = parents.map(p => ({
+      'ID': p.id,
+      'Parent ID': p.parent_id || '',
+      'First Name': p.parent1_first_name,
+      'Last Name': p.parent1_last_name,
+      'Email': p.parent1_email,
+      'Mobile': p.parent1_mobile || '',
+      'Stripe Customer ID': p.stripe_customer_id || '',
+    }))
+    exportToCSV(data, `parents_export_${new Date().toISOString().split('T')[0]}.csv`, headers)
+    toast({
+      title: 'Success',
+      description: 'Parents exported successfully.',
+    })
+  }
+
+  const handleExportPayments = () => {
+    const headers = ['ID', 'Parent ID', 'Student ID', 'Amount', 'Currency', 'Status', 'Payment Type', 'Term Fees', 'Books', 'Created At']
+    const data = payments.map(p => {
+      const parent = parents.find(par => par.id === p.parent_id)
+      const student = p.student_id ? students.find(s => s.id === p.student_id) : null
+      return {
+        'ID': p.id,
+        'Parent ID': parent ? `${parent.parent1_first_name} ${parent.parent1_last_name}` : p.parent_id,
+        'Student ID': student ? `${student.first_name} ${student.last_name}` : (p.student_id || 'All Students'),
+        'Amount': p.amount,
+        'Currency': p.currency,
+        'Status': p.status,
+        'Payment Type': p.payment_type,
+        'Term Fees': p.paid_term_fees ? 'Yes' : 'No',
+        'Books': p.paid_for_books ? 'Yes' : 'No',
+        'Created At': new Date(p.created_at).toLocaleString(),
+      }
+    })
+    exportToCSV(data, `payments_export_${new Date().toISOString().split('T')[0]}.csv`, headers)
+    toast({
+      title: 'Success',
+      description: 'Payments exported successfully.',
+    })
+  }
+
+  const handleCSVImport = async () => {
+    if (!csvFile) {
+      toast({
+        title: 'Error',
+        description: 'Please select a CSV file to import.',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    try {
+      setImportingCSV(true)
+      const fileText = await csvFile.text()
+
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/import-csv-data`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          },
+          body: JSON.stringify({ csvData: fileText }),
+        }
+      )
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.error || 'Failed to import CSV data')
+      }
+
+      const data = await response.json()
+      
+      toast({
+        title: 'Success',
+        description: `CSV imported successfully! ${data.parentsCreated || 0} parent(s) and ${data.studentsCreated || 0} student(s) created.`,
+      })
+
+      setShowCSVImportDialog(false)
+      setCsvFile(null)
+      loadDashboardData()
+    } catch (err: any) {
+      toast({
+        title: 'Error',
+        description: err.message || 'Failed to import CSV data',
+        variant: 'destructive',
+      })
+    } finally {
+      setImportingCSV(false)
+    }
+  }
+
   const handlePromoteTeacherToAdmin = async (teacher: Teacher) => {
     if (!confirm(`Are you sure you want to promote ${teacher.first_name} ${teacher.last_name} to admin? They will gain access to the admin portal.`)) {
       return
@@ -926,12 +1523,80 @@ const AdminPortal: React.FC = () => {
         unpaidStudents: unpaidCount,
       })
 
-      // Load teachers
-      const { data: teachersData } = await supabase
+      // Load teachers with student counts
+      const { data: teachersData, error: teachersError } = await supabase
         .from('teachers')
         .select('*')
         .order('last_name', { ascending: true })
-      setTeachers(teachersData || [])
+      
+      if (teachersError) {
+        console.error('Error loading teachers:', teachersError)
+        setTeachers([])
+      } else if (teachersData) {
+        // Load student counts for each teacher
+        try {
+          const teachersWithCounts = await Promise.all(
+            teachersData.map(async (teacher) => {
+              try {
+                // Count Quran students
+                const { count: quranCount, error: quranError } = await supabase
+                  .from('teacher_students')
+                  .select('*', { count: 'exact', head: true })
+                  .eq('quran_teacher_id', teacher.id)
+                
+                if (quranError) console.error(`Error counting Quran students for teacher ${teacher.id}:`, quranError)
+                
+                // Count Islamic Studies students
+                const { count: islamicCount, error: islamicError } = await supabase
+                  .from('teacher_students')
+                  .select('*', { count: 'exact', head: true })
+                  .eq('islamic_studies_teacher_id', teacher.id)
+                
+                if (islamicError) console.error(`Error counting Islamic Studies students for teacher ${teacher.id}:`, islamicError)
+                
+                // Count total unique students (students assigned to either subject)
+                // Use separate queries and combine to avoid .or() syntax issues
+                const [quranData, islamicData] = await Promise.all([
+                  supabase.from('teacher_students').select('student_id').eq('quran_teacher_id', teacher.id),
+                  supabase.from('teacher_students').select('student_id').eq('islamic_studies_teacher_id', teacher.id)
+                ])
+                
+                if (quranData.error) console.error(`Error loading Quran students for teacher ${teacher.id}:`, quranData.error)
+                if (islamicData.error) console.error(`Error loading Islamic Studies students for teacher ${teacher.id}:`, islamicData.error)
+                
+                const allIds = [
+                  ...(quranData.data || []).map(t => t.student_id),
+                  ...(islamicData.data || []).map(t => t.student_id)
+                ]
+                const uniqueStudentIds = new Set(allIds)
+                
+                return {
+                  ...teacher,
+                  quran_students_count: quranCount || 0,
+                  islamic_studies_students_count: islamicCount || 0,
+                  total_students_count: uniqueStudentIds.size,
+                }
+              } catch (err) {
+                console.error(`Error processing teacher ${teacher.id}:`, err)
+                // Return teacher with zero counts if there's an error
+                return {
+                  ...teacher,
+                  quran_students_count: 0,
+                  islamic_studies_students_count: 0,
+                  total_students_count: 0,
+                }
+              }
+            })
+          )
+          setTeachers(teachersWithCounts)
+        } catch (err) {
+          console.error('Error loading teacher counts:', err)
+          // Fallback to teachers without counts
+          setTeachers(teachersData)
+        }
+      } else {
+        setTeachers([])
+      }
 
       // Load students and parents
       const { data: studentsData } = await supabase
@@ -1879,6 +2544,14 @@ const AdminPortal: React.FC = () => {
             <TabsContent value="payments" className="mt-6">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-2xl font-bold">Payment Management</h2>
+                <Button
+                  variant="outline"
+                  onClick={handleExportPayments}
+                  className="gap-2"
+                >
+                  <Download className="h-4 w-4" />
+                  Export Payments to CSV
+                </Button>
                 <Dialog open={showCreatePayment} onOpenChange={setShowCreatePayment}>
                   <DialogTrigger asChild>
                     <Button>Create Manual Payment</Button>
@@ -2177,6 +2850,14 @@ const AdminPortal: React.FC = () => {
                             </Badge>
                             {payment.paid_term_fees && <Badge variant="outline">Term Fees</Badge>}
                             {payment.paid_for_books && <Badge variant="outline">Books</Badge>}
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleEditPayment(payment)}
+                              className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
                             <Button
                               variant="ghost"
                               size="sm"
@@ -2580,76 +3261,100 @@ const AdminPortal: React.FC = () => {
 
             {/* Teachers Tab */}
             <TabsContent value="teachers" className="mt-6">
-              <div className="flex justify-between items-center mb-4">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
                 <h2 className="text-2xl font-bold">Teacher Management</h2>
-                <Dialog open={showCreateTeacher} onOpenChange={setShowCreateTeacher}>
-                  <DialogTrigger asChild>
-                    <Button>Create New Teacher</Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Create New Teacher</DialogTitle>
-                      <DialogDescription>
-                        Add a new teacher to the system. They will receive login credentials.
-                      </DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4 py-4">
-                      <div className="space-y-2">
-                        <Label>First Name</Label>
-                        <Input
-                          value={newTeacher.first_name}
-                          onChange={(e) => setNewTeacher({ ...newTeacher, first_name: e.target.value })}
-                          placeholder="John"
-                        />
+                <div className="flex gap-2">
+                  <Dialog open={showCreateTeacher} onOpenChange={setShowCreateTeacher}>
+                    <DialogTrigger asChild>
+                      <Button>Create New Teacher</Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Create New Teacher</DialogTitle>
+                        <DialogDescription>
+                          Add a new teacher to the system. They will receive login credentials.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="space-y-4 py-4">
+                        <div className="space-y-2">
+                          <Label>First Name</Label>
+                          <Input
+                            value={newTeacher.first_name}
+                            onChange={(e) => setNewTeacher({ ...newTeacher, first_name: e.target.value })}
+                            placeholder="John"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Last Name</Label>
+                          <Input
+                            value={newTeacher.last_name}
+                            onChange={(e) => setNewTeacher({ ...newTeacher, last_name: e.target.value })}
+                            placeholder="Doe"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Email</Label>
+                          <Input
+                            type="email"
+                            value={newTeacher.email}
+                            onChange={(e) => setNewTeacher({ ...newTeacher, email: e.target.value })}
+                            placeholder="john.doe@example.com"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Mobile (Optional)</Label>
+                          <Input
+                            value={newTeacher.mobile}
+                            onChange={(e) => setNewTeacher({ ...newTeacher, mobile: e.target.value })}
+                            placeholder="0412345678"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Password</Label>
+                          <Input
+                            type="password"
+                            value={newTeacher.password}
+                            onChange={(e) => setNewTeacher({ ...newTeacher, password: e.target.value })}
+                            placeholder="Minimum 6 characters"
+                          />
+                        </div>
+                        <div className="flex justify-end gap-2">
+                          <Button variant="outline" onClick={() => setShowCreateTeacher(false)}>
+                            Cancel
+                          </Button>
+                          <Button
+                            onClick={handleCreateTeacher}
+                            disabled={loading || !newTeacher.first_name || !newTeacher.last_name || !newTeacher.email || !newTeacher.password || newTeacher.password.length < 6}
+                          >
+                            Create Teacher
+                          </Button>
+                        </div>
                       </div>
-                      <div className="space-y-2">
-                        <Label>Last Name</Label>
-                        <Input
-                          value={newTeacher.last_name}
-                          onChange={(e) => setNewTeacher({ ...newTeacher, last_name: e.target.value })}
-                          placeholder="Doe"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Email</Label>
-                        <Input
-                          type="email"
-                          value={newTeacher.email}
-                          onChange={(e) => setNewTeacher({ ...newTeacher, email: e.target.value })}
-                          placeholder="john.doe@example.com"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Mobile (Optional)</Label>
-                        <Input
-                          value={newTeacher.mobile}
-                          onChange={(e) => setNewTeacher({ ...newTeacher, mobile: e.target.value })}
-                          placeholder="0412345678"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Password</Label>
-                        <Input
-                          type="password"
-                          value={newTeacher.password}
-                          onChange={(e) => setNewTeacher({ ...newTeacher, password: e.target.value })}
-                          placeholder="Minimum 6 characters"
-                        />
-                      </div>
-                      <div className="flex justify-end gap-2">
-                        <Button variant="outline" onClick={() => setShowCreateTeacher(false)}>
-                          Cancel
-                        </Button>
-                        <Button
-                          onClick={handleCreateTeacher}
-                          disabled={loading || !newTeacher.first_name || !newTeacher.last_name || !newTeacher.email || !newTeacher.password || newTeacher.password.length < 6}
-                        >
-                          Create Teacher
-                        </Button>
-                      </div>
-                    </div>
-                  </DialogContent>
-                </Dialog>
+                    </DialogContent>
+                  </Dialog>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setShowPasswordResetDialog(true)
+                      setPasswordResetEmail('')
+                    }}
+                    className="gap-2"
+                  >
+                    <KeyRound className="h-4 w-4" />
+                    Reset Password
+                  </Button>
+                </div>
+              </div>
+              <div className="mb-4">
+                <div className="relative max-w-md">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <Input
+                    placeholder="Search teachers by name or email..."
+                    value={teachersSearchTerm}
+                    onChange={(e) => setTeachersSearchTerm(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
               </div>
 
               <Card>
@@ -2661,7 +3366,20 @@ const AdminPortal: React.FC = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-2">
-                    {teachers.map((teacher) => {
+                    {teachers
+                      .filter((teacher) => {
+                        if (teachersSearchTerm) {
+                          const search = teachersSearchTerm.toLowerCase()
+                          const name = `${teacher.first_name} ${teacher.last_name}`.toLowerCase()
+                          const email = teacher.email.toLowerCase()
+                          return name.includes(search) || email.includes(search)
+                        }
+                        return true
+                      })
+                      .map((teacher) => {
+                        const quranCount = teacher.quran_students_count || 0
+                        const islamicCount = teacher.islamic_studies_students_count || 0
+                        const totalCount = teacher.total_students_count || 0
                       const isAdmin = admins.some(admin => admin.email.toLowerCase() === teacher.email.toLowerCase())
                       return (
                         <div key={teacher.id} className="border rounded-lg p-3 flex justify-between items-center">
@@ -2676,6 +3394,11 @@ const AdminPortal: React.FC = () => {
                             {teacher.mobile && (
                               <p className="text-xs text-gray-500">{teacher.mobile}</p>
                             )}
+                            <div className="flex gap-3 mt-2 text-xs text-gray-600">
+                              <span>Quran: <strong>{quranCount}</strong></span>
+                              <span>Islamic Studies: <strong>{islamicCount}</strong></span>
+                              <span>Total: <strong>{totalCount}</strong></span>
+                            </div>
                           </div>
                           <div className="flex items-center gap-2">
                             <Button
@@ -2705,6 +3428,26 @@ const AdminPortal: React.FC = () => {
                                 </Button>
                               </>
                             )}
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleEditTeacher(teacher)}
+                              className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setPasswordResetEmail(teacher.email)
+                                setShowPasswordResetDialog(true)
+                              }}
+                              className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                              title="Reset Password"
+                            >
+                              <KeyRound className="h-4 w-4" />
+                            </Button>
                             <Button
                               variant="ghost"
                               size="sm"
@@ -3303,6 +4046,37 @@ const AdminPortal: React.FC = () => {
 
             {/* Students Tab */}
             <TabsContent value="students" className="mt-6 space-y-6">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
+                <div className="flex-1 w-full sm:max-w-md">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <Input
+                      placeholder="Search students by name, grade, or parent..."
+                      value={studentsSearchTerm}
+                      onChange={(e) => setStudentsSearchTerm(e.target.value)}
+                      className="pl-10"
+                    />
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowCSVImportDialog(true)}
+                    className="gap-2"
+                  >
+                    <Download className="h-4 w-4 rotate-180" />
+                    Import CSV
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={handleExportStudents}
+                    className="gap-2"
+                  >
+                    <Download className="h-4 w-4" />
+                    Export CSV
+                  </Button>
+                </div>
+              </div>
               {/* Students List with Payment Status */}
               <Card>
                 <CardHeader>
@@ -3382,6 +4156,19 @@ const AdminPortal: React.FC = () => {
                   <div className="space-y-2">
                     {students
                       .filter((student) => {
+                        // Search filter
+                        if (studentsSearchTerm) {
+                          const search = studentsSearchTerm.toLowerCase()
+                          const studentName = `${student.first_name} ${student.last_name}`.toLowerCase()
+                          const parent = parents.find(p => p.id === student.parent_id)
+                          const parentName = parent ? `${parent.parent1_first_name} ${parent.parent1_last_name}`.toLowerCase() : ''
+                          const parentEmail = parent?.parent1_email?.toLowerCase() || ''
+                          if (!studentName.includes(search) && !student.grade.toLowerCase().includes(search) && 
+                              !parentName.includes(search) && !parentEmail.includes(search)) {
+                            return false
+                          }
+                        }
+                        // Other filters
                         if (programFilter !== 'all') {
                           if (programFilter === 'none' && student.program) return false
                           if (programFilter !== 'none' && student.program !== programFilter) return false
@@ -3427,15 +4214,25 @@ const AdminPortal: React.FC = () => {
                                 </p>
                               )}
                             </div>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleDeleteStudent(student)}
-                              disabled={loading}
-                              className="text-red-600 hover:text-red-700 hover:bg-red-50 shrink-0"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
+                            <div className="flex gap-2 shrink-0">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleEditStudent(student)}
+                                className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDeleteStudent(student)}
+                                disabled={loading}
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
                           </div>
                         </div>
                       )
@@ -3449,6 +4246,27 @@ const AdminPortal: React.FC = () => {
             {/* Parents Tab */}
             <TabsContent value="parents" className="mt-6">
               <div className="mb-4 space-y-3">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-2">
+                  <div className="flex-1 w-full sm:max-w-md">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                      <Input
+                        placeholder="Search parents by name or email..."
+                        value={parentsSearchTerm}
+                        onChange={(e) => setParentsSearchTerm(e.target.value)}
+                        className="pl-10"
+                      />
+                    </div>
+                  </div>
+                  <Button
+                    variant="outline"
+                    onClick={handleExportParents}
+                    className="gap-2"
+                  >
+                    <Download className="h-4 w-4" />
+                    Export CSV
+                  </Button>
+                </div>
                 <div className="flex gap-2">
                   <Button
                     onClick={async () => {
@@ -3906,7 +4724,17 @@ const AdminPortal: React.FC = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-2">
-                    {parents.map((parent) => {
+                    {parents
+                      .filter((parent) => {
+                        if (parentsSearchTerm) {
+                          const search = parentsSearchTerm.toLowerCase()
+                          const name = `${parent.parent1_first_name} ${parent.parent1_last_name}`.toLowerCase()
+                          const email = parent.parent1_email.toLowerCase()
+                          return name.includes(search) || email.includes(search)
+                        }
+                        return true
+                      })
+                      .map((parent) => {
                       const parentStudents = students.filter(s => s.parent_id === parent.id)
                       const isSelected = selectedParentsForInvoice.includes(parent.id)
                       const hasStripeCustomer = !!parent.stripe_customer_id
@@ -3955,6 +4783,30 @@ const AdminPortal: React.FC = () => {
                                 )}
                                 <Badge variant="outline">Parent</Badge>
                               </div>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleEditParent(parent)
+                                }}
+                                className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  setPasswordResetEmail(parent.parent1_email)
+                                  setShowPasswordResetDialog(true)
+                                }}
+                                className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                                title="Reset Password"
+                              >
+                                <KeyRound className="h-4 w-4" />
+                              </Button>
                               <Button
                                 variant="ghost"
                                 size="sm"
@@ -4644,6 +5496,490 @@ const AdminPortal: React.FC = () => {
                     </Button>
                     <Button onClick={handleAddNote} disabled={!noteText.trim()}>
                       Add Note
+                    </Button>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
+
+            {/* Edit Student Dialog */}
+            <Dialog open={showEditStudentDialog} onOpenChange={setShowEditStudentDialog}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Edit Student</DialogTitle>
+                  <DialogDescription>
+                    Update student information
+                  </DialogDescription>
+                </DialogHeader>
+                {editingStudent && (
+                  <div className="space-y-4 py-4">
+                    <div className="space-y-2">
+                      <Label>First Name *</Label>
+                      <Input
+                        value={editingStudent.first_name}
+                        onChange={(e) => setEditingStudent({ ...editingStudent, first_name: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Last Name *</Label>
+                      <Input
+                        value={editingStudent.last_name}
+                        onChange={(e) => setEditingStudent({ ...editingStudent, last_name: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Grade *</Label>
+                      <Select
+                        value={editingStudent.grade}
+                        onValueChange={(value) => setEditingStudent({ ...editingStudent, grade: value })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Prep">Prep</SelectItem>
+                          <SelectItem value="Grade 1">Grade 1</SelectItem>
+                          <SelectItem value="Grade 2">Grade 2</SelectItem>
+                          <SelectItem value="Grade 3">Grade 3</SelectItem>
+                          <SelectItem value="Grade 4">Grade 4</SelectItem>
+                          <SelectItem value="Grade 5">Grade 5</SelectItem>
+                          <SelectItem value="Grade 6">Grade 6</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Program</Label>
+                      <Select
+                        value={editingStudent.program || 'none'}
+                        onValueChange={(value) => setEditingStudent({ ...editingStudent, program: value === 'none' ? null : value })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">Not Set</SelectItem>
+                          <SelectItem value="A">Program A</SelectItem>
+                          <SelectItem value="B">Program B</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Quran Level (Simple)</Label>
+                      <Select
+                        value={quranLevelSimple || 'none'}
+                        onValueChange={(value) => setQuranLevelSimple(value === 'none' ? '' : value)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select Quran Level" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">Not Set</SelectItem>
+                          <SelectItem value="Iqra 1">Iqra 1</SelectItem>
+                          <SelectItem value="Iqra 2">Iqra 2</SelectItem>
+                          <SelectItem value="Iqra 3">Iqra 3</SelectItem>
+                          <SelectItem value="Iqra 4">Iqra 4</SelectItem>
+                          <SelectItem value="Iqra 5">Iqra 5</SelectItem>
+                          <SelectItem value="Iqra 6">Iqra 6</SelectItem>
+                          <SelectItem value="Quran">Quran</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-gray-500">This updates the quran_level column directly</p>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Quran/Iqra Progress (Detailed)</Label>
+                      <Select value={quranType} onValueChange={(v: 'iqra' | 'quran') => setQuranType(v)}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="iqra">Iqra</SelectItem>
+                          <SelectItem value="quran">Quran (Surah & Ayah)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {quranType === 'iqra' ? (
+                      <>
+                        <div className="space-y-2">
+                          <Label>Iqra Level (1-6)</Label>
+                          <Select value={quranLevel || 'none'} onValueChange={(v) => setQuranLevel(v === 'none' ? '' : v)}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select Iqra level" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="1">Level 1</SelectItem>
+                              <SelectItem value="2">Level 2</SelectItem>
+                              <SelectItem value="3">Level 3</SelectItem>
+                              <SelectItem value="4">Level 4</SelectItem>
+                              <SelectItem value="5">Level 5</SelectItem>
+                              <SelectItem value="6">Level 6</SelectItem>
+                              <SelectItem value="none">Clear</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Page (1-30)</Label>
+                          <Input
+                            type="number"
+                            min="1"
+                            max="30"
+                            value={quranPage}
+                            onChange={(e) => setQuranPage(e.target.value)}
+                            placeholder="Enter page number (1-30)"
+                          />
+                          <p className="text-xs text-gray-500">Each Iqra level has 30 pages</p>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="space-y-2">
+                          <Label>Surah</Label>
+                          <Select 
+                            value={quranSurah || ''} 
+                            onValueChange={(v) => {
+                              setQuranSurah(v)
+                              setQuranAyah('')
+                            }}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select Surah" />
+                            </SelectTrigger>
+                            <SelectContent className="max-h-[300px]">
+                              {SURAHS.map((surah) => (
+                                <SelectItem key={surah.number} value={surah.name}>
+                                  {surah.number}. {surah.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Ayah (Verse)</Label>
+                          {quranSurah && (() => {
+                            const selectedSurah = SURAHS.find(s => s.name === quranSurah)
+                            if (!selectedSurah) return null
+                            
+                            return (
+                              <Select 
+                                value={quranAyah || ''} 
+                                onValueChange={setQuranAyah}
+                              >
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select Ayah" />
+                                </SelectTrigger>
+                                <SelectContent className="max-h-[300px]">
+                                  {Array.from({ length: selectedSurah.ayahs }, (_, i) => i + 1).map((ayah) => (
+                                    <SelectItem key={ayah} value={ayah.toString()}>
+                                      {ayah}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            )
+                          })()}
+                          {!quranSurah && (
+                            <Input
+                              type="text"
+                              value={quranAyah}
+                              placeholder="Select Surah first"
+                              disabled
+                            />
+                          )}
+                        </div>
+                      </>
+                    )}
+
+                    <div className="space-y-2">
+                      <Label>Behavior Standing</Label>
+                      <Select value={behaviorStanding || 'none'} onValueChange={(v) => setBehaviorStanding(v === 'none' ? '' : v)}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select behavior standing" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="excellent">Excellent</SelectItem>
+                          <SelectItem value="good">Good</SelectItem>
+                          <SelectItem value="satisfactory">Satisfactory</SelectItem>
+                          <SelectItem value="needs_improvement">Needs Improvement</SelectItem>
+                          <SelectItem value="concern">Concern</SelectItem>
+                          <SelectItem value="none">Clear (Not Set)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="flex justify-end gap-2">
+                      <Button variant="outline" onClick={() => setShowEditStudentDialog(false)}>
+                        Cancel
+                      </Button>
+                      <Button onClick={handleSaveStudent} disabled={!editingStudent.first_name || !editingStudent.last_name || !editingStudent.grade}>
+                        Save Changes
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </DialogContent>
+            </Dialog>
+
+            {/* Edit Parent Dialog */}
+            <Dialog open={showEditParentDialog} onOpenChange={setShowEditParentDialog}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Edit Parent</DialogTitle>
+                  <DialogDescription>
+                    Update parent information
+                  </DialogDescription>
+                </DialogHeader>
+                {editingParent && (
+                  <div className="space-y-4 py-4">
+                    <div className="space-y-2">
+                      <Label>First Name *</Label>
+                      <Input
+                        value={editingParent.parent1_first_name}
+                        onChange={(e) => setEditingParent({ ...editingParent, parent1_first_name: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Last Name *</Label>
+                      <Input
+                        value={editingParent.parent1_last_name}
+                        onChange={(e) => setEditingParent({ ...editingParent, parent1_last_name: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Email *</Label>
+                      <Input
+                        type="email"
+                        value={editingParent.parent1_email}
+                        onChange={(e) => setEditingParent({ ...editingParent, parent1_email: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Mobile</Label>
+                      <Input
+                        value={editingParent.parent1_mobile || ''}
+                        onChange={(e) => setEditingParent({ ...editingParent, parent1_mobile: e.target.value })}
+                      />
+                    </div>
+                    <div className="flex justify-end gap-2">
+                      <Button variant="outline" onClick={() => setShowEditParentDialog(false)}>
+                        Cancel
+                      </Button>
+                      <Button onClick={handleSaveParent} disabled={!editingParent.parent1_first_name || !editingParent.parent1_last_name || !editingParent.parent1_email}>
+                        Save Changes
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </DialogContent>
+            </Dialog>
+
+            {/* Edit Teacher Dialog */}
+            <Dialog open={showEditTeacherDialog} onOpenChange={setShowEditTeacherDialog}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Edit Teacher</DialogTitle>
+                  <DialogDescription>
+                    Update teacher information
+                  </DialogDescription>
+                </DialogHeader>
+                {editingTeacher && (
+                  <div className="space-y-4 py-4">
+                    <div className="space-y-2">
+                      <Label>First Name *</Label>
+                      <Input
+                        value={editingTeacher.first_name}
+                        onChange={(e) => setEditingTeacher({ ...editingTeacher, first_name: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Last Name *</Label>
+                      <Input
+                        value={editingTeacher.last_name}
+                        onChange={(e) => setEditingTeacher({ ...editingTeacher, last_name: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Email *</Label>
+                      <Input
+                        type="email"
+                        value={editingTeacher.email}
+                        onChange={(e) => setEditingTeacher({ ...editingTeacher, email: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Mobile</Label>
+                      <Input
+                        value={editingTeacher.mobile || ''}
+                        onChange={(e) => setEditingTeacher({ ...editingTeacher, mobile: e.target.value })}
+                      />
+                    </div>
+                    <div className="flex justify-end gap-2">
+                      <Button variant="outline" onClick={() => setShowEditTeacherDialog(false)}>
+                        Cancel
+                      </Button>
+                      <Button onClick={handleSaveTeacher} disabled={!editingTeacher.first_name || !editingTeacher.last_name || !editingTeacher.email}>
+                        Save Changes
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </DialogContent>
+            </Dialog>
+
+            {/* Password Reset Dialog */}
+            <Dialog open={showPasswordResetDialog} onOpenChange={setShowPasswordResetDialog}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Reset Password</DialogTitle>
+                  <DialogDescription>
+                    Reset password for a user account
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <div className="space-y-2">
+                    <Label>Email Address *</Label>
+                    <Input
+                      type="email"
+                      value={passwordResetEmail}
+                      onChange={(e) => setPasswordResetEmail(e.target.value)}
+                      placeholder="user@example.com"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>New Password *</Label>
+                    <Input
+                      type="password"
+                      value={passwordResetNewPassword}
+                      onChange={(e) => setPasswordResetNewPassword(e.target.value)}
+                      placeholder="Minimum 6 characters"
+                    />
+                  </div>
+                  <div className="flex justify-end gap-2">
+                    <Button variant="outline" onClick={() => {
+                      setShowPasswordResetDialog(false)
+                      setPasswordResetEmail('')
+                      setPasswordResetNewPassword('')
+                    }}>
+                      Cancel
+                    </Button>
+                    <Button onClick={handleResetPassword} disabled={resettingPassword || !passwordResetEmail || !passwordResetNewPassword || passwordResetNewPassword.length < 6}>
+                      {resettingPassword ? 'Resetting...' : 'Reset Password'}
+                    </Button>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
+
+            {/* Edit Payment Dialog */}
+            <Dialog open={showEditPaymentDialog} onOpenChange={setShowEditPaymentDialog}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Edit Payment</DialogTitle>
+                  <DialogDescription>
+                    Update payment information
+                  </DialogDescription>
+                </DialogHeader>
+                {editingPayment && (
+                  <div className="space-y-4 py-4">
+                    <div className="space-y-2">
+                      <Label>Amount *</Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        value={editingPayment.amount}
+                        onChange={(e) => setEditingPayment({ ...editingPayment, amount: parseFloat(e.target.value) || 0 })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Status *</Label>
+                      <Select
+                        value={editingPayment.status}
+                        onValueChange={(value) => setEditingPayment({ ...editingPayment, status: value })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="succeeded">Succeeded</SelectItem>
+                          <SelectItem value="pending">Pending</SelectItem>
+                          <SelectItem value="failed">Failed</SelectItem>
+                          <SelectItem value="refunded">Refunded</SelectItem>
+                          <SelectItem value="trial_active">Trial Active</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id="paid_term_fees"
+                          checked={editingPayment.paid_term_fees}
+                          onCheckedChange={(checked) => setEditingPayment({ ...editingPayment, paid_term_fees: checked === true })}
+                        />
+                        <Label htmlFor="paid_term_fees" className="cursor-pointer">Paid Term Fees</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id="paid_for_books"
+                          checked={editingPayment.paid_for_books}
+                          onCheckedChange={(checked) => setEditingPayment({ ...editingPayment, paid_for_books: checked === true })}
+                        />
+                        <Label htmlFor="paid_for_books" className="cursor-pointer">Paid for Books</Label>
+                      </div>
+                    </div>
+                    <div className="flex justify-end gap-2">
+                      <Button variant="outline" onClick={() => setShowEditPaymentDialog(false)}>
+                        Cancel
+                      </Button>
+                      <Button onClick={handleSavePayment}>
+                        Save Changes
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </DialogContent>
+            </Dialog>
+
+            {/* CSV Import Dialog */}
+            <Dialog open={showCSVImportDialog} onOpenChange={setShowCSVImportDialog}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Import Data from CSV</DialogTitle>
+                  <DialogDescription>
+                    Upload a CSV file to import parent and student data. The CSV should match the expected format.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <div className="space-y-2">
+                    <Label>CSV File *</Label>
+                    <Input
+                      type="file"
+                      accept=".csv"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0]
+                        if (file) {
+                          setCsvFile(file)
+                        }
+                      }}
+                    />
+                    <p className="text-xs text-gray-500">
+                      Select a CSV file containing parent and student data.
+                    </p>
+                  </div>
+                  <div className="flex justify-end gap-2">
+                    <Button variant="outline" onClick={() => {
+                      setShowCSVImportDialog(false)
+                      setCsvFile(null)
+                    }}>
+                      Cancel
+                    </Button>
+                    <Button onClick={handleCSVImport} disabled={!csvFile || importingCSV}>
+                      {importingCSV ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Importing...
+                        </>
+                      ) : (
+                        'Import CSV'
+                      )}
                     </Button>
                   </div>
                 </div>
