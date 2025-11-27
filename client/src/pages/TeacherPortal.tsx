@@ -220,7 +220,7 @@ const TeacherPortal: React.FC = () => {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [programFilter, setProgramFilter] = useState<string>('all') // 'all', 'A', 'B', 'none'
-  const [activeTab, setActiveTab] = useState<string>('my-students') // 'my-students' or 'all-teachers'
+  const [activeTab, setActiveTab] = useState<string>('my-students') // 'my-students', 'all-teachers', or 'absence-notes'
   
   // Student assignment
   const [showAssignStudentsDialog, setShowAssignStudentsDialog] = useState(false)
@@ -239,6 +239,14 @@ const TeacherPortal: React.FC = () => {
   const [showTeacherViewDialog, setShowTeacherViewDialog] = useState(false)
   const [teacherViewQuranStudents, setTeacherViewQuranStudents] = useState<Student[]>([])
   const [teacherViewIslamicStudiesStudents, setTeacherViewIslamicStudiesStudents] = useState<Student[]>([])
+  
+  // Absence notes
+  const [absenceNotes, setAbsenceNotes] = useState<any[]>([])
+  const [showAbsenceNoteDialog, setShowAbsenceNoteDialog] = useState(false)
+  const [absenceDate, setAbsenceDate] = useState('')
+  const [absenceReason, setAbsenceReason] = useState('')
+  const [absenceNoteText, setAbsenceNoteText] = useState('')
+  const [loadingAbsenceNotes, setLoadingAbsenceNotes] = useState(false)
   
   // Student detail data
   const [attendance, setAttendance] = useState<Attendance[]>([])
@@ -412,10 +420,102 @@ const TeacherPortal: React.FC = () => {
       
       // Load all teachers for the "All Teachers" view
       await loadAllTeachers()
+      
+      // Load absence notes
+      await loadAbsenceNotes()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load teacher data')
     } finally {
       setLoading(false)
+    }
+  }
+  
+  const loadAbsenceNotes = async () => {
+    try {
+      setLoadingAbsenceNotes(true)
+      const { data, error } = await supabase
+        .from('teacher_absence_notes')
+        .select(`
+          *,
+          teachers (id, first_name, last_name)
+        `)
+        .order('absence_date', { ascending: true })
+        .gte('absence_date', new Date().toISOString().split('T')[0]) // Only show future absences
+      
+      if (error) throw error
+      setAbsenceNotes(data || [])
+    } catch (err) {
+      console.error('Error loading absence notes:', err)
+    } finally {
+      setLoadingAbsenceNotes(false)
+    }
+  }
+  
+  const handleCreateAbsenceNote = async () => {
+    if (!teacher || !absenceDate || !absenceNoteText) {
+      toast({
+        title: 'Error',
+        description: 'Please fill in all required fields.',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    try {
+      const { error } = await supabase
+        .from('teacher_absence_notes')
+        .insert({
+          teacher_id: teacher.id,
+          absence_date: absenceDate,
+          reason: absenceReason || null,
+          notes: absenceNoteText,
+        })
+
+      if (error) throw error
+
+      toast({
+        title: 'Success',
+        description: 'Absence note created successfully.',
+      })
+
+      setShowAbsenceNoteDialog(false)
+      setAbsenceDate('')
+      setAbsenceReason('')
+      setAbsenceNoteText('')
+      await loadAbsenceNotes()
+    } catch (err: any) {
+      toast({
+        title: 'Error',
+        description: err.message || 'Failed to create absence note',
+        variant: 'destructive',
+      })
+    }
+  }
+  
+  const handleDeleteAbsenceNote = async (noteId: number) => {
+    if (!teacher || !confirm('Are you sure you want to delete this absence note?')) return
+
+    try {
+      const { error } = await supabase
+        .from('teacher_absence_notes')
+        .delete()
+        .eq('id', noteId)
+        .eq('teacher_id', teacher.id) // Only allow deleting own notes
+
+      if (error) throw error
+
+      toast({
+        title: 'Success',
+        description: 'Absence note deleted successfully.',
+      })
+
+      await loadAbsenceNotes()
+    } catch (err: any) {
+      toast({
+        title: 'Error',
+        description: err.message || 'Failed to delete absence note',
+        variant: 'destructive',
+      })
     }
   }
 
@@ -1605,11 +1705,12 @@ const TeacherPortal: React.FC = () => {
             </Alert>
           )}
 
-          {/* Tabs for My Students and All Teachers */}
+          {/* Tabs for My Students, All Teachers, and Absence Notes */}
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="mb-4 sm:mb-6 gap-1 w-full">
-              <TabsTrigger value="my-students" className="flex-1 text-xs sm:text-sm">My Students</TabsTrigger>
-              <TabsTrigger value="all-teachers" className="flex-1 text-xs sm:text-sm">All Teachers</TabsTrigger>
+            <TabsList className="mb-4 sm:mb-6 gap-1 w-full flex-wrap">
+              <TabsTrigger value="my-students" className="flex-1 text-xs sm:text-sm min-w-[100px]">My Students</TabsTrigger>
+              <TabsTrigger value="all-teachers" className="flex-1 text-xs sm:text-sm min-w-[100px]">All Teachers</TabsTrigger>
+              <TabsTrigger value="absence-notes" className="flex-1 text-xs sm:text-sm min-w-[100px]">Absence Notes</TabsTrigger>
             </TabsList>
 
             {/* My Students Tab */}
@@ -1816,6 +1917,90 @@ const TeacherPortal: React.FC = () => {
                       </CardContent>
                     </Card>
                   ))}
+                </div>
+              )}
+            </TabsContent>
+
+            {/* Absence Notes Tab */}
+            <TabsContent value="absence-notes" className="space-y-4">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                <h2 className="text-lg sm:text-xl font-semibold">Teacher Absence Notes</h2>
+                <Button onClick={() => setShowAbsenceNoteDialog(true)} size="sm" className="w-full sm:w-auto">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Create Absence Note
+                </Button>
+              </div>
+
+              {loadingAbsenceNotes ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                  <span className="ml-2">Loading absence notes...</span>
+                </div>
+              ) : absenceNotes.length === 0 ? (
+                <Card>
+                  <CardContent className="py-12 text-center">
+                    <Calendar className="h-12 w-12 mx-auto text-gray-400 mb-2" />
+                    <p className="text-gray-500">No upcoming absences scheduled.</p>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="space-y-3">
+                  {absenceNotes.map((note: any) => {
+                    const noteTeacher = note.teachers
+                    const isUpcoming = new Date(note.absence_date) >= new Date()
+                    const isToday = new Date(note.absence_date).toDateString() === new Date().toDateString()
+                    const isMyNote = teacher && note.teacher_id === teacher.id
+                    
+                    return (
+                      <Card key={note.id} className={`hover:shadow-md transition-shadow ${isToday ? 'border-primary border-2' : ''} ${!isUpcoming ? 'opacity-75' : ''}`}>
+                        <CardContent className="p-4">
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-2">
+                                <Calendar className="h-4 w-4 text-primary" />
+                                <p className="font-semibold text-lg">
+                                  {new Date(note.absence_date).toLocaleDateString('en-US', { 
+                                    weekday: 'long', 
+                                    year: 'numeric', 
+                                    month: 'long', 
+                                    day: 'numeric' 
+                                  })}
+                                </p>
+                                {isToday && (
+                                  <Badge className="bg-primary text-white">Today</Badge>
+                                )}
+                                {isMyNote && (
+                                  <Badge variant="outline">My Note</Badge>
+                                )}
+                              </div>
+                              <p className="text-sm text-gray-600 mb-2">
+                                <strong>Teacher:</strong> {noteTeacher?.first_name} {noteTeacher?.last_name}
+                              </p>
+                              {note.reason && (
+                                <p className="text-sm text-gray-600 mb-2">
+                                  <strong>Reason:</strong> {note.reason}
+                                </p>
+                              )}
+                              <div className="mt-3 p-3 bg-gray-50 rounded-lg">
+                                <p className="text-sm font-medium text-gray-700 mb-1">Coverage Instructions:</p>
+                                <p className="text-sm text-gray-800 whitespace-pre-wrap">{note.notes}</p>
+                              </div>
+                            </div>
+                            {isMyNote && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDeleteAbsenceNote(note.id)}
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50 shrink-0"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )
+                  })}
                 </div>
               )}
             </TabsContent>
@@ -3089,6 +3274,68 @@ const TeacherPortal: React.FC = () => {
                 )}
               </CardContent>
             </Card>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create Absence Note Dialog */}
+      <Dialog open={showAbsenceNoteDialog} onOpenChange={setShowAbsenceNoteDialog}>
+        <DialogContent className="w-[95vw] sm:w-full max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Create Absence Note</DialogTitle>
+            <DialogDescription>
+              Leave instructions for other teachers to cover your classes when you're absent.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div>
+              <Label htmlFor="absence-date">Absence Date *</Label>
+              <Input
+                id="absence-date"
+                type="date"
+                value={absenceDate}
+                onChange={(e) => setAbsenceDate(e.target.value)}
+                min={new Date().toISOString().split('T')[0]}
+                required
+              />
+            </div>
+            <div>
+              <Label htmlFor="absence-reason">Reason (Optional)</Label>
+              <Input
+                id="absence-reason"
+                type="text"
+                value={absenceReason}
+                onChange={(e) => setAbsenceReason(e.target.value)}
+                placeholder="e.g., Sick leave, Personal appointment, etc."
+              />
+            </div>
+            <div>
+              <Label htmlFor="absence-notes">Coverage Instructions *</Label>
+              <Textarea
+                id="absence-notes"
+                value={absenceNoteText}
+                onChange={(e) => setAbsenceNoteText(e.target.value)}
+                placeholder="Provide detailed instructions for covering teachers, including what topics to cover, which students need special attention, homework assignments, etc."
+                rows={6}
+                required
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Be specific about what needs to be covered and any important information for substitute teachers.
+              </p>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => {
+                setShowAbsenceNoteDialog(false)
+                setAbsenceDate('')
+                setAbsenceReason('')
+                setAbsenceNoteText('')
+              }}>
+                Cancel
+              </Button>
+              <Button onClick={handleCreateAbsenceNote} disabled={!absenceDate || !absenceNoteText}>
+                Create Note
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
