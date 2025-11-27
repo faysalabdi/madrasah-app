@@ -329,10 +329,18 @@ const AdminPortal: React.FC = () => {
   const [studentHomework, setStudentHomework] = useState<any[]>([])
   const [studentBehaviorNotes, setStudentBehaviorNotes] = useState<any[]>([])
   const [studentNotes, setStudentNotes] = useState<any[]>([])
+  const [studentParentInfo, setStudentParentInfo] = useState<{ first_name: string; last_name: string; email: string; mobile: string | null } | null>(null)
 
   // Edit dialogs
   const [showEditStudentDialog, setShowEditStudentDialog] = useState(false)
   const [editingStudent, setEditingStudent] = useState<Student | null>(null)
+  const [quranType, setQuranType] = useState<'iqra' | 'quran'>('iqra')
+  const [quranLevel, setQuranLevel] = useState<string>('')
+  const [quranPage, setQuranPage] = useState<string>('')
+  const [quranSurah, setQuranSurah] = useState<string>('')
+  const [quranAyah, setQuranAyah] = useState<string>('')
+  const [quranLevelSimple, setQuranLevelSimple] = useState<string>('') // For simple quran_level column
+  const [behaviorStanding, setBehaviorStanding] = useState<string>('')
   const [showEditParentDialog, setShowEditParentDialog] = useState(false)
   const [editingParent, setEditingParent] = useState<Parent | null>(null)
   const [showEditTeacherDialog, setShowEditTeacherDialog] = useState(false)
@@ -465,6 +473,34 @@ const AdminPortal: React.FC = () => {
       setStudentHomework(homeworkRes.data || [])
       setStudentBehaviorNotes(behaviorRes.data || [])
       setStudentNotes(notesRes.data || [])
+
+      // Load parent information
+      const { data: studentData } = await supabase
+        .from('students')
+        .select('parent_id')
+        .eq('id', studentId)
+        .single()
+      
+      if (studentData?.parent_id) {
+        const { data: parentData } = await supabase
+          .from('parents')
+          .select('parent1_first_name, parent1_last_name, parent1_email, parent1_mobile')
+          .eq('id', studentData.parent_id)
+          .single()
+        
+        if (parentData) {
+          setStudentParentInfo({
+            first_name: parentData.parent1_first_name,
+            last_name: parentData.parent1_last_name,
+            email: parentData.parent1_email,
+            mobile: parentData.parent1_mobile,
+          })
+        } else {
+          setStudentParentInfo(null)
+        }
+      } else {
+        setStudentParentInfo(null)
+      }
     } catch (err: any) {
       console.error('Error loading student records:', err)
       setError(err.message || 'Failed to load student records')
@@ -4999,25 +5035,67 @@ const AdminPortal: React.FC = () => {
                       </CardContent>
                     </Card>
 
-                    <Tabs defaultValue="attendance" className="w-full mt-4">
-                      <TabsList className="grid w-full grid-cols-4 h-12">
-                        <TabsTrigger value="attendance" className="flex items-center gap-2">
-                          <Calendar className="h-4 w-4" />
-                          Attendance ({studentAttendance.length})
+                    <Tabs defaultValue="profile" className="w-full mt-4">
+                      <TabsList className="flex-wrap h-auto w-full gap-1">
+                        <TabsTrigger value="profile" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3">
+                          <UserCheck className="h-3 w-3 sm:h-4 sm:w-4" />
+                          <span className="hidden sm:inline">Profile</span>
                         </TabsTrigger>
-                        <TabsTrigger value="homework" className="flex items-center gap-2">
-                          <BookOpen className="h-4 w-4" />
-                          Homework ({studentHomework.length})
+                        <TabsTrigger value="attendance" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3">
+                          <Calendar className="h-3 w-3 sm:h-4 sm:w-4" />
+                          <span className="hidden sm:inline">Attendance</span>
+                          <span className="sm:hidden">({studentAttendance.length})</span>
                         </TabsTrigger>
-                        <TabsTrigger value="behavior" className="flex items-center gap-2">
-                          <FileText className="h-4 w-4" />
-                          Behavior ({studentBehaviorNotes.length})
+                        <TabsTrigger value="homework" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3">
+                          <BookOpen className="h-3 w-3 sm:h-4 sm:w-4" />
+                          <span className="hidden sm:inline">Homework</span>
+                          <span className="sm:hidden">({studentHomework.length})</span>
                         </TabsTrigger>
-                        <TabsTrigger value="notes" className="flex items-center gap-2">
-                          <FileText className="h-4 w-4" />
-                          Notes ({studentNotes.length})
+                        <TabsTrigger value="behavior" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3">
+                          <FileText className="h-3 w-3 sm:h-4 sm:w-4" />
+                          <span className="hidden sm:inline">Behavior</span>
+                          <span className="sm:hidden">({studentBehaviorNotes.length})</span>
+                        </TabsTrigger>
+                        <TabsTrigger value="notes" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3">
+                          <FileText className="h-3 w-3 sm:h-4 sm:w-4" />
+                          <span className="hidden sm:inline">Notes</span>
+                          <span className="sm:hidden">({studentNotes.length})</span>
                         </TabsTrigger>
                       </TabsList>
+
+                      {/* Profile Tab */}
+                      <TabsContent value="profile" className="mt-6 space-y-4">
+                        <Card>
+                          <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                              <User className="h-5 w-5 text-primary" />
+                              Parent Contact Information
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            {studentParentInfo ? (
+                              <div className="space-y-3">
+                                <div>
+                                  <p className="text-sm text-gray-600">Parent Name</p>
+                                  <p className="font-medium">{studentParentInfo.first_name} {studentParentInfo.last_name}</p>
+                                </div>
+                                <div>
+                                  <p className="text-sm text-gray-600">Email</p>
+                                  <p className="font-medium">{studentParentInfo.email}</p>
+                                </div>
+                                {studentParentInfo.mobile && (
+                                  <div>
+                                    <p className="text-sm text-gray-600">Phone Number</p>
+                                    <p className="font-medium">{studentParentInfo.mobile}</p>
+                                  </div>
+                                )}
+                              </div>
+                            ) : (
+                              <p className="text-gray-500">Parent information not available.</p>
+                            )}
+                          </CardContent>
+                        </Card>
+                      </TabsContent>
 
                       {/* Attendance Tab */}
                       <TabsContent value="attendance" className="mt-6">
@@ -5504,7 +5582,7 @@ const AdminPortal: React.FC = () => {
 
             {/* Edit Student Dialog */}
             <Dialog open={showEditStudentDialog} onOpenChange={setShowEditStudentDialog}>
-              <DialogContent>
+              <DialogContent className="w-[95vw] sm:w-full max-w-2xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>Edit Student</DialogTitle>
                   <DialogDescription>

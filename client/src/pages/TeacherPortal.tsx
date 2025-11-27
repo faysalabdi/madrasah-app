@@ -247,6 +247,7 @@ const TeacherPortal: React.FC = () => {
   const [studentNotes, setStudentNotes] = useState<StudentNote[]>([])
   const [classContent, setClassContent] = useState<any[]>([])
   const [loadingStudentDetails, setLoadingStudentDetails] = useState(false)
+  const [parentInfo, setParentInfo] = useState<{ first_name: string; last_name: string; email: string; mobile: string | null } | null>(null)
   
   // Dialog states
   const [showStudentDetail, setShowStudentDetail] = useState(false)
@@ -814,6 +815,29 @@ const TeacherPortal: React.FC = () => {
         .order('created_at', { ascending: false })
 
       setClassContent(classContentData || [])
+
+      // Load parent information
+      if (updatedStudent?.parent_id) {
+        const { data: parentData } = await supabase
+          .from('parents')
+          .select('parent1_first_name, parent1_last_name, parent1_email, parent1_mobile')
+          .eq('id', updatedStudent.parent_id)
+          .single()
+        
+        if (parentData) {
+          setParentInfo({
+            first_name: parentData.parent1_first_name,
+            last_name: parentData.parent1_last_name,
+            email: parentData.parent1_email,
+            mobile: parentData.parent1_mobile,
+          })
+        } else {
+          setParentInfo(null)
+        }
+      } else {
+        setParentInfo(null)
+      }
+
       setError(null) // Clear any previous errors
     } catch (err) {
       console.error('Error loading student details:', err)
@@ -1929,6 +1953,38 @@ const TeacherPortal: React.FC = () => {
                   </CardContent>
                 </Card>
               </div>
+
+              {/* Parent Contact Information */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <User className="h-5 w-5 text-primary" />
+                    Parent Contact Information
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {parentInfo ? (
+                    <div className="space-y-3">
+                      <div>
+                        <p className="text-sm text-gray-600">Parent Name</p>
+                        <p className="font-medium">{parentInfo.first_name} {parentInfo.last_name}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-600">Email</p>
+                        <p className="font-medium">{parentInfo.email}</p>
+                      </div>
+                      {parentInfo.mobile && (
+                        <div>
+                          <p className="text-sm text-gray-600">Phone Number</p>
+                          <p className="font-medium">{parentInfo.mobile}</p>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-gray-500">Parent information not available.</p>
+                  )}
+                </CardContent>
+              </Card>
 
               {/* Attendance Statistics with Pie Chart */}
               <Card>
