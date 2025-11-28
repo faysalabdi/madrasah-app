@@ -248,6 +248,13 @@ const TeacherPortal: React.FC = () => {
   const [absenceNoteText, setAbsenceNoteText] = useState('')
   const [loadingAbsenceNotes, setLoadingAbsenceNotes] = useState(false)
   
+  // Bulk attendance
+  const [showBulkAttendanceDialog, setShowBulkAttendanceDialog] = useState(false)
+  const [bulkAttendanceDate, setBulkAttendanceDate] = useState(new Date().toISOString().split('T')[0])
+  const [bulkAttendanceRecords, setBulkAttendanceRecords] = useState<{ [studentId: number]: string }>({})
+  const [bulkAttendanceNotes, setBulkAttendanceNotes] = useState<{ [studentId: number]: string }>({})
+  const [savingBulkAttendance, setSavingBulkAttendance] = useState(false)
+  
   // Student detail data
   const [attendance, setAttendance] = useState<Attendance[]>([])
   const [behaviorNotes, setBehaviorNotes] = useState<BehaviorNote[]>([])
@@ -1165,6 +1172,111 @@ const TeacherPortal: React.FC = () => {
     }
   }
 
+  const handleBulkMarkAttendance = async () => {
+    if (!teacher) return
+
+    try {
+      setSavingBulkAttendance(true)
+      
+      // Get all unique students (combine Quran and Islamic Studies)
+      const allMyStudents = [...quranStudents, ...islamicStudiesStudents]
+      const uniqueStudents = Array.from(new Map(allMyStudents.map(s => [s.id, s])).values())
+      
+      // Prepare attendance records
+      const attendanceRecords = uniqueStudents
+        .filter(student => bulkAttendanceRecords[student.id]) // Only include students with a status
+        .map(student => ({
+          student_id: student.id,
+          teacher_id: teacher.id,
+          date: bulkAttendanceDate,
+          status: bulkAttendanceRecords[student.id],
+          notes: bulkAttendanceNotes[student.id] || null,
+        }))
+
+      if (attendanceRecords.length === 0) {
+        toast({
+          title: 'Error',
+          description: 'Please mark attendance for at least one student.',
+          variant: 'destructive',
+        })
+        return
+      }
+
+      // Upsert all attendance records
+      const { error } = await supabase
+        .from('attendance')
+        .upsert(attendanceRecords, {
+          onConflict: 'student_id,date'
+        })
+
+      if (error) throw error
+
+      // Send email notifications for absences or lateness
+      const studentsToNotify = uniqueStudents.filter(student => {
+        const status = bulkAttendanceRecords[student.id]
+        return status && (status.includes('absent') || status.includes('late'))
+      })
+
+      for (const student of studentsToNotify) {
+        const { data: parent } = await supabase
+          .from('parents')
+          .select('parent1_email, parent1_first_name, parent1_last_name')
+          .eq('id', student.parent_id)
+          .single()
+
+        if (parent?.parent1_email) {
+          const status = bulkAttendanceRecords[student.id]
+          const statusLabel = status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+          const studentName = `${student.first_name} ${student.last_name}`
+          const parentName = `${parent.parent1_first_name} ${parent.parent1_last_name}`
+          const notes = bulkAttendanceNotes[student.id]
+          
+          const htmlMessage = `
+            <p>Assalamu Alaikum ${parentName},</p>
+            <p>This is to inform you that ${studentName}'s attendance has been recorded for ${new Date(bulkAttendanceDate).toLocaleDateString()}.</p>
+            <p><strong>Status:</strong> ${statusLabel}</p>
+            ${notes ? `<p><strong>Notes:</strong> ${notes}</p>` : ''}
+            <p>Please check the parent portal for more details.</p>
+            <p>Jazakallahu Khairan,<br>Madrasah Abu Bakr As-Siddiq Team</p>
+          `
+
+          await sendNotification(
+            parent.parent1_email,
+            parentName,
+            studentName,
+            'attendance',
+            `Attendance Update - ${studentName}`,
+            undefined,
+            htmlMessage
+          )
+        }
+      }
+
+      toast({
+        title: 'Success',
+        description: `Attendance marked for ${attendanceRecords.length} student(s).`,
+      })
+
+      setShowBulkAttendanceDialog(false)
+      setBulkAttendanceDate(new Date().toISOString().split('T')[0])
+      setBulkAttendanceRecords({})
+      setBulkAttendanceNotes({})
+      
+      // Reload teacher data to refresh student lists
+      if (teacher) {
+        await loadTeacherData(teacher.id)
+      }
+    } catch (err: any) {
+      toast({
+        title: 'Error',
+        description: err.message || 'Failed to mark bulk attendance',
+        variant: 'destructive',
+      })
+    } finally {
+      setSavingBulkAttendance(false)
+    }
+  }
+
   const handleAddBehaviorNote = async () => {
     if (!selectedStudent || !teacher) return
 
@@ -1717,13 +1829,30 @@ const TeacherPortal: React.FC = () => {
             <TabsContent value="my-students" className="space-y-4">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                 <h2 className="text-lg sm:text-xl font-semibold">My Assigned Students</h2>
-                <Button onClick={() => {
-                  setShowAssignStudentsDialog(true)
-                  loadAllStudents()
-                }} size="sm" className="w-full sm:w-auto">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Assign Students to Me
-                </Button>
+                <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                  <Button onClick={() => {
+                    setShowBulkAttendanceDialog(true)
+                    // Initialize all students with default status
+                    const allMyStudents = [...quranStudents, ...islamicStudiesStudents]
+                    const uniqueStudents = Array.from(new Map(allMyStudents.map(s => [s.id, s])).values())
+                    const initialRecords: { [key: number]: string } = {}
+                    uniqueStudents.forEach(student => {
+                      initialRecords[student.id] = 'present_with_uniform'
+                    })
+                    setBulkAttendanceRecords(initialRecords)
+                    setBulkAttendanceNotes({})
+                  }} size="sm" variant="default" className="w-full sm:w-auto">
+                    <Calendar className="mr-2 h-4 w-4" />
+                    Mark All Attendance
+                  </Button>
+                  <Button onClick={() => {
+                    setShowAssignStudentsDialog(true)
+                    loadAllStudents()
+                  }} size="sm" variant="outline" className="w-full sm:w-auto">
+                    <Plus className="mr-2 h-4 w-4" />
+                    Assign Students to Me
+                  </Button>
+                </div>
               </div>
 
               {/* Program Filter */}
@@ -3274,6 +3403,175 @@ const TeacherPortal: React.FC = () => {
                 )}
               </CardContent>
             </Card>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Bulk Attendance Dialog */}
+      <Dialog open={showBulkAttendanceDialog} onOpenChange={setShowBulkAttendanceDialog}>
+        <DialogContent className="w-[95vw] sm:w-full max-w-5xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Mark Attendance for All Students</DialogTitle>
+            <DialogDescription>
+              Mark attendance for all your assigned students at once. Select the date and status for each student.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div>
+              <Label htmlFor="bulk-attendance-date">Date *</Label>
+              <Input
+                id="bulk-attendance-date"
+                type="date"
+                value={bulkAttendanceDate}
+                onChange={(e) => setBulkAttendanceDate(e.target.value)}
+                required
+              />
+            </div>
+
+            {/* Get all unique students */}
+            {(() => {
+              const allMyStudents = [...quranStudents, ...islamicStudiesStudents]
+              const uniqueStudents = Array.from(new Map(allMyStudents.map(s => [s.id, s])).values())
+              
+              if (uniqueStudents.length === 0) {
+                return (
+                  <Card>
+                    <CardContent className="py-8 text-center">
+                      <p className="text-gray-500">No students assigned yet.</p>
+                    </CardContent>
+                  </Card>
+                )
+              }
+
+              return (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between mb-4">
+                    <Label className="text-base font-semibold">Students ({uniqueStudents.length})</Label>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          const allPresent: { [key: number]: string } = {}
+                          uniqueStudents.forEach(student => {
+                            allPresent[student.id] = 'present_with_uniform'
+                          })
+                          setBulkAttendanceRecords(allPresent)
+                        }}
+                      >
+                        Mark All Present
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          const allAbsent: { [key: number]: string } = {}
+                          uniqueStudents.forEach(student => {
+                            allAbsent[student.id] = 'absent_no_excuse'
+                          })
+                          setBulkAttendanceRecords(allAbsent)
+                        }}
+                      >
+                        Mark All Absent
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  <div className="border rounded-lg overflow-hidden">
+                    <div className="max-h-[500px] overflow-y-auto">
+                      <table className="w-full">
+                        <thead className="bg-gray-50 sticky top-0">
+                          <tr>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Student</th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Grade</th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Status</th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Notes</th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                          {uniqueStudents.map((student) => (
+                            <tr key={student.id} className="hover:bg-gray-50">
+                              <td className="px-4 py-3 whitespace-nowrap">
+                                <div className="text-sm font-medium text-gray-900">
+                                  {student.first_name} {student.last_name}
+                                </div>
+                              </td>
+                              <td className="px-4 py-3 whitespace-nowrap">
+                                <div className="text-sm text-gray-500">{student.grade}</div>
+                              </td>
+                              <td className="px-4 py-3 whitespace-nowrap">
+                                <Select
+                                  value={bulkAttendanceRecords[student.id] || 'present_with_uniform'}
+                                  onValueChange={(value) => {
+                                    setBulkAttendanceRecords(prev => ({
+                                      ...prev,
+                                      [student.id]: value
+                                    }))
+                                  }}
+                                >
+                                  <SelectTrigger className="w-[200px]">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="present_with_uniform">Present (Uniform)</SelectItem>
+                                    <SelectItem value="present_no_uniform">Present (No Uniform)</SelectItem>
+                                    <SelectItem value="late_uniform">Late (Uniform)</SelectItem>
+                                    <SelectItem value="late_no_uniform">Late (No Uniform)</SelectItem>
+                                    <SelectItem value="absent_with_excuse">Absent (Excused)</SelectItem>
+                                    <SelectItem value="absent_no_excuse">Absent (No Excuse)</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </td>
+                              <td className="px-4 py-3">
+                                <Input
+                                  type="text"
+                                  placeholder="Optional notes"
+                                  value={bulkAttendanceNotes[student.id] || ''}
+                                  onChange={(e) => {
+                                    setBulkAttendanceNotes(prev => ({
+                                      ...prev,
+                                      [student.id]: e.target.value
+                                    }))
+                                  }}
+                                  className="w-full"
+                                />
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              )
+            })()}
+
+            <div className="flex justify-end gap-2 pt-4 border-t">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowBulkAttendanceDialog(false)
+                  setBulkAttendanceRecords({})
+                  setBulkAttendanceNotes({})
+                }}
+                disabled={savingBulkAttendance}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleBulkMarkAttendance}
+                disabled={savingBulkAttendance || Object.keys(bulkAttendanceRecords).length === 0}
+              >
+                {savingBulkAttendance ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  'Save All Attendance'
+                )}
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
