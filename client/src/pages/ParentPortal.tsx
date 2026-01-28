@@ -9,7 +9,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Loader2, User, LogOut, CreditCard, CheckCircle2, Circle, Trash2, Calendar, BookOpen, FileText, UserCheck, Star, TrendingUp, Award } from 'lucide-react'
+import { Textarea } from '@/components/ui/textarea'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Loader2, User, LogOut, CreditCard, CheckCircle2, Circle, Trash2, Calendar, BookOpen, FileText, UserCheck, Star, TrendingUp, Award, Send, MessageCircle, Reply } from 'lucide-react'
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart'
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend } from 'recharts'
 import {
@@ -95,6 +99,15 @@ const ParentPortal: React.FC = () => {
   const [classContent, setClassContent] = useState<any[]>([])
   const [quranTeacher, setQuranTeacher] = useState<{ first_name: string; last_name: string } | null>(null)
   const [islamicStudiesTeacher, setIslamicStudiesTeacher] = useState<{ first_name: string; last_name: string } | null>(null)
+  
+  // Messaging state
+  const [messages, setMessages] = useState<any[]>([])
+  const [newMessageSubject, setNewMessageSubject] = useState('')
+  const [newMessageText, setNewMessageText] = useState('')
+  const [replyingTo, setReplyingTo] = useState<number | null>(null)
+  const [replyText, setReplyText] = useState('')
+  const [sendingMessage, setSendingMessage] = useState(false)
+  const [messageRecipient, setMessageRecipient] = useState<'quran' | 'islamic_studies' | null>(null)
 
   useEffect(() => {
     // Check authentication and restore session
@@ -351,6 +364,22 @@ const ParentPortal: React.FC = () => {
         .order('created_at', { ascending: false })
 
       setClassContent(classContentData || [])
+
+      // Load messages
+      if (parent) {
+        const { data: messagesData } = await supabase
+          .from('parent_teacher_messages')
+          .select(`
+            *,
+            teacher:teachers(first_name, last_name)
+          `)
+          .eq('student_id', student.id)
+          .eq('parent_id', parent.id)
+          .order('created_at', { ascending: false })
+          .limit(50)
+
+        setMessages(messagesData || [])
+      }
     } catch (err) {
       console.error('Error loading student details:', err)
     }
@@ -429,6 +458,115 @@ const ParentPortal: React.FC = () => {
   const getBehaviorStandingLabel = (standing: string | null) => {
     if (!standing) return 'Not Set'
     return standing.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+  }
+
+  // Send a new message to teacher
+  const handleSendMessage = async () => {
+    if (!parent || !selectedStudent || !newMessageSubject || !newMessageText || !messageRecipient) {
+      setError('Please fill in all fields and select a teacher')
+      return
+    }
+
+    // Get the teacher ID based on recipient
+    const teacherId = messageRecipient === 'quran' 
+      ? quranTeacher 
+      : islamicStudiesTeacher
+
+    if (!teacherId) {
+      setError('No teacher assigned for this class. Please contact the administrator.')
+      return
+    }
+
+    try {
+      setSendingMessage(true)
+      
+      // Get teacher ID from teacher_students table
+      const { data: teacherAssignment } = await supabase
+        .from('teacher_students')
+        .select(messageRecipient === 'quran' ? 'quran_teacher_id' : 'islamic_studies_teacher_id')
+        .eq('student_id', selectedStudent.id)
+        .single()
+
+      const teacherIdValue = messageRecipient === 'quran' 
+        ? teacherAssignment?.quran_teacher_id 
+        : teacherAssignment?.islamic_studies_teacher_id
+
+      if (!teacherIdValue) {
+        setError('Teacher not found. Please contact the administrator.')
+        return
+      }
+
+      const { error: insertError } = await supabase
+        .from('parent_teacher_messages')
+        .insert({
+          student_id: selectedStudent.id,
+          parent_id: parent.id,
+          teacher_id: teacherIdValue,
+          sender_type: 'parent',
+          subject: newMessageSubject,
+          message: newMessageText,
+          parent_read: true,
+          teacher_read: false,
+        })
+
+      if (insertError) throw insertError
+
+      // Reload messages
+      const { data: messagesData } = await supabase
+        .from('parent_teacher_messages')
+        .select(`
+          *,
+          teacher:teachers(first_name, last_name)
+        `)
+        .eq('student_id', selectedStudent.id)
+        .eq('parent_id', parent.id)
+        .order('created_at', { ascending: false })
+        .limit(50)
+
+      setMessages(messagesData || [])
+      
+      // Reset form
+      setNewMessageSubject('')
+      setNewMessageText('')
+      setMessageRecipient(null)
+      setError(null)
+    } catch (err) {
+      console.error('Error sending message:', err)
+      setError('Failed to send message. Please try again.')
+    } finally {
+      setSendingMessage(false)
+    }
+  }
+
+  // Mark message as read
+  const markMessageAsRead = async (messageId: number) => {
+    try {
+      await supabase
+        .from('parent_teacher_messages')
+        .update({ parent_read: true })
+        .eq('id', messageId)
+    } catch (err) {
+      console.error('Error marking message as read:', err)
+    }
+  }
+
+  // Group messages by thread
+  const getMessageThreads = () => {
+    if (!messages.length) return []
+    
+    // Find all root messages (messages without parent_reply_to)
+    const rootMessages = messages.filter(m => !m.parent_reply_to)
+    
+    // For each root message, find its replies
+    const threads = rootMessages.map(root => {
+      const replies = messages.filter(m => m.parent_reply_to === root.id)
+      return {
+        root,
+        replies: replies.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
+      }
+    })
+    
+    return threads
   }
 
   const handleLogout = async () => {
@@ -925,12 +1063,14 @@ const ParentPortal: React.FC = () => {
       {/* Student Detail Dialog */}
       <Dialog open={showStudentDetail} onOpenChange={setShowStudentDetail}>
         <DialogContent className="w-[95vw] sm:w-full max-w-5xl max-h-[90vh] overflow-y-auto p-4 sm:p-6">
-          <DialogHeader>
-            <DialogTitle className="text-2xl">
+          <DialogHeader className="space-y-2">
+            <DialogTitle className="text-xl sm:text-2xl break-words">
               {selectedStudent?.first_name} {selectedStudent?.last_name}
             </DialogTitle>
-            <DialogDescription className="text-base">
-              Grade {selectedStudent?.grade} • Student ID: {selectedStudent?.student_id || `STU-${selectedStudent?.id.toString().padStart(4, '0')}`}
+            <DialogDescription className="text-sm sm:text-base break-words">
+              <span className="block sm:inline">Grade {selectedStudent?.grade}</span>
+              <span className="hidden sm:inline"> • </span>
+              <span className="block sm:inline">Student ID: {selectedStudent?.student_id || `STU-${selectedStudent?.id.toString().padStart(4, '0')}`}</span>
             </DialogDescription>
           </DialogHeader>
 
@@ -959,6 +1099,15 @@ const ParentPortal: React.FC = () => {
               <TabsTrigger value="class-content" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3">
                 <BookOpen className="h-3 w-3 sm:h-4 sm:w-4" />
                 <span className="hidden sm:inline">Class Content</span>
+              </TabsTrigger>
+              <TabsTrigger value="messages" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3">
+                <MessageCircle className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span className="hidden sm:inline">Messages</span>
+                {messages.filter(m => m.sender_type === 'teacher' && !m.parent_read).length > 0 && (
+                  <Badge variant="destructive" className="ml-1 h-4 w-4 p-0 flex items-center justify-center text-xs">
+                    {messages.filter(m => m.sender_type === 'teacher' && !m.parent_read).length}
+                  </Badge>
+                )}
               </TabsTrigger>
             </TabsList>
 
@@ -1389,6 +1538,212 @@ const ParentPortal: React.FC = () => {
                   ))}
                 </div>
               )}
+            </TabsContent>
+
+            {/* Messages Tab */}
+            <TabsContent value="messages" className="mt-6 space-y-6">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold flex items-center gap-2">
+                  <MessageCircle className="h-5 w-5 text-primary" />
+                  Teacher Communication
+                </h3>
+                <Badge variant="outline">{messages.length} messages</Badge>
+              </div>
+
+              {/* New Message Form */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base sm:text-lg">Send a Message to Teacher</CardTitle>
+                  <CardDescription className="text-sm">
+                    Contact your child's teacher about their progress, concerns, or questions
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="recipient">Select Teacher</Label>
+                    <Select
+                      value={messageRecipient || ''}
+                      onValueChange={(value) => setMessageRecipient(value as 'quran' | 'islamic_studies')}
+                    >
+                      <SelectTrigger id="recipient" className="w-full">
+                        <SelectValue placeholder="Choose a teacher..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {quranTeacher && (
+                          <SelectItem value="quran">
+                            Quran Teacher: {quranTeacher.first_name} {quranTeacher.last_name}
+                          </SelectItem>
+                        )}
+                        {islamicStudiesTeacher && (
+                          <SelectItem value="islamic_studies">
+                            Islamic Studies Teacher: {islamicStudiesTeacher.first_name} {islamicStudiesTeacher.last_name}
+                          </SelectItem>
+                        )}
+                      </SelectContent>
+                    </Select>
+                    {!quranTeacher && !islamicStudiesTeacher && (
+                      <p className="text-sm text-yellow-600">
+                        No teachers assigned yet. Please contact the administrator.
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="subject">Subject</Label>
+                    <Input
+                      id="subject"
+                      placeholder="e.g., Question about homework, Progress inquiry..."
+                      value={newMessageSubject}
+                      onChange={(e) => setNewMessageSubject(e.target.value)}
+                      className="w-full"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="message">Message</Label>
+                    <Textarea
+                      id="message"
+                      placeholder="Type your message here..."
+                      value={newMessageText}
+                      onChange={(e) => setNewMessageText(e.target.value)}
+                      rows={4}
+                      className="w-full resize-none"
+                    />
+                  </div>
+
+                  {error && (
+                    <Alert variant="destructive">
+                      <AlertDescription>{error}</AlertDescription>
+                    </Alert>
+                  )}
+
+                  <Button
+                    onClick={handleSendMessage}
+                    disabled={sendingMessage || !newMessageSubject || !newMessageText || !messageRecipient}
+                    className="w-full sm:w-auto gap-2"
+                  >
+                    {sendingMessage ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Sending...
+                      </>
+                    ) : (
+                      <>
+                        <Send className="h-4 w-4" />
+                        Send Message
+                      </>
+                    )}
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {/* Message Threads */}
+              <div className="space-y-4">
+                <h4 className="font-semibold text-base sm:text-lg">Message History</h4>
+                
+                {messages.length === 0 ? (
+                  <Card>
+                    <CardContent className="py-8 text-center">
+                      <MessageCircle className="h-12 w-12 mx-auto text-gray-400 mb-2" />
+                      <p className="text-gray-500">No messages yet. Start a conversation with your child's teacher!</p>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <div className="space-y-4">
+                    {getMessageThreads().map((thread) => (
+                      <Card key={thread.root.id} className="overflow-hidden">
+                        <CardContent className="p-0">
+                          {/* Root Message */}
+                          <div className={`p-4 ${thread.root.sender_type === 'parent' ? 'bg-blue-50' : 'bg-green-50'}`}>
+                            <div className="flex items-start justify-between gap-2 mb-2">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <Badge variant={thread.root.sender_type === 'parent' ? 'default' : 'secondary'}>
+                                  {thread.root.sender_type === 'parent' ? 'You' : 'Teacher'}
+                                </Badge>
+                                {thread.root.sender_type === 'teacher' && !thread.root.parent_read && (
+                                  <Badge variant="destructive" className="text-xs">New</Badge>
+                                )}
+                                <span className="text-xs text-gray-500">
+                                  {new Date(thread.root.created_at).toLocaleDateString('en-US', {
+                                    month: 'short',
+                                    day: 'numeric',
+                                    year: 'numeric',
+                                    hour: '2-digit',
+                                    minute: '2-digit'
+                                  })}
+                                </span>
+                              </div>
+                            </div>
+                            <h5 className="font-semibold text-sm sm:text-base mb-2 break-words">{thread.root.subject}</h5>
+                            <p className="text-sm text-gray-700 whitespace-pre-wrap break-words">{thread.root.message}</p>
+                            {thread.root.teacher && (
+                              <p className="text-xs text-gray-500 mt-2">
+                                To: {thread.root.teacher.first_name} {thread.root.teacher.last_name}
+                              </p>
+                            )}
+                            {thread.root.sender_type === 'teacher' && !thread.root.parent_read && (
+                              <Button
+                                variant="link"
+                                size="sm"
+                                onClick={() => markMessageAsRead(thread.root.id)}
+                                className="mt-2 p-0 h-auto text-xs"
+                              >
+                                Mark as read
+                              </Button>
+                            )}
+                          </div>
+
+                          {/* Replies */}
+                          {thread.replies.length > 0 && (
+                            <div className="border-t">
+                              {thread.replies.map((reply, index) => (
+                                <div
+                                  key={reply.id}
+                                  className={`p-4 pl-8 ${reply.sender_type === 'parent' ? 'bg-blue-50/50' : 'bg-green-50/50'} ${
+                                    index !== thread.replies.length - 1 ? 'border-b' : ''
+                                  }`}
+                                >
+                                  <div className="flex items-start justify-between gap-2 mb-2">
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                      <Reply className="h-3 w-3 text-gray-400" />
+                                      <Badge variant={reply.sender_type === 'parent' ? 'default' : 'secondary'} className="text-xs">
+                                        {reply.sender_type === 'parent' ? 'You' : 'Teacher'}
+                                      </Badge>
+                                      {reply.sender_type === 'teacher' && !reply.parent_read && (
+                                        <Badge variant="destructive" className="text-xs">New</Badge>
+                                      )}
+                                      <span className="text-xs text-gray-500">
+                                        {new Date(reply.created_at).toLocaleDateString('en-US', {
+                                          month: 'short',
+                                          day: 'numeric',
+                                          year: 'numeric',
+                                          hour: '2-digit',
+                                          minute: '2-digit'
+                                        })}
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <p className="text-sm text-gray-700 whitespace-pre-wrap break-words">{reply.message}</p>
+                                  {reply.sender_type === 'teacher' && !reply.parent_read && (
+                                    <Button
+                                      variant="link"
+                                      size="sm"
+                                      onClick={() => markMessageAsRead(reply.id)}
+                                      className="mt-2 p-0 h-auto text-xs"
+                                    >
+                                      Mark as read
+                                    </Button>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </div>
             </TabsContent>
           </Tabs>
         </DialogContent>

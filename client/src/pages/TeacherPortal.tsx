@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
-import { Loader2, Trash2, Calendar, BookOpen, FileText, UserCheck, Plus, CheckCircle2, AlertCircle, Award, TrendingUp, Circle, User, LogOut, Settings } from 'lucide-react'
+import { Loader2, Trash2, Calendar, BookOpen, FileText, UserCheck, Plus, CheckCircle2, AlertCircle, Award, TrendingUp, Circle, User, LogOut, Settings, MessageCircle, Send, Reply } from 'lucide-react'
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart'
 import { PieChart, Pie, Cell, Legend } from 'recharts'
 import {
@@ -308,6 +308,12 @@ const TeacherPortal: React.FC = () => {
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [changingPassword, setChangingPassword] = useState(false)
+  
+  // Messaging state
+  const [messages, setMessages] = useState<any[]>([])
+  const [replyText, setReplyText] = useState('')
+  const [replyingTo, setReplyingTo] = useState<number | null>(null)
+  const [sendingReply, setSendingReply] = useState(false)
   
   const { toast } = useToast()
 
@@ -945,6 +951,20 @@ const TeacherPortal: React.FC = () => {
         setParentInfo(null)
       }
 
+      // Load messages from parents about this student
+      const { data: messagesData } = await supabase
+        .from('parent_teacher_messages')
+        .select(`
+          *,
+          parent:parents(parent1_first_name, parent1_last_name)
+        `)
+        .eq('student_id', studentId)
+        .eq('teacher_id', teacher.id)
+        .order('created_at', { ascending: false })
+        .limit(50)
+
+      setMessages(messagesData || [])
+
       setError(null) // Clear any previous errors
     } catch (err) {
       console.error('Error loading student details:', err)
@@ -1009,6 +1029,119 @@ const TeacherPortal: React.FC = () => {
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update student profile')
     }
+  }
+
+  // Send a reply to a parent message
+  const handleSendReply = async (parentMessageId: number) => {
+    if (!teacher || !selectedStudent || !replyText) {
+      toast({
+        title: "Error",
+        description: "Please enter a reply message.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    try {
+      setSendingReply(true)
+      
+      // Get the parent message to get parent_id
+      const { data: parentMessage } = await supabase
+        .from('parent_teacher_messages')
+        .select('parent_id')
+        .eq('id', parentMessageId)
+        .single()
+
+      if (!parentMessage) {
+        throw new Error('Parent message not found')
+      }
+
+      const { error: insertError } = await supabase
+        .from('parent_teacher_messages')
+        .insert({
+          student_id: selectedStudent.id,
+          parent_id: parentMessage.parent_id,
+          teacher_id: teacher.id,
+          sender_type: 'teacher',
+          subject: 'Re: Parent Inquiry',
+          message: replyText,
+          parent_read: false,
+          teacher_read: true,
+          parent_reply_to: parentMessageId,
+        })
+
+      if (insertError) throw insertError
+
+      // Reload messages
+      const { data: messagesData } = await supabase
+        .from('parent_teacher_messages')
+        .select(`
+          *,
+          parent:parents(parent1_first_name, parent1_last_name)
+        `)
+        .eq('student_id', selectedStudent.id)
+        .eq('teacher_id', teacher.id)
+        .order('created_at', { ascending: false })
+        .limit(50)
+
+      setMessages(messagesData || [])
+      
+      // Reset reply form
+      setReplyText('')
+      setReplyingTo(null)
+      
+      toast({
+        title: "Success",
+        description: "Reply sent successfully!",
+      })
+    } catch (err) {
+      console.error('Error sending reply:', err)
+      toast({
+        title: "Error",
+        description: "Failed to send reply. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setSendingReply(false)
+    }
+  }
+
+  // Mark message as read
+  const markMessageAsRead = async (messageId: number) => {
+    try {
+      await supabase
+        .from('parent_teacher_messages')
+        .update({ teacher_read: true })
+        .eq('id', messageId)
+      
+      // Update local state
+      setMessages(prev => 
+        prev.map(m => 
+          m.id === messageId ? { ...m, teacher_read: true } : m
+        )
+      )
+    } catch (err) {
+      console.error('Error marking message as read:', err)
+    }
+  }
+
+  // Group messages by thread
+  const getMessageThreads = () => {
+    if (!messages.length) return []
+    
+    // Find all root messages (messages without parent_reply_to)
+    const rootMessages = messages.filter(m => !m.parent_reply_to)
+    
+    // For each root message, find its replies
+    const threads = rootMessages.map(root => {
+      const replies = messages.filter(m => m.parent_reply_to === root.id)
+      return {
+        root,
+        replies: replies.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
+      }
+    })
+    
+    return threads
   }
 
   // Format Quran progress display
@@ -2157,12 +2290,14 @@ const TeacherPortal: React.FC = () => {
             </div>
           ) : (
             <>
-              <DialogHeader>
-                <DialogTitle className="text-2xl">
+              <DialogHeader className="space-y-2">
+                <DialogTitle className="text-xl sm:text-2xl break-words">
                   {selectedStudent?.first_name || 'Unknown'} {selectedStudent?.last_name || ''}
                 </DialogTitle>
-                <DialogDescription className="text-base">
-                  Grade {selectedStudent?.grade || 'N/A'} • Student ID: {selectedStudent?.student_id || (selectedStudent?.id ? `STU-${selectedStudent.id.toString().padStart(4, '0')}` : 'N/A')}
+                <DialogDescription className="text-sm sm:text-base break-words">
+                  <span className="block sm:inline">Grade {selectedStudent?.grade || 'N/A'}</span>
+                  <span className="hidden sm:inline"> • </span>
+                  <span className="block sm:inline">Student ID: {selectedStudent?.student_id || (selectedStudent?.id ? `STU-${selectedStudent.id.toString().padStart(4, '0')}` : 'N/A')}</span>
                 </DialogDescription>
               </DialogHeader>
 
@@ -2191,6 +2326,15 @@ const TeacherPortal: React.FC = () => {
               <TabsTrigger value="class-content" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3">
                 <BookOpen className="h-3 w-3 sm:h-4 sm:w-4" />
                 <span className="hidden sm:inline">Class Content</span>
+              </TabsTrigger>
+              <TabsTrigger value="messages" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3">
+                <MessageCircle className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span className="hidden sm:inline">Parent Messages</span>
+                {messages.filter(m => m.sender_type === 'parent' && !m.teacher_read).length > 0 && (
+                  <Badge variant="destructive" className="ml-1 h-4 w-4 p-0 flex items-center justify-center text-xs">
+                    {messages.filter(m => m.sender_type === 'parent' && !m.teacher_read).length}
+                  </Badge>
+                )}
               </TabsTrigger>
             </TabsList>
 
@@ -2680,6 +2824,181 @@ const TeacherPortal: React.FC = () => {
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </TabsContent>
+
+            {/* Messages Tab */}
+            <TabsContent value="messages" className="mt-6 space-y-6">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold flex items-center gap-2">
+                  <MessageCircle className="h-5 w-5 text-primary" />
+                  Parent Communications
+                </h3>
+                <Badge variant="outline">{messages.length} messages</Badge>
+              </div>
+
+              {messages.length === 0 ? (
+                <Card>
+                  <CardContent className="py-8 text-center">
+                    <MessageCircle className="h-12 w-12 mx-auto text-gray-400 mb-2" />
+                    <p className="text-gray-500">No messages from parents yet.</p>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="space-y-4">
+                  {getMessageThreads().map((thread) => (
+                    <Card key={thread.root.id} className="overflow-hidden">
+                      <CardContent className="p-0">
+                        {/* Root Message */}
+                        <div className={`p-4 ${thread.root.sender_type === 'parent' ? 'bg-blue-50' : 'bg-green-50'}`}>
+                          <div className="flex items-start justify-between gap-2 mb-2">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <Badge variant={thread.root.sender_type === 'parent' ? 'secondary' : 'default'}>
+                                {thread.root.sender_type === 'parent' ? 'From Parent' : 'Your Reply'}
+                              </Badge>
+                              {thread.root.sender_type === 'parent' && !thread.root.teacher_read && (
+                                <Badge variant="destructive" className="text-xs">New</Badge>
+                              )}
+                              <span className="text-xs text-gray-500">
+                                {new Date(thread.root.created_at).toLocaleDateString('en-US', {
+                                  month: 'short',
+                                  day: 'numeric',
+                                  year: 'numeric',
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })}
+                              </span>
+                            </div>
+                          </div>
+                          <h5 className="font-semibold text-sm sm:text-base mb-2 break-words">{thread.root.subject}</h5>
+                          <p className="text-sm text-gray-700 whitespace-pre-wrap break-words">{thread.root.message}</p>
+                          {thread.root.parent && (
+                            <p className="text-xs text-gray-500 mt-2">
+                              From: {thread.root.parent.parent1_first_name} {thread.root.parent.parent1_last_name}
+                            </p>
+                          )}
+                          {thread.root.sender_type === 'parent' && !thread.root.teacher_read && (
+                            <Button
+                              variant="link"
+                              size="sm"
+                              onClick={() => markMessageAsRead(thread.root.id)}
+                              className="mt-2 p-0 h-auto text-xs"
+                            >
+                              Mark as read
+                            </Button>
+                          )}
+                        </div>
+
+                        {/* Replies */}
+                        {thread.replies.length > 0 && (
+                          <div className="border-t">
+                            {thread.replies.map((reply, index) => (
+                              <div
+                                key={reply.id}
+                                className={`p-4 pl-8 ${reply.sender_type === 'parent' ? 'bg-blue-50/50' : 'bg-green-50/50'} ${
+                                  index !== thread.replies.length - 1 ? 'border-b' : ''
+                                }`}
+                              >
+                                <div className="flex items-start justify-between gap-2 mb-2">
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <Reply className="h-3 w-3 text-gray-400" />
+                                    <Badge variant={reply.sender_type === 'parent' ? 'secondary' : 'default'} className="text-xs">
+                                      {reply.sender_type === 'parent' ? 'From Parent' : 'Your Reply'}
+                                    </Badge>
+                                    {reply.sender_type === 'parent' && !reply.teacher_read && (
+                                      <Badge variant="destructive" className="text-xs">New</Badge>
+                                    )}
+                                    <span className="text-xs text-gray-500">
+                                      {new Date(reply.created_at).toLocaleDateString('en-US', {
+                                        month: 'short',
+                                        day: 'numeric',
+                                        year: 'numeric',
+                                        hour: '2-digit',
+                                        minute: '2-digit'
+                                      })}
+                                    </span>
+                                  </div>
+                                </div>
+                                <p className="text-sm text-gray-700 whitespace-pre-wrap break-words">{reply.message}</p>
+                                {reply.sender_type === 'parent' && !reply.teacher_read && (
+                                  <Button
+                                    variant="link"
+                                    size="sm"
+                                    onClick={() => markMessageAsRead(reply.id)}
+                                    className="mt-2 p-0 h-auto text-xs"
+                                  >
+                                    Mark as read
+                                  </Button>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Reply Form */}
+                        {thread.root.sender_type === 'parent' && (
+                          <div className="p-4 bg-gray-50 border-t">
+                            {replyingTo === thread.root.id ? (
+                              <div className="space-y-3">
+                                <Label htmlFor={`reply-${thread.root.id}`} className="text-sm font-medium">
+                                  Reply to Parent
+                                </Label>
+                                <Textarea
+                                  id={`reply-${thread.root.id}`}
+                                  placeholder="Type your reply here..."
+                                  value={replyText}
+                                  onChange={(e) => setReplyText(e.target.value)}
+                                  rows={3}
+                                  className="w-full resize-none"
+                                />
+                                <div className="flex gap-2">
+                                  <Button
+                                    onClick={() => handleSendReply(thread.root.id)}
+                                    disabled={sendingReply || !replyText}
+                                    size="sm"
+                                    className="gap-2"
+                                  >
+                                    {sendingReply ? (
+                                      <>
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                        Sending...
+                                      </>
+                                    ) : (
+                                      <>
+                                        <Send className="h-4 w-4" />
+                                        Send Reply
+                                      </>
+                                    )}
+                                  </Button>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => {
+                                      setReplyingTo(null)
+                                      setReplyText('')
+                                    }}
+                                  >
+                                    Cancel
+                                  </Button>
+                                </div>
+                              </div>
+                            ) : (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setReplyingTo(thread.root.id)}
+                                className="gap-2"
+                              >
+                                <Reply className="h-4 w-4" />
+                                Reply to Parent
+                              </Button>
+                            )}
+                          </div>
+                        )}
                       </CardContent>
                     </Card>
                   ))}
