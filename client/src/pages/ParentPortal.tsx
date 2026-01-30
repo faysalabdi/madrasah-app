@@ -1117,9 +1117,9 @@ const ParentPortal: React.FC = () => {
                 {/* Quran Progress Card */}
                 <Card>
                   <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <BookOpen className="h-5 w-5 text-primary" />
-                      Quran / Iqra Progress
+                    <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                      <BookOpen className="h-4 w-4 sm:h-5 sm:w-5 text-primary shrink-0" />
+                      <span className="break-words">Quran / Iqra Progress</span>
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
@@ -1149,9 +1149,9 @@ const ParentPortal: React.FC = () => {
                 {/* Behavior Standing Card */}
                 <Card>
                   <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Award className="h-5 w-5 text-primary" />
-                      Behavior Standing
+                    <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                      <Award className="h-4 w-4 sm:h-5 sm:w-5 text-primary shrink-0" />
+                      <span className="break-words">Behavior Standing</span>
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
@@ -1170,9 +1170,9 @@ const ParentPortal: React.FC = () => {
                 {/* Teacher Assignments Card */}
                 <Card>
                   <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <UserCheck className="h-5 w-5 text-primary" />
-                      Teachers
+                    <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                      <UserCheck className="h-4 w-4 sm:h-5 sm:w-5 text-primary shrink-0" />
+                      <span className="break-words">Teachers</span>
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">

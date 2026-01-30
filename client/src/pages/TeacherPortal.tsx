@@ -2356,9 +2356,9 @@ const TeacherPortal: React.FC = () => {
                 {/* Quran Progress Card */}
                 <Card>
                   <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <BookOpen className="h-5 w-5 text-primary" />
-                      Quran / Iqra Progress
+                    <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                      <BookOpen className="h-4 w-4 sm:h-5 sm:w-5 text-primary shrink-0" />
+                      <span className="break-words">Quran / Iqra Progress</span>
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
@@ -2388,9 +2388,9 @@ const TeacherPortal: React.FC = () => {
                 {/* Behavior Standing Card */}
                 <Card>
                   <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Award className="h-5 w-5 text-primary" />
-                      Behavior Standing
+                    <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                      <Award className="h-4 w-4 sm:h-5 sm:w-5 text-primary shrink-0" />
+                      <span className="break-words">Behavior Standing</span>
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
