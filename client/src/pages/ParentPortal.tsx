@@ -109,6 +109,11 @@ const ParentPortal: React.FC = () => {
   const [sendingMessage, setSendingMessage] = useState(false)
   const [messageRecipient, setMessageRecipient] = useState<'quran' | 'islamic_studies' | null>(null)
 
+  // Term selection
+  const [terms, setTerms] = useState<any[]>([])
+  const [selectedTermId, setSelectedTermId] = useState<number | null>(null)
+  const [currentTermId, setCurrentTermId] = useState<number | null>(null)
+
   useEffect(() => {
     // Check authentication and restore session
     const checkAuth = async () => {
@@ -180,6 +185,23 @@ const ParentPortal: React.FC = () => {
   const loadPortalData = async (parentId: number) => {
     try {
       setLoading(true)
+
+      // Load terms
+      const { data: termsData, error: termsError } = await supabase
+        .from('terms')
+        .select('*')
+        .order('created_at', { ascending: false })
+
+      if (!termsError && termsData) {
+        setTerms(termsData)
+        const current = termsData.find((t: any) => t.is_current)
+        if (current) {
+          setCurrentTermId(current.id)
+          if (!selectedTermId) {
+            setSelectedTermId(current.id)
+          }
+        }
+      }
 
       // Load parent data
       const { data: parentData, error: parentError } = await supabase
@@ -295,21 +317,33 @@ const ParentPortal: React.FC = () => {
         setSelectedStudent(updatedStudent as Student)
       }
 
-      // Load attendance
-      const { data: attendanceData } = await supabase
+      // Load attendance (filtered by selected term)
+      let attendanceQuery = supabase
         .from('attendance')
         .select('*')
         .eq('student_id', student.id)
+      
+      if (selectedTermId) {
+        attendanceQuery = attendanceQuery.eq('term_id', selectedTermId)
+      }
+      
+      const { data: attendanceData } = await attendanceQuery
         .order('date', { ascending: false })
         .limit(100)
 
       setAttendance(attendanceData || [])
 
-      // Load behavior notes
-      const { data: behaviorData } = await supabase
+      // Load behavior notes (filtered by selected term)
+      let behaviorQuery = supabase
         .from('behavior_notes')
         .select('*')
         .eq('student_id', student.id)
+      
+      if (selectedTermId) {
+        behaviorQuery = behaviorQuery.eq('term_id', selectedTermId)
+      }
+      
+      const { data: behaviorData } = await behaviorQuery
         .order('date', { ascending: false })
         .limit(20)
 
@@ -335,31 +369,49 @@ const ParentPortal: React.FC = () => {
 
       setBehaviorNotes(behaviorData || [])
 
-      // Load homework
-      const { data: homeworkData } = await supabase
+      // Load homework (filtered by selected term)
+      let homeworkQuery = supabase
         .from('homework')
         .select('*')
         .eq('student_id', student.id)
+      
+      if (selectedTermId) {
+        homeworkQuery = homeworkQuery.eq('term_id', selectedTermId)
+      }
+      
+      const { data: homeworkData } = await homeworkQuery
         .order('assigned_date', { ascending: false })
         .limit(20)
 
       setHomework(homeworkData || [])
 
-      // Load student notes
-      const { data: notesData } = await supabase
+      // Load student notes (filtered by selected term)
+      let notesQuery = supabase
         .from('student_notes')
         .select('*')
         .eq('student_id', student.id)
+      
+      if (selectedTermId) {
+        notesQuery = notesQuery.eq('term_id', selectedTermId)
+      }
+      
+      const { data: notesData } = await notesQuery
         .order('created_at', { ascending: false })
         .limit(50)
 
       setStudentNotes(notesData || [])
 
-      // Load class content
-      const { data: classContentData } = await supabase
+      // Load class content (filtered by selected term)
+      let classContentQuery = supabase
         .from('class_content')
         .select('*')
         .eq('student_id', student.id)
+      
+      if (selectedTermId) {
+        classContentQuery = classContentQuery.eq('term_id', selectedTermId)
+      }
+      
+      const { data: classContentData } = await classContentQuery
         .order('date', { ascending: false })
         .order('created_at', { ascending: false })
 
@@ -612,21 +664,17 @@ const ParentPortal: React.FC = () => {
       return students.every(student => hasPaidTermFees(student.id))
     }
     
-    // Check for specific student - ONLY count payments explicitly for this student
+    // Check for specific student - ONLY count payments for the CURRENT TERM
     // Payments with student_id === null are NOT counted for specific students
     // Only count succeeded payments (not refunded, canceled, or failed)
     const studentPayments = payments.filter(p => 
       p.student_id === studentId && // Must match exactly - no null checks
       p.paid_term_fees && 
-      p.status === 'succeeded' // Only count successful payments, not refunded/canceled/failed
+      p.status === 'succeeded' && // Only count successful payments, not refunded/canceled/failed
+      p.term_id === currentTermId // CRITICAL: Only check payments for current term
     )
-    if (studentPayments.length === 0) return false
     
-    const lastPayment = studentPayments[0]
-    const lastPaymentDate = new Date(lastPayment.created_at)
-    const threeMonthsAgo = new Date()
-    threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3)
-    return lastPaymentDate >= threeMonthsAgo
+    return studentPayments.length > 0
   }
 
   // Check if term fees are due (for all students)
@@ -1073,6 +1121,44 @@ const ParentPortal: React.FC = () => {
               <span className="block sm:inline">Student ID: {selectedStudent?.student_id || `STU-${selectedStudent?.id.toString().padStart(4, '0')}`}</span>
             </DialogDescription>
           </DialogHeader>
+
+          {/* Term Selector within Student Profile */}
+          {terms.length > 0 && (
+            <div className="mt-4 p-3 bg-muted rounded-lg">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                <Label htmlFor="student-term-select" className="text-sm font-medium whitespace-nowrap flex items-center gap-2">
+                  <Calendar className="h-4 w-4" />
+                  View Term:
+                </Label>
+                <Select
+                  value={selectedTermId?.toString() || ''}
+                  onValueChange={(value) => {
+                    setSelectedTermId(parseInt(value))
+                    // Reload student data for the new term
+                    if (selectedStudent) {
+                      handleStudentClick(selectedStudent)
+                    }
+                  }}
+                >
+                  <SelectTrigger id="student-term-select" className="w-full sm:w-64">
+                    <SelectValue placeholder="Select term..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {terms.map((term) => (
+                      <SelectItem key={term.id} value={term.id.toString()}>
+                        {term.name} {term.is_current && '(Current)'}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {selectedTermId !== currentTermId && (
+                  <Badge variant="secondary" className="whitespace-nowrap">
+                    Historical
+                  </Badge>
+                )}
+              </div>
+            </div>
+          )}
 
           <Tabs defaultValue="profile" className="w-full mt-4">
             <TabsList className="flex-wrap h-auto w-full gap-1">

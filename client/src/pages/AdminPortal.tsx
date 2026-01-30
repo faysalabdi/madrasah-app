@@ -142,6 +142,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { useToast } from '@/hooks/use-toast'
+import { TermManagement } from '@/components/TermManagement'
 
 interface Student {
   id: number
@@ -190,6 +191,7 @@ interface Payment {
   status: string
   paid_term_fees: boolean
   paid_for_books: boolean
+  term_id: number | null
   created_at: string
 }
 
@@ -236,6 +238,8 @@ const AdminPortal: React.FC = () => {
   // Payments
   const [payments, setPayments] = useState<Payment[]>([])
   const [paymentDateFilter, setPaymentDateFilter] = useState<string>('all') // 'all', '7days', '30days', '90days', '1year'
+  const [currentTermId, setCurrentTermId] = useState<number | null>(null)
+  const [terms, setTerms] = useState<any[]>([])
   
   // Invoices
   const [invoices, setInvoices] = useState<any[]>([])
@@ -1634,19 +1638,44 @@ const AdminPortal: React.FC = () => {
         setTeachers([])
       }
 
+      // Load current term to filter payments correctly
+      const { data: currentTermData } = await supabase
+        .from('terms')
+        .select('id')
+        .eq('is_current', true)
+        .single()
+      
+      const currentTermId = currentTermData?.id
+      setCurrentTermId(currentTermId || null)
+      
+      // Load all terms for payment grouping
+      const { data: allTermsData } = await supabase
+        .from('terms')
+        .select('*')
+        .order('academic_year', { ascending: false })
+        .order('term_number', { ascending: false })
+      setTerms(allTermsData || [])
+
       // Load students and parents
       const { data: studentsData } = await supabase
         .from('students')
         .select('*')
         .order('grade', { ascending: true })
       
-      // Calculate payment status for each student (reuse threeMonthsAgo from stats calculation above)
-      const { data: termFeePayments } = await supabase
+      // Calculate payment status for each student - ONLY for current term
+      let termFeePaymentsQuery = supabase
         .from('payments')
-        .select('student_id, created_at, paid_term_fees, status')
+        .select('student_id, created_at, paid_term_fees, status, term_id')
         .eq('paid_term_fees', true)
         .eq('status', 'succeeded')
         .not('student_id', 'is', null)
+      
+      // Filter by current term if one exists
+      if (currentTermId) {
+        termFeePaymentsQuery = termFeePaymentsQuery.eq('term_id', currentTermId)
+      }
+      
+      const { data: termFeePayments } = await termFeePaymentsQuery
       
       // Create a map of student payment status
       const studentPaymentMap = new Map<number, { hasPaid: boolean; lastPaymentDate: string | null }>()
@@ -1654,32 +1683,24 @@ const AdminPortal: React.FC = () => {
       if (termFeePayments) {
         termFeePayments.forEach(payment => {
           if (payment.student_id) {
-            const paymentDate = new Date(payment.created_at)
             const existing = studentPaymentMap.get(payment.student_id)
             
-            // Check if payment is within last 3 months
-            const isRecent = paymentDate >= threeMonthsAgo
-            
+            // Since we're filtering by current term, any payment found means they've paid
             // Keep the most recent payment date
             if (!existing) {
               studentPaymentMap.set(payment.student_id, {
-                hasPaid: isRecent,
+                hasPaid: true,
                 lastPaymentDate: payment.created_at
               })
             } else {
               const existingDate = existing.lastPaymentDate ? new Date(existing.lastPaymentDate) : new Date(0)
+              const paymentDate = new Date(payment.created_at)
               const isNewer = paymentDate > existingDate
               
               if (isNewer) {
                 studentPaymentMap.set(payment.student_id, {
-                  hasPaid: isRecent || existing.hasPaid,
-                  lastPaymentDate: payment.created_at
-                })
-              } else if (existing.hasPaid && isRecent) {
-                // Keep existing date but update hasPaid status
-                studentPaymentMap.set(payment.student_id, {
                   hasPaid: true,
-                  lastPaymentDate: existing.lastPaymentDate
+                  lastPaymentDate: payment.created_at
                 })
               }
             }
@@ -1855,6 +1876,7 @@ const AdminPortal: React.FC = () => {
           status: 'succeeded',
           paid_term_fees: newPayment.term_fees,
           paid_for_books: studentBookAmount > 0,
+          term_id: currentTermId, // Add current term ID
           created_at: newPayment.payment_date,
           metadata: {
             payment_method: 'manual',
@@ -2521,6 +2543,7 @@ const AdminPortal: React.FC = () => {
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="flex-wrap h-auto w-full gap-1">
               <TabsTrigger value="dashboard" className="text-xs sm:text-sm px-2 sm:px-3">Dashboard</TabsTrigger>
+              <TabsTrigger value="terms" className="text-xs sm:text-sm px-2 sm:px-3">Terms</TabsTrigger>
               <TabsTrigger value="payments" className="text-xs sm:text-sm px-2 sm:px-3">Payments</TabsTrigger>
               <TabsTrigger value="invoices" className="text-xs sm:text-sm px-2 sm:px-3">Invoices</TabsTrigger>
               <TabsTrigger value="email" className="text-xs sm:text-sm px-2 sm:px-3">Email</TabsTrigger>
@@ -2529,6 +2552,11 @@ const AdminPortal: React.FC = () => {
               <TabsTrigger value="parents" className="text-xs sm:text-sm px-2 sm:px-3">Parents</TabsTrigger>
               <TabsTrigger value="admins" className="text-xs sm:text-sm px-2 sm:px-3">Admins</TabsTrigger>
             </TabsList>
+
+            {/* Terms Tab */}
+            <TabsContent value="terms" className="mt-6">
+              <TermManagement />
+            </TabsContent>
 
             {/* Dashboard Tab */}
             <TabsContent value="dashboard" className="mt-6">
@@ -2810,126 +2838,148 @@ const AdminPortal: React.FC = () => {
                   <div className="flex justify-between items-start mb-2">
                     <div>
                       <CardTitle>Payment History</CardTitle>
-                      <CardDescription>Click the trash icon to delete a payment record</CardDescription>
+                      <CardDescription>Payments grouped by term</CardDescription>
                     </div>
-                    <Select value={paymentDateFilter} onValueChange={setPaymentDateFilter}>
-                      <SelectTrigger className="w-[180px]">
-                        <SelectValue placeholder="Filter by date" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Time</SelectItem>
-                        <SelectItem value="7days">Last 7 Days</SelectItem>
-                        <SelectItem value="30days">Last 30 Days</SelectItem>
-                        <SelectItem value="90days">Last 90 Days</SelectItem>
-                        <SelectItem value="1year">Last Year</SelectItem>
-                      </SelectContent>
-                    </Select>
                   </div>
                 </CardHeader>
                 <CardContent>
                   {(() => {
-                    // Filter payments by date range
-                    const now = new Date()
-                    const filteredPayments = payments.filter((payment) => {
-                      if (paymentDateFilter === 'all') return true
-                      
-                      const paymentDate = new Date(payment.created_at)
-                      const daysDiff = Math.floor((now.getTime() - paymentDate.getTime()) / (1000 * 60 * 60 * 24))
-                      
-                      switch (paymentDateFilter) {
-                        case '7days':
-                          return daysDiff <= 7
-                        case '30days':
-                          return daysDiff <= 30
-                        case '90days':
-                          return daysDiff <= 90
-                        case '1year':
-                          return daysDiff <= 365
-                        default:
-                          return true
+                    // Group payments by term
+                    const paymentsByTerm = new Map<number | null, typeof payments>()
+                    
+                    payments.forEach(payment => {
+                      const termId = payment.term_id || null
+                      if (!paymentsByTerm.has(termId)) {
+                        paymentsByTerm.set(termId, [])
                       }
+                      paymentsByTerm.get(termId)!.push(payment)
                     })
 
-                    if (filteredPayments.length === 0) {
+                    if (payments.length === 0) {
                       return (
                         <div className="text-center py-8 text-gray-500">
-                          No payments found for the selected period.
+                          No payments found.
                         </div>
                       )
                     }
 
+                    // Sort terms: current term first, then by most recent
+                    const sortedTermEntries = Array.from(paymentsByTerm.entries()).sort((a, b) => {
+                      const termIdA = a[0]
+                      const termIdB = b[0]
+                      
+                      // Current term first
+                      if (termIdA === currentTermId) return -1
+                      if (termIdB === currentTermId) return 1
+                      
+                      // Then by term (most recent first)
+                      if (termIdA === null) return 1 // null/unknown terms last
+                      if (termIdB === null) return -1
+                      
+                      const termA = terms.find(t => t.id === termIdA)
+                      const termB = terms.find(t => t.id === termIdB)
+                      
+                      if (!termA) return 1
+                      if (!termB) return -1
+                      
+                      // Sort by year then term number (descending)
+                      if (termA.academic_year !== termB.academic_year) {
+                        return termB.academic_year.localeCompare(termA.academic_year)
+                      }
+                      return termB.term_number - termA.term_number
+                    })
+
                     return (
-                      <div className="space-y-2">
-                        <div className="text-sm text-gray-600 mb-4">
-                          Showing {filteredPayments.length} payment{filteredPayments.length !== 1 ? 's' : ''}
-                        </div>
-                        {filteredPayments.map((payment) => {
-                      const parent = parents.find(p => p.id === payment.parent_id)
-                      const student = payment.student_id ? students.find(s => s.id === payment.student_id) : null
-                      return (
-                        <div key={payment.id} className="border rounded-lg p-3 flex justify-between items-center">
-                          <div className="flex-1">
-                            <p className="font-medium">
-                              ${payment.amount} {payment.currency.toUpperCase()}
-                            </p>
-                            <p className="text-sm text-gray-600">
-                              {parent?.parent1_first_name} {parent?.parent1_last_name}
-                              {student && ` - ${student.first_name} ${student.last_name}`}
-                            </p>
-                            <p className="text-xs text-gray-500">
-                              {new Date(payment.created_at).toLocaleDateString()}
-                            </p>
-                          </div>
-                          <div className="flex gap-2 items-center">
-                            <Badge variant={payment.status === 'succeeded' ? 'default' : 'secondary'}>
-                              {payment.status}
-                            </Badge>
-                            {payment.paid_term_fees && <Badge variant="outline">Term Fees</Badge>}
-                            {payment.paid_for_books && <Badge variant="outline">Books</Badge>}
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleEditPayment(payment)}
-                              className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={async () => {
-                                if (confirm(`Are you sure you want to delete this payment record for $${payment.amount}? This action cannot be undone.`)) {
-                                  try {
-                                    const { error } = await supabase
-                                      .from('payments')
-                                      .delete()
-                                      .eq('id', payment.id)
-                                    
-                                    if (error) throw error
-                                    
-                                    toast({
-                                      title: 'Success',
-                                      description: 'Payment record deleted successfully.',
-                                    })
-                                    
-                                    loadDashboardData()
-                                  } catch (err: any) {
-                                    toast({
-                                      title: 'Error',
-                                      description: err.message || 'Failed to delete payment record.',
-                                      variant: 'destructive',
-                                    })
-                                  }
-                                }
-                              }}
-                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </div>
-                      )
-                    })}
+                      <div className="space-y-6">
+                        {sortedTermEntries.map(([termId, termPayments]) => {
+                          const term = termId ? terms.find(t => t.id === termId) : null
+                          const termName = term ? term.name : 'No Term Assigned'
+                          const isCurrent = termId === currentTermId
+                          const totalAmount = termPayments.reduce((sum, p) => sum + p.amount, 0)
+                          
+                          return (
+                            <div key={termId || 'null'} className="space-y-2">
+                              <div className="flex items-center justify-between pb-2 border-b">
+                                <div className="flex items-center gap-2">
+                                  <h3 className="text-lg font-semibold">{termName}</h3>
+                                  {isCurrent && <Badge>Current Term</Badge>}
+                                </div>
+                                <div className="text-sm text-gray-600">
+                                  {termPayments.length} payment{termPayments.length !== 1 ? 's' : ''} • ${totalAmount.toFixed(2)} AUD
+                                </div>
+                              </div>
+                              <div className="space-y-2">
+                                {termPayments.map((payment) => {
+                                  const parent = parents.find(p => p.id === payment.parent_id)
+                                  const student = payment.student_id ? students.find(s => s.id === payment.student_id) : null
+                                  return (
+                                    <div key={payment.id} className="border rounded-lg p-3 flex justify-between items-center bg-white">
+                                      <div className="flex-1">
+                                        <p className="font-medium">
+                                          ${payment.amount} {payment.currency.toUpperCase()}
+                                        </p>
+                                        <p className="text-sm text-gray-600">
+                                          {parent?.parent1_first_name} {parent?.parent1_last_name}
+                                          {student && ` - ${student.first_name} ${student.last_name}`}
+                                        </p>
+                                        <p className="text-xs text-gray-500">
+                                          {new Date(payment.created_at).toLocaleDateString()}
+                                        </p>
+                                      </div>
+                                      <div className="flex gap-2 items-center">
+                                        <Badge variant={payment.status === 'succeeded' ? 'default' : 'secondary'}>
+                                          {payment.status}
+                                        </Badge>
+                                        {payment.paid_term_fees && <Badge variant="outline">Term Fees</Badge>}
+                                        {payment.paid_for_books && <Badge variant="outline">Books</Badge>}
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          onClick={() => handleEditPayment(payment)}
+                                          className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                        >
+                                          <Pencil className="h-4 w-4" />
+                                        </Button>
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          onClick={async () => {
+                                            if (confirm(`Are you sure you want to delete this payment record for $${payment.amount}? This action cannot be undone.`)) {
+                                              try {
+                                                const { error } = await supabase
+                                                  .from('payments')
+                                                  .delete()
+                                                  .eq('id', payment.id)
+                                                
+                                                if (error) throw error
+                                                
+                                                toast({
+                                                  title: 'Success',
+                                                  description: 'Payment record deleted successfully.',
+                                                })
+                                                
+                                                loadDashboardData()
+                                              } catch (err: any) {
+                                                toast({
+                                                  title: 'Error',
+                                                  description: err.message || 'Failed to delete payment record.',
+                                                  variant: 'destructive',
+                                                })
+                                              }
+                                            }
+                                          }}
+                                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                        >
+                                          <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                      </div>
+                                    </div>
+                                  )
+                                })}
+                              </div>
+                            </div>
+                          )
+                        })}
                       </div>
                     )
                   })()}
