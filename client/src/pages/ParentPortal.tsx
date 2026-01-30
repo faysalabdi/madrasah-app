@@ -1112,79 +1112,79 @@ const ParentPortal: React.FC = () => {
             </TabsList>
 
             {/* Profile Tab */}
-            <TabsContent value="profile" className="mt-4 space-y-3">
+            <TabsContent value="profile" className="mt-4 sm:mt-6 space-y-4 sm:space-y-5">
               {/* Simple Info List */}
-              <div className="space-y-3">
+              <div className="space-y-4 sm:space-y-5">
                 {/* Quran Progress */}
-                <div className="bg-white border border-gray-200 rounded-lg p-3">
-                  <div className="flex items-center gap-2 mb-2">
-                    <BookOpen className="h-4 w-4 text-primary shrink-0" />
-                    <h3 className="text-sm font-semibold text-gray-900">Quran / Iqra Progress</h3>
+                <div className="bg-white border border-gray-200 rounded-lg p-4 sm:p-5">
+                  <div className="flex items-center gap-2 mb-3">
+                    <BookOpen className="h-5 w-5 text-primary shrink-0" />
+                    <h3 className="text-base sm:text-lg font-semibold text-gray-900">Quran / Iqra Progress</h3>
                   </div>
                   {(() => {
                     const progress = getQuranProgressDisplay()
                     if (progress) {
                       return (
-                        <div className="space-y-1 pl-6">
+                        <div className="space-y-2 pl-7">
                           <div className="flex items-center gap-2">
-                            <span className="text-xs text-gray-500">Type:</span>
-                            <Badge variant="outline" className="text-xs px-2 py-0.5">
+                            <span className="text-sm text-gray-600">Type:</span>
+                            <Badge variant="outline" className="text-sm px-3 py-1">
                               {progress.type === 'iqra' ? 'Iqra' : 'Quran'}
                             </Badge>
                           </div>
                           <div className="flex flex-col">
-                            <span className="text-xs text-gray-500 mb-0.5">Progress:</span>
-                            <span className="text-base font-bold text-primary">{progress.display}</span>
+                            <span className="text-sm text-gray-600 mb-1">Progress:</span>
+                            <span className="text-xl sm:text-2xl font-bold text-primary">{progress.display}</span>
                           </div>
                         </div>
                       )
                     }
-                    return <p className="text-xs text-gray-500 pl-6">Not set yet</p>
+                    return <p className="text-sm text-gray-500 pl-7">Not set yet</p>
                   })()}
                 </div>
 
                 {/* Behavior Standing */}
-                <div className="bg-white border border-gray-200 rounded-lg p-3">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Award className="h-4 w-4 text-primary shrink-0" />
-                    <h3 className="text-sm font-semibold text-gray-900">Behavior Standing</h3>
+                <div className="bg-white border border-gray-200 rounded-lg p-4 sm:p-5">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Award className="h-5 w-5 text-primary shrink-0" />
+                    <h3 className="text-base sm:text-lg font-semibold text-gray-900">Behavior Standing</h3>
                   </div>
                   {selectedStudent?.behavior_standing ? (
-                    <div className="pl-6">
-                      <Badge className={`${getBehaviorStandingColor(selectedStudent.behavior_standing)} border text-xs font-medium px-2 py-1`}>
+                    <div className="pl-7">
+                      <Badge className={`${getBehaviorStandingColor(selectedStudent.behavior_standing)} border text-sm sm:text-base font-semibold px-4 py-2`}>
                         {getBehaviorStandingLabel(selectedStudent.behavior_standing)}
                       </Badge>
                     </div>
                   ) : (
-                    <p className="text-xs text-gray-500 pl-6">Not set yet</p>
+                    <p className="text-sm text-gray-500 pl-7">Not set yet</p>
                   )}
                 </div>
 
                 {/* Teachers */}
-                <div className="bg-white border border-gray-200 rounded-lg p-3">
-                  <div className="flex items-center gap-2 mb-2">
-                    <UserCheck className="h-4 w-4 text-primary shrink-0" />
-                    <h3 className="text-sm font-semibold text-gray-900">Teachers</h3>
+                <div className="bg-white border border-gray-200 rounded-lg p-4 sm:p-5">
+                  <div className="flex items-center gap-2 mb-3">
+                    <UserCheck className="h-5 w-5 text-primary shrink-0" />
+                    <h3 className="text-base sm:text-lg font-semibold text-gray-900">Teachers</h3>
                   </div>
-                  <div className="space-y-2 pl-6">
+                  <div className="space-y-3 pl-7">
                     <div>
-                      <p className="text-xs text-gray-500">Quran (First Hour)</p>
+                      <p className="text-sm text-gray-600 mb-1">Quran Teacher (First Hour)</p>
                       {quranTeacher ? (
-                        <p className="text-sm font-medium">
+                        <p className="text-base font-semibold">
                           {quranTeacher.first_name} {quranTeacher.last_name}
                         </p>
                       ) : (
-                        <p className="text-xs text-gray-400">Not assigned</p>
+                        <p className="text-sm text-gray-400">Not assigned</p>
                       )}
                     </div>
                     <div>
-                      <p className="text-xs text-gray-500">Islamic Studies (Second Hour)</p>
+                      <p className="text-sm text-gray-600 mb-1">Islamic Studies Teacher (Second Hour)</p>
                       {islamicStudiesTeacher ? (
-                        <p className="text-sm font-medium">
+                        <p className="text-base font-semibold">
                           {islamicStudiesTeacher.first_name} {islamicStudiesTeacher.last_name}
                         </p>
                       ) : (
-                        <p className="text-xs text-gray-400">Not assigned</p>
+                        <p className="text-sm text-gray-400">Not assigned</p>
                       )}
                     </div>
                   </div>
@@ -1192,16 +1192,16 @@ const ParentPortal: React.FC = () => {
               </div>
 
               {/* Attendance Statistics */}
-              <div className="bg-white border border-gray-200 rounded-lg p-3">
-                <div className="flex items-center gap-2 mb-2">
-                  <TrendingUp className="h-4 w-4 text-primary shrink-0" />
-                  <h3 className="text-sm font-semibold text-gray-900">Attendance Summary</h3>
+              <div className="bg-white border border-gray-200 rounded-lg p-4 sm:p-5">
+                <div className="flex items-center gap-2 mb-3">
+                  <TrendingUp className="h-5 w-5 text-primary shrink-0" />
+                  <h3 className="text-base sm:text-lg font-semibold text-gray-900">Attendance Summary</h3>
                 </div>
                 {attendance.length === 0 ? (
-                  <p className="text-xs text-gray-500 pl-6">No records yet</p>
+                  <p className="text-sm text-gray-500 pl-7">No records yet</p>
                 ) : (
-                  <div className="space-y-1.5 pl-6">
-                    <p className="text-xs text-gray-500 mb-2">Total: {attendance.length} days</p>
+                  <div className="space-y-2 pl-7">
+                    <p className="text-sm text-gray-600 mb-3 font-medium">Total: {attendance.length} days</p>
                     {(() => {
                       const stats = {
                         presentWithUniform: attendance.filter(a => a.status === 'present_with_uniform').length,
@@ -1214,39 +1214,39 @@ const ParentPortal: React.FC = () => {
                       return (
                         <>
                           {stats.presentWithUniform > 0 && (
-                            <div className="flex justify-between items-center">
-                              <span className="text-xs text-gray-600">Present (Uniform)</span>
-                              <span className="text-xs font-medium text-green-700">{stats.presentWithUniform}</span>
+                            <div className="flex justify-between items-center py-1">
+                              <span className="text-sm text-gray-700">Present (Uniform)</span>
+                              <span className="text-base font-semibold text-green-700">{stats.presentWithUniform}</span>
                             </div>
                           )}
                           {stats.presentNoUniform > 0 && (
-                            <div className="flex justify-between items-center">
-                              <span className="text-xs text-gray-600">Present (No Uniform)</span>
-                              <span className="text-xs font-medium text-yellow-700">{stats.presentNoUniform}</span>
+                            <div className="flex justify-between items-center py-1">
+                              <span className="text-sm text-gray-700">Present (No Uniform)</span>
+                              <span className="text-base font-semibold text-yellow-700">{stats.presentNoUniform}</span>
                             </div>
                           )}
                           {stats.lateUniform > 0 && (
-                            <div className="flex justify-between items-center">
-                              <span className="text-xs text-gray-600">Late (Uniform)</span>
-                              <span className="text-xs font-medium text-orange-700">{stats.lateUniform}</span>
+                            <div className="flex justify-between items-center py-1">
+                              <span className="text-sm text-gray-700">Late (Uniform)</span>
+                              <span className="text-base font-semibold text-orange-700">{stats.lateUniform}</span>
                             </div>
                           )}
                           {stats.lateNoUniform > 0 && (
-                            <div className="flex justify-between items-center">
-                              <span className="text-xs text-gray-600">Late (No Uniform)</span>
-                              <span className="text-xs font-medium text-orange-600">{stats.lateNoUniform}</span>
+                            <div className="flex justify-between items-center py-1">
+                              <span className="text-sm text-gray-700">Late (No Uniform)</span>
+                              <span className="text-base font-semibold text-orange-600">{stats.lateNoUniform}</span>
                             </div>
                           )}
                           {stats.absentExcused > 0 && (
-                            <div className="flex justify-between items-center">
-                              <span className="text-xs text-gray-600">Absent (Excused)</span>
-                              <span className="text-xs font-medium text-blue-700">{stats.absentExcused}</span>
+                            <div className="flex justify-between items-center py-1">
+                              <span className="text-sm text-gray-700">Absent (Excused)</span>
+                              <span className="text-base font-semibold text-blue-700">{stats.absentExcused}</span>
                             </div>
                           )}
                           {stats.absentUnexcused > 0 && (
-                            <div className="flex justify-between items-center">
-                              <span className="text-xs text-gray-600">Absent (No Excuse)</span>
-                              <span className="text-xs font-medium text-red-700">{stats.absentUnexcused}</span>
+                            <div className="flex justify-between items-center py-1">
+                              <span className="text-sm text-gray-700">Absent (No Excuse)</span>
+                              <span className="text-base font-semibold text-red-700">{stats.absentUnexcused}</span>
                             </div>
                           )}
                         </>
