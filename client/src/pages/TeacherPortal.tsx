@@ -2448,26 +2448,26 @@ const TeacherPortal: React.FC = () => {
                     <BookOpen className="h-5 w-5 text-primary shrink-0" />
                     <h3 className="text-base sm:text-lg font-semibold text-gray-900">Quran / Iqra Progress</h3>
                   </div>
-                  {(() => {
-                    const progress = getQuranProgressDisplay()
-                    if (progress) {
-                      return (
+                    {(() => {
+                      const progress = getQuranProgressDisplay()
+                      if (progress) {
+                        return (
                         <div className="space-y-2 pl-7">
                           <div className="flex items-center gap-2">
                             <span className="text-sm text-gray-600">Type:</span>
                             <Badge variant="outline" className="text-sm px-3 py-1">
-                              {progress.type === 'iqra' ? 'Iqra' : 'Quran'}
-                            </Badge>
-                          </div>
+                                {progress.type === 'iqra' ? 'Iqra' : 'Quran'}
+                              </Badge>
+                            </div>
                           <div className="flex flex-col">
                             <span className="text-sm text-gray-600 mb-1">Progress:</span>
                             <span className="text-xl sm:text-2xl font-bold text-primary">{progress.display}</span>
+                            </div>
                           </div>
-                        </div>
-                      )
-                    }
+                        )
+                      }
                     return <p className="text-sm text-gray-500 pl-7">Not set yet</p>
-                  })()}
+                    })()}
                 </div>
 
                 {/* Behavior Standing */}
@@ -2476,21 +2476,21 @@ const TeacherPortal: React.FC = () => {
                     <Award className="h-5 w-5 text-primary shrink-0" />
                     <h3 className="text-base sm:text-lg font-semibold text-gray-900">Behavior Standing</h3>
                   </div>
-                  {selectedStudent?.behavior_standing ? (
+                    {selectedStudent?.behavior_standing ? (
                     <div className="pl-7">
-                      <Badge className={`${
-                        selectedStudent.behavior_standing === 'excellent' ? 'bg-green-100 text-green-800 border-green-300' :
-                        selectedStudent.behavior_standing === 'good' ? 'bg-blue-100 text-blue-800 border-blue-300' :
-                        selectedStudent.behavior_standing === 'satisfactory' ? 'bg-yellow-100 text-yellow-800 border-yellow-300' :
-                        selectedStudent.behavior_standing === 'needs_improvement' ? 'bg-orange-100 text-orange-800 border-orange-300' :
-                        'bg-red-100 text-red-800 border-red-300'
+                        <Badge className={`${
+                          selectedStudent.behavior_standing === 'excellent' ? 'bg-green-100 text-green-800 border-green-300' :
+                          selectedStudent.behavior_standing === 'good' ? 'bg-blue-100 text-blue-800 border-blue-300' :
+                          selectedStudent.behavior_standing === 'satisfactory' ? 'bg-yellow-100 text-yellow-800 border-yellow-300' :
+                          selectedStudent.behavior_standing === 'needs_improvement' ? 'bg-orange-100 text-orange-800 border-orange-300' :
+                          'bg-red-100 text-red-800 border-red-300'
                       } border text-sm sm:text-base font-semibold px-4 py-2`}>
-                        {selectedStudent.behavior_standing.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                      </Badge>
-                    </div>
-                  ) : (
+                          {selectedStudent.behavior_standing.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                        </Badge>
+                      </div>
+                    ) : (
                     <p className="text-sm text-gray-500 pl-7">Not set yet</p>
-                  )}
+                    )}
                 </div>
               </div>
 
@@ -2500,26 +2500,26 @@ const TeacherPortal: React.FC = () => {
                   <User className="h-5 w-5 text-primary shrink-0" />
                   <h3 className="text-base sm:text-lg font-semibold text-gray-900">Parent Contact</h3>
                 </div>
-                {parentInfo ? (
+                  {parentInfo ? (
                   <div className="space-y-3 pl-7">
-                    <div>
+                      <div>
                       <p className="text-sm text-gray-600 mb-1">Name</p>
                       <p className="text-base font-semibold">{parentInfo.first_name} {parentInfo.last_name}</p>
-                    </div>
-                    <div>
+                      </div>
+                      <div>
                       <p className="text-sm text-gray-600 mb-1">Email</p>
                       <p className="text-sm font-medium break-all">{parentInfo.email}</p>
-                    </div>
-                    {parentInfo.mobile && (
-                      <div>
+                      </div>
+                      {parentInfo.mobile && (
+                        <div>
                         <p className="text-sm text-gray-600 mb-1">Phone</p>
                         <p className="text-base font-semibold">{parentInfo.mobile}</p>
-                      </div>
-                    )}
-                  </div>
-                ) : (
+                        </div>
+                      )}
+                    </div>
+                  ) : (
                   <p className="text-sm text-gray-500 pl-7">Not available</p>
-                )}
+                  )}
               </div>
 
               {/* Attendance Statistics */}
@@ -2528,9 +2528,9 @@ const TeacherPortal: React.FC = () => {
                   <TrendingUp className="h-5 w-5 text-primary shrink-0" />
                   <h3 className="text-base sm:text-lg font-semibold text-gray-900">Attendance Summary</h3>
                 </div>
-                {(() => {
-                  const chartData = getAttendanceChartData()
-                  if (attendance.length === 0 || chartData.length === 0) {
+                  {(() => {
+                    const chartData = getAttendanceChartData()
+                    if (attendance.length === 0 || chartData.length === 0) {
                     return <p className="text-sm text-gray-500 pl-7">No records yet</p>
                   }
                   const stats = {
@@ -2540,8 +2540,8 @@ const TeacherPortal: React.FC = () => {
                     lateNoUniform: attendance.filter(a => a.status === 'late_no_uniform').length,
                     absentExcused: attendance.filter(a => a.status === 'absent_with_excuse').length,
                     absentUnexcused: attendance.filter(a => a.status === 'absent_no_excuse').length,
-                  }
-                  return (
+                    }
+                    return (
                     <div className="space-y-2 pl-7">
                       <p className="text-sm text-gray-600 mb-3 font-medium">Total: {attendance.length} days</p>
                       {stats.presentWithUniform > 0 && (
@@ -2581,8 +2581,8 @@ const TeacherPortal: React.FC = () => {
                         </div>
                       )}
                     </div>
-                  )
-                })()}
+                    )
+                  })()}
               </div>
             </TabsContent>
 

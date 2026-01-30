@@ -1536,24 +1536,30 @@ const AdminPortal: React.FC = () => {
         supabase.from('payments').select('id', { count: 'exact' }),
       ])
 
-      // Count unpaid students (students without recent term fee payments)
-      const threeMonthsAgo = new Date()
-      threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3)
+      // Count unpaid students (students without term fee payments for current term)
+      let unpaidCount = 0
       
-      const { data: allPayments } = await supabase
-        .from('payments')
-        .select('student_id, created_at, paid_term_fees, status')
-        .eq('paid_term_fees', true)
-        .eq('status', 'succeeded')
+      if (currentTermId) {
+        // Get all students who have paid for the current term
+        const { data: currentTermPayments } = await supabase
+          .from('payments')
+          .select('student_id')
+          .eq('paid_term_fees', true)
+          .eq('status', 'succeeded')
+          .eq('term_id', currentTermId)
+          .not('student_id', 'is', null)
 
-      const paidStudentIds = new Set(
-        allPayments
-          ?.filter(p => p.student_id && new Date(p.created_at) >= threeMonthsAgo)
-          .map(p => p.student_id) || []
-      )
+        const paidStudentIds = new Set(
+          currentTermPayments?.map(p => p.student_id) || []
+        )
 
-      const { data: allStudents } = await supabase.from('students').select('id')
-      const unpaidCount = (allStudents?.length || 0) - paidStudentIds.size
+        const { data: allStudents } = await supabase.from('students').select('id')
+        unpaidCount = (allStudents?.length || 0) - paidStudentIds.size
+      } else {
+        // If no current term, all students are unpaid
+        const { count } = await supabase.from('students').select('id', { count: 'exact' })
+        unpaidCount = count || 0
+      }
 
       setStats({
         totalParents: parentsRes.count || 0,

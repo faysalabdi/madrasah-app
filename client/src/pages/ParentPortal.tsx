@@ -1168,9 +1168,10 @@ const ParentPortal: React.FC = () => {
           </Card>
         </div>
       </div>
+    </div>
 
-      {/* Student Detail Dialog */}
-      <Dialog open={showStudentDetail} onOpenChange={setShowStudentDetail}>
+    {/* Student Detail Dialog */}
+    <Dialog open={showStudentDetail} onOpenChange={setShowStudentDetail}>
         <DialogContent className="w-[95vw] sm:w-full max-w-5xl max-h-[90vh] overflow-y-auto p-4 sm:p-6">
           <DialogHeader className="space-y-2">
             <DialogTitle className="text-xl sm:text-2xl break-words">
@@ -1902,8 +1903,6 @@ const ParentPortal: React.FC = () => {
           </Tabs>
         </DialogContent>
       </Dialog>
-        </div>
-      </div>
     </div>
   )
 }
