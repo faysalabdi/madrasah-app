@@ -563,6 +563,40 @@ const ParentPortal: React.FC = () => {
 
       if (insertError) throw insertError
 
+      // Send email notification to teacher
+      try {
+        const teacherData = messageRecipient === 'quran' ? quranTeacher : islamicStudiesTeacher
+        if (teacherData) {
+          // Get teacher email from teachers table
+          const { data: teacherDetails } = await supabase
+            .from('teachers')
+            .select('email, first_name, last_name')
+            .eq(messageRecipient === 'quran' ? 'id' : 'id', teacherIdValue)
+            .single()
+
+          if (teacherDetails?.email) {
+            await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/notify-teacher-message`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+              },
+              body: JSON.stringify({
+                teacherEmail: teacherDetails.email,
+                teacherName: `${teacherDetails.first_name} ${teacherDetails.last_name}`,
+                parentName: `${parent.parent1_first_name} ${parent.parent1_last_name}`,
+                studentName: `${selectedStudent.first_name} ${selectedStudent.last_name}`,
+                subject: newMessageSubject,
+                messagePreview: newMessageText,
+              }),
+            })
+          }
+        }
+      } catch (notifError) {
+        // Don't fail the message send if notification fails
+        console.error('Failed to send notification:', notifError)
+      }
+
       // Reload messages
       const { data: messagesData } = await supabase
         .from('parent_teacher_messages')
