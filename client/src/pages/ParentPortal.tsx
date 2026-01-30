@@ -1112,8 +1112,8 @@ const ParentPortal: React.FC = () => {
             </TabsList>
 
             {/* Profile Tab */}
-            <TabsContent value="profile" className="mt-6 space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+            <TabsContent value="profile" className="mt-6 space-y-4 sm:space-y-6">
+              <div className="grid grid-cols-1 gap-4 sm:gap-6">
                 {/* Quran Progress Card */}
                 <Card>
                   <CardHeader>
@@ -1128,15 +1128,15 @@ const ParentPortal: React.FC = () => {
                       if (progress) {
                         return (
                           <div>
-                            <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center justify-between mb-2 gap-2">
                               <span className="text-sm text-gray-600">Type</span>
-                              <Badge variant="outline" className="text-base px-3 py-1">
+                              <Badge variant="outline" className="text-sm sm:text-base px-2 sm:px-3 py-1">
                                 {progress.type === 'iqra' ? 'Iqra' : 'Quran'}
                               </Badge>
                             </div>
-                            <div className="flex items-center justify-between">
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-2">
                               <span className="text-sm text-gray-600">Current Progress</span>
-                              <span className="text-2xl font-bold text-primary">{progress.display}</span>
+                              <span className="text-lg sm:text-xl font-bold text-primary break-words">{progress.display}</span>
                             </div>
                           </div>
                         )
@@ -1157,12 +1157,12 @@ const ParentPortal: React.FC = () => {
                   <CardContent>
                     {selectedStudent?.behavior_standing ? (
                       <div className="flex items-center justify-center py-4">
-                        <Badge className={`${getBehaviorStandingColor(selectedStudent.behavior_standing)} border text-lg font-semibold px-6 py-3`}>
+                        <Badge className={`${getBehaviorStandingColor(selectedStudent.behavior_standing)} border text-sm sm:text-base font-semibold px-3 sm:px-6 py-2 sm:py-3 max-w-full break-words text-center`}>
                           {getBehaviorStandingLabel(selectedStudent.behavior_standing)}
                         </Badge>
                       </div>
                     ) : (
-                      <p className="text-gray-500 text-center py-4">Behavior standing not set yet.</p>
+                      <p className="text-gray-500 text-center py-4 text-sm">Behavior standing not set yet.</p>
                     )}
                   </CardContent>
                 </Card>
@@ -1177,23 +1177,23 @@ const ParentPortal: React.FC = () => {
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div>
-                      <p className="text-sm text-gray-600 mb-1">Quran Teacher (First Hour)</p>
+                      <p className="text-xs sm:text-sm text-gray-600 mb-1">Quran Teacher (First Hour)</p>
                       {quranTeacher ? (
-                        <p className="font-semibold text-lg">
+                        <p className="font-semibold text-base sm:text-lg break-words">
                           {quranTeacher.first_name} {quranTeacher.last_name}
                         </p>
                       ) : (
-                        <p className="text-gray-500">Not assigned yet</p>
+                        <p className="text-gray-500 text-sm">Not assigned yet</p>
                       )}
                     </div>
                     <div>
-                      <p className="text-sm text-gray-600 mb-1">Islamic Studies Teacher (Second Hour)</p>
+                      <p className="text-xs sm:text-sm text-gray-600 mb-1">Islamic Studies Teacher (Second Hour)</p>
                       {islamicStudiesTeacher ? (
-                        <p className="font-semibold text-lg">
+                        <p className="font-semibold text-base sm:text-lg break-words">
                           {islamicStudiesTeacher.first_name} {islamicStudiesTeacher.last_name}
                         </p>
                       ) : (
-                        <p className="text-gray-500">Not assigned yet</p>
+                        <p className="text-gray-500 text-sm">Not assigned yet</p>
                       )}
                     </div>
                   </CardContent>
@@ -1203,17 +1203,17 @@ const ParentPortal: React.FC = () => {
               {/* Attendance Statistics Card with Pie Chart */}
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <TrendingUp className="h-5 w-5 text-primary" />
+                  <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                    <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
                     Attendance Statistics
                   </CardTitle>
-                  <CardDescription>
+                  <CardDescription className="text-xs sm:text-sm">
                     Total attendance records: {attendance.length}
                   </CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="overflow-hidden">
                   {attendance.length === 0 ? (
-                    <p className="text-gray-500 text-center py-8">No attendance records yet.</p>
+                    <p className="text-gray-500 text-center py-8 text-sm">No attendance records yet.</p>
                   ) : (
                     <ChartContainer
                       config={{
@@ -1224,7 +1224,7 @@ const ParentPortal: React.FC = () => {
                         'Absent (Excused)': { label: 'Absent (Excused)', color: '#3b82f6' },
                         'Absent (No Excuse)': { label: 'Absent (No Excuse)', color: '#ef4444' },
                       }}
-                      className="h-[400px]"
+                      className="h-[300px] sm:h-[400px] w-full"
                     >
                       <PieChart>
                         <ChartTooltip content={<ChartTooltipContent />} />
@@ -1233,8 +1233,8 @@ const ParentPortal: React.FC = () => {
                           cx="50%"
                           cy="50%"
                           labelLine={false}
-                          label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                          outerRadius={120}
+                          label={false}
+                          outerRadius={window.innerWidth < 640 ? 60 : 120}
                           fill="#8884d8"
                           dataKey="value"
                         >
@@ -1242,7 +1242,10 @@ const ParentPortal: React.FC = () => {
                             <Cell key={`cell-${index}`} fill={entry.color} />
                           ))}
                         </Pie>
-                        <Legend />
+                        <Legend 
+                          wrapperStyle={{ fontSize: '12px' }}
+                          iconSize={8}
+                        />
                       </PieChart>
                     </ChartContainer>
                   )}

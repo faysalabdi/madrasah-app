@@ -2340,18 +2340,19 @@ const TeacherPortal: React.FC = () => {
 
             {/* Profile Tab */}
             <TabsContent value="profile" className="mt-6 space-y-4">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold flex items-center gap-2">
-                  <UserCheck className="h-5 w-5 text-primary" />
-                  Student Profile
+              <div className="flex items-center justify-between mb-4 gap-2">
+                <h3 className="text-base sm:text-lg font-semibold flex items-center gap-2">
+                  <UserCheck className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+                  <span className="truncate">Student Profile</span>
                 </h3>
-                <Button onClick={() => setShowProfileEditDialog(true)} size="sm" className="gap-2">
-                  <Plus className="h-4 w-4" />
-                  Edit Profile
+                <Button onClick={() => setShowProfileEditDialog(true)} size="sm" className="gap-1 sm:gap-2 shrink-0">
+                  <Plus className="h-3 w-3 sm:h-4 sm:w-4" />
+                  <span className="hidden sm:inline">Edit Profile</span>
+                  <span className="sm:hidden">Edit</span>
                 </Button>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+              <div className="grid grid-cols-1 gap-4 sm:gap-6">
                 {/* Quran Progress Card */}
                 <Card>
                   <CardHeader>
@@ -2366,15 +2367,15 @@ const TeacherPortal: React.FC = () => {
                       if (progress) {
                         return (
                           <div>
-                            <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center justify-between mb-2 gap-2">
                               <span className="text-sm text-gray-600">Type</span>
-                              <Badge variant="outline" className="text-base px-3 py-1">
+                              <Badge variant="outline" className="text-sm sm:text-base px-2 sm:px-3 py-1">
                                 {progress.type === 'iqra' ? 'Iqra' : 'Quran'}
                               </Badge>
                             </div>
-                            <div className="flex items-center justify-between">
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-2">
                               <span className="text-sm text-gray-600">Current Progress</span>
-                              <span className="text-2xl font-bold text-primary">{progress.display}</span>
+                              <span className="text-lg sm:text-xl font-bold text-primary break-words">{progress.display}</span>
                             </div>
                           </div>
                         )
@@ -2401,12 +2402,12 @@ const TeacherPortal: React.FC = () => {
                           selectedStudent.behavior_standing === 'satisfactory' ? 'bg-yellow-100 text-yellow-800 border-yellow-300' :
                           selectedStudent.behavior_standing === 'needs_improvement' ? 'bg-orange-100 text-orange-800 border-orange-300' :
                           'bg-red-100 text-red-800 border-red-300'
-                        } border text-lg font-semibold px-6 py-3`}>
+                        } border text-sm sm:text-base font-semibold px-3 sm:px-6 py-2 sm:py-3 max-w-full break-words text-center`}>
                           {selectedStudent.behavior_standing.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                         </Badge>
                       </div>
                     ) : (
-                      <p className="text-gray-500 text-center py-4">Behavior standing not set yet.</p>
+                      <p className="text-gray-500 text-center py-4 text-sm">Behavior standing not set yet.</p>
                     )}
                   </CardContent>
                 </Card>
@@ -2415,8 +2416,8 @@ const TeacherPortal: React.FC = () => {
               {/* Parent Contact Information */}
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <User className="h-5 w-5 text-primary" />
+                  <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                    <User className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
                     Parent Contact Information
                   </CardTitle>
                 </CardHeader>
@@ -2424,22 +2425,22 @@ const TeacherPortal: React.FC = () => {
                   {parentInfo ? (
                     <div className="space-y-3">
                       <div>
-                        <p className="text-sm text-gray-600">Parent Name</p>
-                        <p className="font-medium">{parentInfo.first_name} {parentInfo.last_name}</p>
+                        <p className="text-xs sm:text-sm text-gray-600">Parent Name</p>
+                        <p className="font-medium text-sm sm:text-base break-words">{parentInfo.first_name} {parentInfo.last_name}</p>
                       </div>
                       <div>
-                        <p className="text-sm text-gray-600">Email</p>
-                        <p className="font-medium">{parentInfo.email}</p>
+                        <p className="text-xs sm:text-sm text-gray-600">Email</p>
+                        <p className="font-medium text-sm sm:text-base break-all">{parentInfo.email}</p>
                       </div>
                       {parentInfo.mobile && (
                         <div>
-                          <p className="text-sm text-gray-600">Phone Number</p>
-                          <p className="font-medium">{parentInfo.mobile}</p>
+                          <p className="text-xs sm:text-sm text-gray-600">Phone Number</p>
+                          <p className="font-medium text-sm sm:text-base">{parentInfo.mobile}</p>
                         </div>
                       )}
                     </div>
                   ) : (
-                    <p className="text-gray-500">Parent information not available.</p>
+                    <p className="text-gray-500 text-sm">Parent information not available.</p>
                   )}
                 </CardContent>
               </Card>
@@ -2447,19 +2448,19 @@ const TeacherPortal: React.FC = () => {
               {/* Attendance Statistics with Pie Chart */}
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <TrendingUp className="h-5 w-5 text-primary" />
+                  <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                    <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
                     Attendance Statistics
                   </CardTitle>
-                  <CardDescription>
+                  <CardDescription className="text-xs sm:text-sm">
                     Total records: {attendance.length}
                   </CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="overflow-hidden">
                   {(() => {
                     const chartData = getAttendanceChartData()
                     if (attendance.length === 0 || chartData.length === 0) {
-                      return <p className="text-gray-500 text-center py-8">No attendance records yet.</p>
+                      return <p className="text-gray-500 text-center py-8 text-sm">No attendance records yet.</p>
                     }
                     return (
                       <ChartContainer
@@ -2471,7 +2472,7 @@ const TeacherPortal: React.FC = () => {
                           'Absent (Excused)': { label: 'Absent (Excused)', color: '#3b82f6' },
                           'Absent (No Excuse)': { label: 'Absent (No Excuse)', color: '#ef4444' },
                         }}
-                        className="h-[400px]"
+                        className="h-[300px] sm:h-[400px] w-full"
                       >
                         <PieChart>
                           <ChartTooltip content={<ChartTooltipContent />} />
@@ -2480,8 +2481,8 @@ const TeacherPortal: React.FC = () => {
                             cx="50%"
                             cy="50%"
                             labelLine={false}
-                            label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                            outerRadius={120}
+                            label={false}
+                            outerRadius={window.innerWidth < 640 ? 60 : 120}
                             fill="#8884d8"
                             dataKey="value"
                           >
@@ -2489,7 +2490,10 @@ const TeacherPortal: React.FC = () => {
                               <Cell key={`cell-${index}`} fill={entry.color} />
                             ))}
                           </Pie>
-                          <Legend />
+                          <Legend 
+                            wrapperStyle={{ fontSize: '12px' }}
+                            iconSize={8}
+                          />
                         </PieChart>
                       </ChartContainer>
                     )
