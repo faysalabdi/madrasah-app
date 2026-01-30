@@ -2339,167 +2339,161 @@ const TeacherPortal: React.FC = () => {
             </TabsList>
 
             {/* Profile Tab */}
-            <TabsContent value="profile" className="mt-6 space-y-4">
-              <div className="flex items-center justify-between mb-4 gap-2">
-                <h3 className="text-base sm:text-lg font-semibold flex items-center gap-2">
-                  <UserCheck className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
-                  <span className="truncate">Student Profile</span>
+            <TabsContent value="profile" className="mt-4 space-y-3">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-sm font-semibold flex items-center gap-2">
+                  <UserCheck className="h-4 w-4 text-primary" />
+                  <span>Student Profile</span>
                 </h3>
-                <Button onClick={() => setShowProfileEditDialog(true)} size="sm" className="gap-1 sm:gap-2 shrink-0">
-                  <Plus className="h-3 w-3 sm:h-4 sm:w-4" />
-                  <span className="hidden sm:inline">Edit Profile</span>
-                  <span className="sm:hidden">Edit</span>
+                <Button onClick={() => setShowProfileEditDialog(true)} size="sm" className="h-7 text-xs px-2">
+                  <Plus className="h-3 w-3 mr-1" />
+                  Edit
                 </Button>
               </div>
 
-              <div className="grid grid-cols-1 gap-4 sm:gap-6">
-                {/* Quran Progress Card */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-                      <BookOpen className="h-4 w-4 sm:h-5 sm:w-5 text-primary shrink-0" />
-                      <span className="break-words">Quran / Iqra Progress</span>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    {(() => {
-                      const progress = getQuranProgressDisplay()
-                      if (progress) {
-                        return (
-                          <div>
-                            <div className="flex items-center justify-between mb-2 gap-2">
-                              <span className="text-sm text-gray-600">Type</span>
-                              <Badge variant="outline" className="text-sm sm:text-base px-2 sm:px-3 py-1">
-                                {progress.type === 'iqra' ? 'Iqra' : 'Quran'}
-                              </Badge>
-                            </div>
-                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-2">
-                              <span className="text-sm text-gray-600">Current Progress</span>
-                              <span className="text-lg sm:text-xl font-bold text-primary break-words">{progress.display}</span>
-                            </div>
+              <div className="space-y-3">
+                {/* Quran Progress */}
+                <div className="bg-white border border-gray-200 rounded-lg p-3">
+                  <div className="flex items-center gap-2 mb-2">
+                    <BookOpen className="h-4 w-4 text-primary shrink-0" />
+                    <h3 className="text-sm font-semibold text-gray-900">Quran / Iqra Progress</h3>
+                  </div>
+                  {(() => {
+                    const progress = getQuranProgressDisplay()
+                    if (progress) {
+                      return (
+                        <div className="space-y-1 pl-6">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-gray-500">Type:</span>
+                            <Badge variant="outline" className="text-xs px-2 py-0.5">
+                              {progress.type === 'iqra' ? 'Iqra' : 'Quran'}
+                            </Badge>
                           </div>
-                        )
-                      }
-                      return <p className="text-gray-500">Quran/Iqra progress not set yet.</p>
-                    })()}
-                  </CardContent>
-                </Card>
+                          <div className="flex flex-col">
+                            <span className="text-xs text-gray-500 mb-0.5">Progress:</span>
+                            <span className="text-base font-bold text-primary">{progress.display}</span>
+                          </div>
+                        </div>
+                      )
+                    }
+                    return <p className="text-xs text-gray-500 pl-6">Not set yet</p>
+                  })()}
+                </div>
 
-                {/* Behavior Standing Card */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-                      <Award className="h-4 w-4 sm:h-5 sm:w-5 text-primary shrink-0" />
-                      <span className="break-words">Behavior Standing</span>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {selectedStudent?.behavior_standing ? (
-                      <div className="flex items-center justify-center py-4">
-                        <Badge className={`${
-                          selectedStudent.behavior_standing === 'excellent' ? 'bg-green-100 text-green-800 border-green-300' :
-                          selectedStudent.behavior_standing === 'good' ? 'bg-blue-100 text-blue-800 border-blue-300' :
-                          selectedStudent.behavior_standing === 'satisfactory' ? 'bg-yellow-100 text-yellow-800 border-yellow-300' :
-                          selectedStudent.behavior_standing === 'needs_improvement' ? 'bg-orange-100 text-orange-800 border-orange-300' :
-                          'bg-red-100 text-red-800 border-red-300'
-                        } border text-sm sm:text-base font-semibold px-3 sm:px-6 py-2 sm:py-3 max-w-full break-words text-center`}>
-                          {selectedStudent.behavior_standing.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                        </Badge>
-                      </div>
-                    ) : (
-                      <p className="text-gray-500 text-center py-4 text-sm">Behavior standing not set yet.</p>
-                    )}
-                  </CardContent>
-                </Card>
+                {/* Behavior Standing */}
+                <div className="bg-white border border-gray-200 rounded-lg p-3">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Award className="h-4 w-4 text-primary shrink-0" />
+                    <h3 className="text-sm font-semibold text-gray-900">Behavior Standing</h3>
+                  </div>
+                  {selectedStudent?.behavior_standing ? (
+                    <div className="pl-6">
+                      <Badge className={`${
+                        selectedStudent.behavior_standing === 'excellent' ? 'bg-green-100 text-green-800 border-green-300' :
+                        selectedStudent.behavior_standing === 'good' ? 'bg-blue-100 text-blue-800 border-blue-300' :
+                        selectedStudent.behavior_standing === 'satisfactory' ? 'bg-yellow-100 text-yellow-800 border-yellow-300' :
+                        selectedStudent.behavior_standing === 'needs_improvement' ? 'bg-orange-100 text-orange-800 border-orange-300' :
+                        'bg-red-100 text-red-800 border-red-300'
+                      } border text-xs font-medium px-2 py-1`}>
+                        {selectedStudent.behavior_standing.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                      </Badge>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-gray-500 pl-6">Not set yet</p>
+                  )}
+                </div>
               </div>
 
               {/* Parent Contact Information */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-                    <User className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
-                    Parent Contact Information
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {parentInfo ? (
-                    <div className="space-y-3">
+              <div className="bg-white border border-gray-200 rounded-lg p-3">
+                <div className="flex items-center gap-2 mb-2">
+                  <User className="h-4 w-4 text-primary shrink-0" />
+                  <h3 className="text-sm font-semibold text-gray-900">Parent Contact</h3>
+                </div>
+                {parentInfo ? (
+                  <div className="space-y-2 pl-6">
+                    <div>
+                      <p className="text-xs text-gray-500">Name</p>
+                      <p className="text-sm font-medium">{parentInfo.first_name} {parentInfo.last_name}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500">Email</p>
+                      <p className="text-xs font-medium break-all">{parentInfo.email}</p>
+                    </div>
+                    {parentInfo.mobile && (
                       <div>
-                        <p className="text-xs sm:text-sm text-gray-600">Parent Name</p>
-                        <p className="font-medium text-sm sm:text-base break-words">{parentInfo.first_name} {parentInfo.last_name}</p>
+                        <p className="text-xs text-gray-500">Phone</p>
+                        <p className="text-sm font-medium">{parentInfo.mobile}</p>
                       </div>
-                      <div>
-                        <p className="text-xs sm:text-sm text-gray-600">Email</p>
-                        <p className="font-medium text-sm sm:text-base break-all">{parentInfo.email}</p>
-                      </div>
-                      {parentInfo.mobile && (
-                        <div>
-                          <p className="text-xs sm:text-sm text-gray-600">Phone Number</p>
-                          <p className="font-medium text-sm sm:text-base">{parentInfo.mobile}</p>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-xs text-gray-500 pl-6">Not available</p>
+                )}
+              </div>
+
+              {/* Attendance Statistics */}
+              <div className="bg-white border border-gray-200 rounded-lg p-3">
+                <div className="flex items-center gap-2 mb-2">
+                  <TrendingUp className="h-4 w-4 text-primary shrink-0" />
+                  <h3 className="text-sm font-semibold text-gray-900">Attendance Summary</h3>
+                </div>
+                {(() => {
+                  const chartData = getAttendanceChartData()
+                  if (attendance.length === 0 || chartData.length === 0) {
+                    return <p className="text-xs text-gray-500 pl-6">No records yet</p>
+                  }
+                  const stats = {
+                    presentWithUniform: attendance.filter(a => a.status === 'present_with_uniform').length,
+                    presentNoUniform: attendance.filter(a => a.status === 'present_no_uniform').length,
+                    lateUniform: attendance.filter(a => a.status === 'late_uniform').length,
+                    lateNoUniform: attendance.filter(a => a.status === 'late_no_uniform').length,
+                    absentExcused: attendance.filter(a => a.status === 'absent_with_excuse').length,
+                    absentUnexcused: attendance.filter(a => a.status === 'absent_no_excuse').length,
+                  }
+                  return (
+                    <div className="space-y-1.5 pl-6">
+                      <p className="text-xs text-gray-500 mb-2">Total: {attendance.length} days</p>
+                      {stats.presentWithUniform > 0 && (
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs text-gray-600">Present (Uniform)</span>
+                          <span className="text-xs font-medium text-green-700">{stats.presentWithUniform}</span>
+                        </div>
+                      )}
+                      {stats.presentNoUniform > 0 && (
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs text-gray-600">Present (No Uniform)</span>
+                          <span className="text-xs font-medium text-yellow-700">{stats.presentNoUniform}</span>
+                        </div>
+                      )}
+                      {stats.lateUniform > 0 && (
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs text-gray-600">Late (Uniform)</span>
+                          <span className="text-xs font-medium text-orange-700">{stats.lateUniform}</span>
+                        </div>
+                      )}
+                      {stats.lateNoUniform > 0 && (
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs text-gray-600">Late (No Uniform)</span>
+                          <span className="text-xs font-medium text-orange-600">{stats.lateNoUniform}</span>
+                        </div>
+                      )}
+                      {stats.absentExcused > 0 && (
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs text-gray-600">Absent (Excused)</span>
+                          <span className="text-xs font-medium text-blue-700">{stats.absentExcused}</span>
+                        </div>
+                      )}
+                      {stats.absentUnexcused > 0 && (
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs text-gray-600">Absent (No Excuse)</span>
+                          <span className="text-xs font-medium text-red-700">{stats.absentUnexcused}</span>
                         </div>
                       )}
                     </div>
-                  ) : (
-                    <p className="text-gray-500 text-sm">Parent information not available.</p>
-                  )}
-                </CardContent>
-              </Card>
-
-              {/* Attendance Statistics with Pie Chart */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-                    <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
-                    Attendance Statistics
-                  </CardTitle>
-                  <CardDescription className="text-xs sm:text-sm">
-                    Total records: {attendance.length}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="overflow-hidden">
-                  {(() => {
-                    const chartData = getAttendanceChartData()
-                    if (attendance.length === 0 || chartData.length === 0) {
-                      return <p className="text-gray-500 text-center py-8 text-sm">No attendance records yet.</p>
-                    }
-                    return (
-                      <ChartContainer
-                        config={{
-                          'Present (Uniform)': { label: 'Present (Uniform)', color: '#22c55e' },
-                          'Present (No Uniform)': { label: 'Present (No Uniform)', color: '#eab308' },
-                          'Late (Uniform)': { label: 'Late (Uniform)', color: '#f97316' },
-                          'Late (No Uniform)': { label: 'Late (No Uniform)', color: '#f59e0b' },
-                          'Absent (Excused)': { label: 'Absent (Excused)', color: '#3b82f6' },
-                          'Absent (No Excuse)': { label: 'Absent (No Excuse)', color: '#ef4444' },
-                        }}
-                        className="h-[300px] sm:h-[400px] w-full"
-                      >
-                        <PieChart>
-                          <ChartTooltip content={<ChartTooltipContent />} />
-                          <Pie
-                            data={chartData}
-                            cx="50%"
-                            cy="50%"
-                            labelLine={false}
-                            label={false}
-                            outerRadius={window.innerWidth < 640 ? 60 : 120}
-                            fill="#8884d8"
-                            dataKey="value"
-                          >
-                            {chartData.map((entry, index) => (
-                              <Cell key={`cell-${index}`} fill={entry.color} />
-                            ))}
-                          </Pie>
-                          <Legend 
-                            wrapperStyle={{ fontSize: '12px' }}
-                            iconSize={8}
-                          />
-                        </PieChart>
-                      </ChartContainer>
-                    )
-                  })()}
-                </CardContent>
-              </Card>
+                  )
+                })()}
+              </div>
             </TabsContent>
 
             <TabsContent value="attendance" className="mt-6 space-y-4">
