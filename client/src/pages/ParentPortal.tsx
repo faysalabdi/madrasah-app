@@ -776,28 +776,33 @@ const ParentPortal: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-neutral-background py-8">
-      <div className="container mx-auto px-2 sm:px-4">
-        <div className="max-w-6xl mx-auto">
-          {/* Header */}
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4 sm:mb-6">
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-primary font-amiri">
-                Parent Portal
-              </h1>
-              <p className="text-sm sm:text-base text-gray-600 mt-1">
-                Welcome, {parent?.parent1_first_name} {parent?.parent1_last_name}
-              </p>
+    <div className="min-h-screen bg-gray-50">
+      {/* Portal Header Banner */}
+      <div className="bg-gradient-to-r from-primary via-primary-dark to-secondary text-white shadow-lg">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+            <div className="flex items-center gap-3">
+              <div className="bg-white/10 backdrop-blur-sm p-2 rounded-lg">
+                <User className="h-6 w-6" />
+              </div>
+              <div>
+                <h1 className="text-xl sm:text-2xl font-bold font-amiri">
+                  Parent Portal
+                </h1>
+                <p className="text-xs sm:text-sm text-white/90">
+                  Madrasah Abu Bakr As-Siddiq
+                </p>
+              </div>
             </div>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="flex items-center gap-2">
-                  <Avatar className="h-8 w-8">
-                    <AvatarFallback>
+                <Button variant="ghost" className="flex items-center gap-2 text-white hover:bg-white/10">
+                  <Avatar className="h-8 w-8 border-2 border-white/30">
+                    <AvatarFallback className="bg-white/20 text-white">
                       {parent?.parent1_first_name?.[0]}{parent?.parent1_last_name?.[0]}
                     </AvatarFallback>
                   </Avatar>
-                  <span className="hidden md:inline">{parent?.parent1_first_name} {parent?.parent1_last_name}</span>
+                  <span className="hidden sm:inline">{parent?.parent1_first_name} {parent?.parent1_last_name}</span>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
@@ -840,6 +845,28 @@ const ParentPortal: React.FC = () => {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content Area */}
+      <div className="container mx-auto px-2 sm:px-4 py-6">
+        <div className="max-w-6xl mx-auto">
+          {/* Welcome Banner */}
+          <div className="bg-white border-l-4 border-primary rounded-lg shadow-sm p-4 mb-6">
+            <div className="flex items-start gap-3">
+              <div className="bg-primary/10 p-2 rounded-lg">
+                <User className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900">
+                  As-salamu alaykum, {parent?.parent1_first_name}!
+                </h2>
+                <p className="text-sm text-gray-600 mt-1">
+                  Welcome to your Parent Portal. Here you can view your children's progress, attendance, homework, and communicate with teachers.
+                </p>
+              </div>
+            </div>
           </div>
 
           {error && (
@@ -1875,6 +1902,8 @@ const ParentPortal: React.FC = () => {
           </Tabs>
         </DialogContent>
       </Dialog>
+        </div>
+      </div>
     </div>
   )
 }

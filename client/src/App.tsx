@@ -1,5 +1,5 @@
 import React from "react";
-import { Route, Switch } from "wouter";
+import { Route, Switch, useLocation } from "wouter";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/toaster";
 import Home from "@/pages/Home";
@@ -22,10 +22,22 @@ import Footer from "@/components/Footer";
 import Newsletter from "@/components/Newsletter";
 
 function App() {
+  const [location] = useLocation();
+  
+  // Portal pages should not show header/footer
+  const isPortalPage = [
+    '/parent-portal',
+    '/teacher-portal',
+    '/admin-portal',
+    '/admin-login',
+    '/portal',
+    '/parent-password-setup'
+  ].includes(location);
+
   return (
     <TooltipProvider>
       <div className="min-h-screen flex flex-col">
-        <Header />
+        {!isPortalPage && <Header />}
         <main className="flex-grow">
           <Switch>
             <Route path="/" component={Home} />
@@ -45,8 +57,8 @@ function App() {
             <Route component={NotFound} />
           </Switch>
         </main>
-        <Newsletter />
-        <Footer />
+        {!isPortalPage && <Newsletter />}
+        {!isPortalPage && <Footer />}
         <Toaster />
       </div>
     </TooltipProvider>
