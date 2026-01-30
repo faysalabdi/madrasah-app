@@ -1528,6 +1528,21 @@ const AdminPortal: React.FC = () => {
     try {
       setLoading(true)
 
+      // Load current term FIRST (needed for unpaid students calculation)
+      const { data: currentTermData, error: currentTermError } = await supabase
+        .from('terms')
+        .select('id')
+        .eq('is_current', true)
+        .maybeSingle()
+      
+      // Handle case where no current term exists (shouldn't throw error)
+      if (currentTermError && currentTermError.code !== 'PGRST116') {
+        console.error('Error loading current term:', currentTermError)
+      }
+      
+      const currentTermId = currentTermData?.id || null
+      setCurrentTermId(currentTermId)
+
       // Load stats
       const [parentsRes, studentsRes, teachersRes, paymentsRes] = await Promise.all([
         supabase.from('parents').select('id', { count: 'exact' }),
@@ -1644,16 +1659,6 @@ const AdminPortal: React.FC = () => {
         setTeachers([])
       }
 
-      // Load current term to filter payments correctly
-      const { data: currentTermData } = await supabase
-        .from('terms')
-        .select('id')
-        .eq('is_current', true)
-        .single()
-      
-      const currentTermId = currentTermData?.id
-      setCurrentTermId(currentTermId || null)
-      
       // Load all terms for payment grouping
       const { data: allTermsData } = await supabase
         .from('terms')
