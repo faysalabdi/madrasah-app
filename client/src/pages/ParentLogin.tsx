@@ -71,7 +71,7 @@ const ParentLogin: React.FC = () => {
     try {
       // Request password reset (this sends a confirmation email)
       const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/parent-password-setup`,
+        redirectTo: `${window.location.origin}/portal`,
       })
 
       if (resetError) {
@@ -80,7 +80,7 @@ const ParentLogin: React.FC = () => {
           email: email,
           password: 'temp_password_' + Math.random().toString(36).slice(2),
           options: {
-            emailRedirectTo: `${window.location.origin}/parent-password-setup`,
+            emailRedirectTo: `${window.location.origin}/portal`,
           },
         })
 
@@ -91,7 +91,7 @@ const ParentLogin: React.FC = () => {
 
       // Also send custom email via Edge Function
       const parentName = `${parent.parent1_first_name} ${parent.parent1_last_name}`
-      const confirmationUrl = `${window.location.origin}/parent-password-setup`
+      const confirmationUrl = `${window.location.origin}/portal`
 
       await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-password-setup-email`, {
         method: 'POST',

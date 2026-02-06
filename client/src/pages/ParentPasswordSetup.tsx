@@ -89,7 +89,7 @@ const ParentPasswordSetup: React.FC = () => {
           email: emailLower,
           password: password,
           options: {
-            emailRedirectTo: `${window.location.origin}/parent-password-setup`,
+            emailRedirectTo: `${window.location.origin}/portal`,
           },
         })
 
@@ -98,7 +98,7 @@ const ParentPasswordSetup: React.FC = () => {
           if (authError.message.includes('already registered')) {
             // Request password reset to get confirmation email
             const { error: resetError } = await supabase.auth.resetPasswordForEmail(emailLower, {
-              redirectTo: `${window.location.origin}/parent-password-setup`,
+              redirectTo: `${window.location.origin}/portal`,
             })
 
             if (resetError) throw resetError

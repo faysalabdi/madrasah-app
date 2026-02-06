@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useLocation } from 'wouter'
 import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
@@ -18,6 +18,57 @@ const PortalLogin: React.FC = () => {
   const [success, setSuccess] = useState(false)
   const [needsPasswordSetup, setNeedsPasswordSetup] = useState(false)
   const [checkingEmail, setCheckingEmail] = useState(false)
+  const [checkingSession, setCheckingSession] = useState(true)
+
+  // Check for existing session on mount (handles email confirmation redirects)
+  useEffect(() => {
+    const checkSession = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        
+        if (session?.user?.email) {
+          const userEmail = session.user.email.toLowerCase()
+          
+          // Check if user is a parent
+          const { data: parent } = await supabase
+            .from('parents')
+            .select('id, parent1_email')
+            .eq('parent1_email', userEmail)
+            .maybeSingle()
+          
+          if (parent) {
+            localStorage.setItem('parentId', parent.id.toString())
+            localStorage.setItem('parentEmail', userEmail)
+            sessionStorage.setItem('parentId', parent.id.toString())
+            sessionStorage.setItem('parentEmail', userEmail)
+            setLocation('/parent-portal')
+            return
+          }
+          
+          // Check if user is a teacher
+          const { data: teacher } = await supabase
+            .from('teachers')
+            .select('id, email, first_name, last_name')
+            .eq('email', userEmail)
+            .maybeSingle()
+          
+          if (teacher) {
+            localStorage.setItem('teacherId', teacher.id.toString())
+            localStorage.setItem('teacherEmail', userEmail)
+            localStorage.setItem('teacherName', `${teacher.first_name} ${teacher.last_name}`)
+            setLocation('/teacher-portal')
+            return
+          }
+        }
+      } catch (err) {
+        console.error('Error checking session:', err)
+      } finally {
+        setCheckingSession(false)
+      }
+    }
+    
+    checkSession()
+  }, [setLocation])
 
   const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -114,7 +165,7 @@ const PortalLogin: React.FC = () => {
           body: JSON.stringify({
             toEmail: targetEmail,
             parentName: fullName,
-            redirectUrl: `${window.location.origin}/parent-password-setup`,
+            redirectUrl: `${window.location.origin}/portal`,
           }),
         }
       )
@@ -213,6 +264,19 @@ const PortalLogin: React.FC = () => {
       setError(err.message || 'Login failed. Please try again.')
       setLoading(false)
     }
+  }
+
+  // Show loading while checking session
+  if (checkingSession) {
+    return (
+      <div className="min-h-screen bg-neutral-background py-16 flex items-center justify-center">
+        <Card className="max-w-md w-full">
+          <CardContent className="pt-6">
+            <p className="text-center">Checking session...</p>
+          </CardContent>
+        </Card>
+      </div>
+    )
   }
 
   return (
