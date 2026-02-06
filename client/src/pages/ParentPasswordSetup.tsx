@@ -114,7 +114,7 @@ const ParentPasswordSetup: React.FC = () => {
         // Check if email confirmation is required
         if (authData.user && !authData.session) {
           setSuccess(true)
-          setError('Please check your email to confirm your account. After confirmation, you can set your password.')
+          setError('Please check your email to confirm your account. After confirmation, you can log in to your account.')
           setLoading(false)
           return
         }
