@@ -1535,6 +1535,7 @@ const TeacherPortal: React.FC = () => {
           assigned_date: new Date().toISOString().split('T')[0],
           due_date: homeworkDueDate || null,
           completed: false,
+          term_id: currentTermId, // Add current term ID
         })
 
       if (error) throw error
