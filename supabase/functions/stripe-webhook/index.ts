@@ -93,6 +93,7 @@ Deno.serve(async (request) => {
           const studentIdsStr = session.metadata?.student_ids // Comma-separated list
           const paidForBooks = session.metadata?.paid_for_books === "true"
           const paidTermFees = session.metadata?.paid_term_fees === "true"
+          const termId = session.metadata?.term_id ? parseInt(session.metadata.term_id) : null
           
           // If paying for term fees and we have student_ids, create separate payment records for each student
           if (paidTermFees && studentIdsStr && !paidForBooks) {
@@ -113,6 +114,7 @@ Deno.serve(async (request) => {
                 status: "succeeded",
                 paid_for_books: false,
                 paid_term_fees: true,
+                term_id: termId,
                 metadata: { ...session.metadata, student_id: sid.toString() },
               })
             }
@@ -137,6 +139,7 @@ Deno.serve(async (request) => {
                 status: "succeeded",
                 paid_for_books: true,
                 paid_term_fees: true,
+                term_id: termId,
                 metadata: { ...session.metadata, student_id: sid.toString() },
               })
             }
@@ -159,6 +162,7 @@ Deno.serve(async (request) => {
                 status: "succeeded",
                 paid_for_books: true,
                 paid_term_fees: false,
+                term_id: termId,
                 metadata: { ...session.metadata, student_id: sid.toString() },
               })
             }
@@ -177,6 +181,7 @@ Deno.serve(async (request) => {
               status: "succeeded",
               paid_for_books: paidForBooks,
               paid_term_fees: paidTermFees,
+              term_id: termId,
               metadata: session.metadata,
             })
           }
@@ -234,6 +239,7 @@ Deno.serve(async (request) => {
             const studentId = paymentIntent.metadata?.student_id ? parseInt(paymentIntent.metadata.student_id) : null
             const paidForBooks = paymentIntent.metadata?.paid_for_books === "true"
             const paidTermFees = paymentIntent.metadata?.paid_term_fees === "true"
+            const termId = paymentIntent.metadata?.term_id ? parseInt(paymentIntent.metadata.term_id) : null
             
             await supabaseClient.from("payments").insert({
               parent_id: parent.id,
@@ -245,6 +251,7 @@ Deno.serve(async (request) => {
               status: "succeeded",
               paid_for_books: paidForBooks,
               paid_term_fees: paidTermFees,
+              term_id: termId,
               metadata: paymentIntent.metadata,
             })
           }
@@ -354,6 +361,7 @@ Deno.serve(async (request) => {
               const studentIdsStr = subscription.metadata?.student_ids
               const paidTermFees = subscription.metadata?.paid_term_fees === "true"
               const paidForBooks = subscription.metadata?.paid_for_books === "true"
+              const termId = subscription.metadata?.term_id ? parseInt(subscription.metadata.term_id) : null
 
               // If we have student IDs, create payment records for each student
               if (studentIdsStr && paidTermFees) {
@@ -366,12 +374,14 @@ Deno.serve(async (request) => {
                     student_id: sid,
                     stripe_payment_intent_id: invoice.payment_intent as string,
                     stripe_subscription_id: subscriptionId,
+                    stripe_invoice_id: invoice.id,
                     amount: amountPerStudent,
                     currency: invoice.currency,
                     payment_type: "term_fees",
                     status: "succeeded",
                     paid_for_books: paidForBooks,
                     paid_term_fees: paidTermFees,
+                    term_id: termId,
                     metadata: subscription.metadata,
                   })
                 }
@@ -382,12 +392,14 @@ Deno.serve(async (request) => {
                   student_id: null,
                   stripe_payment_intent_id: invoice.payment_intent as string,
                   stripe_subscription_id: subscriptionId,
+                  stripe_invoice_id: invoice.id,
                   amount: (invoice.amount_paid || 0) / 100,
                   currency: invoice.currency,
                   payment_type: "term_fees",
                   status: "succeeded",
                   paid_for_books: paidForBooks,
                   paid_term_fees: paidTermFees,
+                  term_id: termId,
                   metadata: subscription.metadata,
                 })
               }

@@ -1589,7 +1589,13 @@ const AdminPortal: React.FC = () => {
         supabase.from('parents').select('id', { count: 'exact' }),
         supabase.from('students').select('id', { count: 'exact' }),
         supabase.from('teachers').select('id', { count: 'exact' }),
-        supabase.from('payments').select('id', { count: 'exact' }),
+        // Count only successful term fee payments for current term
+        currentTermId 
+          ? supabase.from('payments').select('id', { count: 'exact' })
+              .eq('paid_term_fees', true)
+              .eq('status', 'succeeded')
+              .eq('term_id', currentTermId)
+          : supabase.from('payments').select('id', { count: 'exact' }),
       ])
 
       // Count unpaid students (students without term fee payments for current term)
