@@ -255,6 +255,24 @@ const TeacherPortal: React.FC = () => {
   const [bulkAttendanceNotes, setBulkAttendanceNotes] = useState<{ [studentId: number]: string }>({})
   const [savingBulkAttendance, setSavingBulkAttendance] = useState(false)
   
+  // Bulk homework
+  const [showBulkHomeworkDialog, setShowBulkHomeworkDialog] = useState(false)
+  const [bulkHomeworkTitle, setBulkHomeworkTitle] = useState('')
+  const [bulkHomeworkDescription, setBulkHomeworkDescription] = useState('')
+  const [bulkHomeworkDueDate, setBulkHomeworkDueDate] = useState('')
+  const [selectedStudentsForHomework, setSelectedStudentsForHomework] = useState<{ [studentId: number]: boolean }>({})
+  const [savingBulkHomework, setSavingBulkHomework] = useState(false)
+  
+  // Bulk class content
+  const [showBulkClassContentDialog, setShowBulkClassContentDialog] = useState(false)
+  const [bulkClassContentDate, setBulkClassContentDate] = useState(new Date().toISOString().split('T')[0])
+  const [bulkClassContentSubject, setBulkClassContentSubject] = useState<'quran' | 'islamic_studies'>('quran')
+  const [bulkClassContentSubSubject, setBulkClassContentSubSubject] = useState('')
+  const [bulkClassContentText, setBulkClassContentText] = useState('')
+  const [bulkClassContentLabel, setBulkClassContentLabel] = useState('')
+  const [selectedStudentsForClassContent, setSelectedStudentsForClassContent] = useState<{ [studentId: number]: boolean }>({})
+  const [savingBulkClassContent, setSavingBulkClassContent] = useState(false)
+  
   // Student detail data
   const [attendance, setAttendance] = useState<Attendance[]>([])
   const [behaviorNotes, setBehaviorNotes] = useState<BehaviorNote[]>([])
@@ -1469,6 +1487,162 @@ const TeacherPortal: React.FC = () => {
     }
   }
 
+  const handleBulkAddHomework = async () => {
+    if (!teacher) return
+
+    if (!currentTermId) {
+      setError('No active term found. Please contact admin to set up the current term.')
+      return
+    }
+
+    if (!bulkHomeworkTitle.trim()) {
+      toast({
+        title: 'Error',
+        description: 'Please enter a homework title.',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    const selectedStudents = Object.keys(selectedStudentsForHomework)
+      .filter(id => selectedStudentsForHomework[parseInt(id)])
+      .map(id => parseInt(id))
+
+    if (selectedStudents.length === 0) {
+      toast({
+        title: 'Error',
+        description: 'Please select at least one student.',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    try {
+      setSavingBulkHomework(true)
+
+      // Create homework records for all selected students
+      const homeworkRecords = selectedStudents.map(studentId => ({
+        student_id: studentId,
+        teacher_id: teacher.id,
+        title: bulkHomeworkTitle,
+        description: bulkHomeworkDescription || null,
+        assigned_date: new Date().toISOString().split('T')[0],
+        due_date: bulkHomeworkDueDate || null,
+        completed: false,
+        term_id: currentTermId,
+      }))
+
+      const { error } = await supabase
+        .from('homework')
+        .insert(homeworkRecords)
+
+      if (error) throw error
+
+      toast({
+        title: 'Success',
+        description: `Homework assigned to ${selectedStudents.length} student(s) successfully.`,
+      })
+
+      setShowBulkHomeworkDialog(false)
+      setBulkHomeworkTitle('')
+      setBulkHomeworkDescription('')
+      setBulkHomeworkDueDate('')
+      setSelectedStudentsForHomework({})
+    } catch (err: any) {
+      toast({
+        title: 'Error',
+        description: err.message || 'Failed to assign homework',
+        variant: 'destructive',
+      })
+    } finally {
+      setSavingBulkHomework(false)
+    }
+  }
+
+  const handleBulkAddClassContent = async () => {
+    if (!teacher) return
+
+    if (!currentTermId) {
+      setError('No active term found. Please contact admin to set up the current term.')
+      return
+    }
+
+    if (!bulkClassContentText.trim()) {
+      toast({
+        title: 'Error',
+        description: 'Please enter the content that was covered.',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    // Validate sub-subject for Islamic Studies
+    if (bulkClassContentSubject === 'islamic_studies' && !bulkClassContentSubSubject) {
+      toast({
+        title: 'Error',
+        description: 'Please select a sub-subject for Islamic Studies.',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    const selectedStudents = Object.keys(selectedStudentsForClassContent)
+      .filter(id => selectedStudentsForClassContent[parseInt(id)])
+      .map(id => parseInt(id))
+
+    if (selectedStudents.length === 0) {
+      toast({
+        title: 'Error',
+        description: 'Please select at least one student.',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    try {
+      setSavingBulkClassContent(true)
+
+      // Create class content records for all selected students
+      const classContentRecords = selectedStudents.map(studentId => ({
+        student_id: studentId,
+        teacher_id: teacher.id,
+        date: bulkClassContentDate,
+        subject: bulkClassContentSubject,
+        sub_subject: bulkClassContentSubject === 'islamic_studies' ? bulkClassContentSubSubject : null,
+        content: bulkClassContentText,
+        label: bulkClassContentLabel || null,
+        term_id: currentTermId,
+      }))
+
+      const { error } = await supabase
+        .from('class_content')
+        .insert(classContentRecords)
+
+      if (error) throw error
+
+      toast({
+        title: 'Success',
+        description: `Class content added for ${selectedStudents.length} student(s) successfully.`,
+      })
+
+      setShowBulkClassContentDialog(false)
+      setBulkClassContentDate(new Date().toISOString().split('T')[0])
+      setBulkClassContentSubject('quran')
+      setBulkClassContentSubSubject('')
+      setBulkClassContentText('')
+      setBulkClassContentLabel('')
+      setSelectedStudentsForClassContent({})
+    } catch (err: any) {
+      toast({
+        title: 'Error',
+        description: err.message || 'Failed to add class content',
+        variant: 'destructive',
+      })
+    } finally {
+      setSavingBulkClassContent(false)
+    }
+  }
+
   const handleAddBehaviorNote = async () => {
     if (!selectedStudent || !teacher) return
 
@@ -2042,6 +2216,36 @@ const TeacherPortal: React.FC = () => {
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                 <h2 className="text-lg sm:text-xl font-semibold">My Assigned Students</h2>
                 <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                  <Button onClick={() => {
+                    setShowBulkHomeworkDialog(true)
+                    // Initialize all students as unselected
+                    const allMyStudents = [...quranStudents, ...islamicStudiesStudents]
+                    const uniqueStudents = Array.from(new Map(allMyStudents.map(s => [s.id, s])).values())
+                    const initialSelection: { [key: number]: boolean } = {}
+                    uniqueStudents.forEach(student => {
+                      initialSelection[student.id] = false
+                    })
+                    setSelectedStudentsForHomework(initialSelection)
+                  }} variant="outline" size="sm" className="gap-2">
+                    <BookOpen className="h-4 w-4" />
+                    <span className="hidden sm:inline">Assign Homework</span>
+                    <span className="sm:hidden">Homework</span>
+                  </Button>
+                  <Button onClick={() => {
+                    setShowBulkClassContentDialog(true)
+                    // Initialize all students as unselected
+                    const allMyStudents = [...quranStudents, ...islamicStudiesStudents]
+                    const uniqueStudents = Array.from(new Map(allMyStudents.map(s => [s.id, s])).values())
+                    const initialSelection: { [key: number]: boolean } = {}
+                    uniqueStudents.forEach(student => {
+                      initialSelection[student.id] = false
+                    })
+                    setSelectedStudentsForClassContent(initialSelection)
+                  }} variant="outline" size="sm" className="gap-2">
+                    <FileText className="h-4 w-4" />
+                    <span className="hidden sm:inline">Add Class Content</span>
+                    <span className="sm:hidden">Content</span>
+                  </Button>
                   <Button onClick={() => {
                     setShowBulkAttendanceDialog(true)
                     // Initialize all students with default status
@@ -3772,6 +3976,335 @@ const TeacherPortal: React.FC = () => {
               </CardContent>
             </Card>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Bulk Homework Dialog */}
+      <Dialog open={showBulkHomeworkDialog} onOpenChange={setShowBulkHomeworkDialog}>
+        <DialogContent className="w-[95vw] sm:w-full max-w-5xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Assign Homework to Multiple Students</DialogTitle>
+            <DialogDescription>
+              Assign the same homework to multiple students at once.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div>
+              <Label htmlFor="bulk-homework-title">Title *</Label>
+              <Input
+                id="bulk-homework-title"
+                placeholder="e.g., Memorize Surah Al-Fatiha"
+                value={bulkHomeworkTitle}
+                onChange={(e) => setBulkHomeworkTitle(e.target.value)}
+                required
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="bulk-homework-description">Description</Label>
+              <Textarea
+                id="bulk-homework-description"
+                placeholder="Enter homework details..."
+                value={bulkHomeworkDescription}
+                onChange={(e) => setBulkHomeworkDescription(e.target.value)}
+                rows={3}
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="bulk-homework-due-date">Due Date</Label>
+              <Input
+                id="bulk-homework-due-date"
+                type="date"
+                value={bulkHomeworkDueDate}
+                onChange={(e) => setBulkHomeworkDueDate(e.target.value)}
+              />
+            </div>
+
+            {/* Student Selection */}
+            {(() => {
+              const allMyStudents = [...quranStudents, ...islamicStudiesStudents]
+              const uniqueStudents = Array.from(new Map(allMyStudents.map(s => [s.id, s])).values())
+              
+              if (uniqueStudents.length === 0) {
+                return (
+                  <Card>
+                    <CardContent className="py-8 text-center">
+                      <p className="text-gray-500">No students assigned yet.</p>
+                    </CardContent>
+                  </Card>
+                )
+              }
+
+              const selectedCount = Object.values(selectedStudentsForHomework).filter(v => v).length
+
+              return (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between mb-4">
+                    <Label className="text-base font-semibold">Select Students ({selectedCount}/{uniqueStudents.length})</Label>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          const allSelected: { [key: number]: boolean } = {}
+                          uniqueStudents.forEach(student => {
+                            allSelected[student.id] = true
+                          })
+                          setSelectedStudentsForHomework(allSelected)
+                        }}
+                      >
+                        Select All
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          const noneSelected: { [key: number]: boolean } = {}
+                          uniqueStudents.forEach(student => {
+                            noneSelected[student.id] = false
+                          })
+                          setSelectedStudentsForHomework(noneSelected)
+                        }}
+                      >
+                        Clear All
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  <div className="border rounded-lg overflow-hidden">
+                    <div className="max-h-[400px] overflow-y-auto">
+                      <table className="w-full">
+                        <thead className="bg-gray-50 sticky top-0">
+                          <tr>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Select</th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Student</th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Grade</th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                          {uniqueStudents.map((student) => (
+                            <tr key={student.id} className="hover:bg-gray-50">
+                              <td className="px-4 py-3 whitespace-nowrap">
+                                <input
+                                  type="checkbox"
+                                  checked={selectedStudentsForHomework[student.id] || false}
+                                  onChange={(e) => {
+                                    setSelectedStudentsForHomework(prev => ({
+                                      ...prev,
+                                      [student.id]: e.target.checked
+                                    }))
+                                  }}
+                                  className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
+                                />
+                              </td>
+                              <td className="px-4 py-3 whitespace-nowrap">
+                                <div className="text-sm font-medium text-gray-900">
+                                  {student.first_name} {student.last_name}
+                                </div>
+                              </td>
+                              <td className="px-4 py-3 whitespace-nowrap">
+                                <div className="text-sm text-gray-500">{student.grade}</div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              )
+            })()}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowBulkHomeworkDialog(false)}>Cancel</Button>
+            <Button onClick={handleBulkAddHomework} disabled={savingBulkHomework}>
+              {savingBulkHomework && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Assign Homework
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Bulk Class Content Dialog */}
+      <Dialog open={showBulkClassContentDialog} onOpenChange={setShowBulkClassContentDialog}>
+        <DialogContent className="w-[95vw] sm:w-full max-w-5xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Add Class Content for Multiple Students</DialogTitle>
+            <DialogDescription>
+              Record the same class content for multiple students at once.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div>
+              <Label htmlFor="bulk-class-content-date">Date *</Label>
+              <Input
+                id="bulk-class-content-date"
+                type="date"
+                value={bulkClassContentDate}
+                onChange={(e) => setBulkClassContentDate(e.target.value)}
+                required
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="bulk-class-content-subject">Subject *</Label>
+              <Select value={bulkClassContentSubject} onValueChange={(value: 'quran' | 'islamic_studies') => {
+                setBulkClassContentSubject(value)
+                if (value === 'quran') {
+                  setBulkClassContentSubSubject('')
+                }
+              }}>
+                <SelectTrigger id="bulk-class-content-subject">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="quran">Quran</SelectItem>
+                  <SelectItem value="islamic_studies">Islamic Studies</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {bulkClassContentSubject === 'islamic_studies' && (
+              <div>
+                <Label htmlFor="bulk-class-content-sub-subject">Sub-Subject *</Label>
+                <Select value={bulkClassContentSubSubject} onValueChange={setBulkClassContentSubSubject}>
+                  <SelectTrigger id="bulk-class-content-sub-subject">
+                    <SelectValue placeholder="Select sub-subject" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="surah_and_dua">Surah & Dua</SelectItem>
+                    <SelectItem value="fiqh">Fiqh</SelectItem>
+                    <SelectItem value="islamic_curriculum">Islamic Curriculum</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            <div>
+              <Label htmlFor="bulk-class-content-text">Content Covered *</Label>
+              <Textarea
+                id="bulk-class-content-text"
+                placeholder="Describe what was covered in class..."
+                value={bulkClassContentText}
+                onChange={(e) => setBulkClassContentText(e.target.value)}
+                rows={4}
+                required
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="bulk-class-content-label">Label (optional)</Label>
+              <Input
+                id="bulk-class-content-label"
+                placeholder="e.g., Unit 1, Chapter 3"
+                value={bulkClassContentLabel}
+                onChange={(e) => setBulkClassContentLabel(e.target.value)}
+              />
+            </div>
+
+            {/* Student Selection */}
+            {(() => {
+              const allMyStudents = [...quranStudents, ...islamicStudiesStudents]
+              const uniqueStudents = Array.from(new Map(allMyStudents.map(s => [s.id, s])).values())
+              
+              if (uniqueStudents.length === 0) {
+                return (
+                  <Card>
+                    <CardContent className="py-8 text-center">
+                      <p className="text-gray-500">No students assigned yet.</p>
+                    </CardContent>
+                  </Card>
+                )
+              }
+
+              const selectedCount = Object.values(selectedStudentsForClassContent).filter(v => v).length
+
+              return (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between mb-4">
+                    <Label className="text-base font-semibold">Select Students ({selectedCount}/{uniqueStudents.length})</Label>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          const allSelected: { [key: number]: boolean } = {}
+                          uniqueStudents.forEach(student => {
+                            allSelected[student.id] = true
+                          })
+                          setSelectedStudentsForClassContent(allSelected)
+                        }}
+                      >
+                        Select All
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          const noneSelected: { [key: number]: boolean } = {}
+                          uniqueStudents.forEach(student => {
+                            noneSelected[student.id] = false
+                          })
+                          setSelectedStudentsForClassContent(noneSelected)
+                        }}
+                      >
+                        Clear All
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  <div className="border rounded-lg overflow-hidden">
+                    <div className="max-h-[300px] overflow-y-auto">
+                      <table className="w-full">
+                        <thead className="bg-gray-50 sticky top-0">
+                          <tr>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Select</th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Student</th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Grade</th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                          {uniqueStudents.map((student) => (
+                            <tr key={student.id} className="hover:bg-gray-50">
+                              <td className="px-4 py-3 whitespace-nowrap">
+                                <input
+                                  type="checkbox"
+                                  checked={selectedStudentsForClassContent[student.id] || false}
+                                  onChange={(e) => {
+                                    setSelectedStudentsForClassContent(prev => ({
+                                      ...prev,
+                                      [student.id]: e.target.checked
+                                    }))
+                                  }}
+                                  className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
+                                />
+                              </td>
+                              <td className="px-4 py-3 whitespace-nowrap">
+                                <div className="text-sm font-medium text-gray-900">
+                                  {student.first_name} {student.last_name}
+                                </div>
+                              </td>
+                              <td className="px-4 py-3 whitespace-nowrap">
+                                <div className="text-sm text-gray-500">{student.grade}</div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              )
+            })()}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowBulkClassContentDialog(false)}>Cancel</Button>
+            <Button onClick={handleBulkAddClassContent} disabled={savingBulkClassContent}>
+              {savingBulkClassContent && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Add Class Content
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
