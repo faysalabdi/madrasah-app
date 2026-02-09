@@ -1297,6 +1297,11 @@ const TeacherPortal: React.FC = () => {
   const handleMarkAttendance = async () => {
     if (!selectedStudent || !teacher) return
 
+    if (!currentTermId) {
+      setError('No active term found. Please contact admin to set up the current term.')
+      return
+    }
+
     try {
       const { error } = await supabase
         .from('attendance')
@@ -1306,6 +1311,7 @@ const TeacherPortal: React.FC = () => {
           date: attendanceDate,
           status: attendanceStatus,
           notes: attendanceNotes || null,
+          term_id: currentTermId,
         }, {
           onConflict: 'student_id,date'
         })
@@ -1376,6 +1382,7 @@ const TeacherPortal: React.FC = () => {
           date: bulkAttendanceDate,
           status: bulkAttendanceRecords[student.id],
           notes: bulkAttendanceNotes[student.id] || null,
+          term_id: currentTermId,
         }))
 
       if (attendanceRecords.length === 0) {
@@ -1465,6 +1472,11 @@ const TeacherPortal: React.FC = () => {
   const handleAddBehaviorNote = async () => {
     if (!selectedStudent || !teacher) return
 
+    if (!currentTermId) {
+      setError('No active term found. Please contact admin to set up the current term.')
+      return
+    }
+
     try {
       const { error } = await supabase
         .from('behavior_notes')
@@ -1475,6 +1487,7 @@ const TeacherPortal: React.FC = () => {
           type: behaviorType,
           title: behaviorTitle,
           description: behaviorDescription,
+          term_id: currentTermId,
         })
 
       if (error) throw error
@@ -1591,6 +1604,11 @@ const TeacherPortal: React.FC = () => {
   const handleAddNote = async () => {
     if (!selectedStudent || !teacher) return
 
+    if (!currentTermId) {
+      setError('No active term found. Please contact admin to set up the current term.')
+      return
+    }
+
     try {
       const { error } = await supabase
         .from('student_notes')
@@ -1598,6 +1616,7 @@ const TeacherPortal: React.FC = () => {
           student_id: selectedStudent.id,
           teacher_id: teacher.id,
           note: noteText,
+          term_id: currentTermId,
         })
 
       if (error) throw error
@@ -1673,6 +1692,7 @@ const TeacherPortal: React.FC = () => {
           sub_subject: classContentSubject === 'islamic_studies' ? classContentSubSubject : null,
           content: classContentText,
           label: classContentLabel || null,
+          term_id: currentTermId,
         })
 
       if (error) throw error
@@ -2412,10 +2432,6 @@ const TeacherPortal: React.FC = () => {
                 <BookOpen className="h-3 w-3 sm:h-4 sm:w-4" />
                 <span className="hidden sm:inline">Homework</span>
               </TabsTrigger>
-              <TabsTrigger value="behavior" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3">
-                <AlertCircle className="h-3 w-3 sm:h-4 sm:w-4" />
-                <span className="hidden sm:inline">Behavior</span>
-              </TabsTrigger>
               <TabsTrigger value="notes" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3">
                 <FileText className="h-3 w-3 sm:h-4 sm:w-4" />
                 <span className="hidden sm:inline">Notes</span>
@@ -2739,68 +2755,6 @@ const TeacherPortal: React.FC = () => {
                       </Card>
                     )
                   })}
-                </div>
-              )}
-            </TabsContent>
-
-            <TabsContent value="behavior" className="mt-6 space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold flex items-center gap-2">
-                  <AlertCircle className="h-5 w-5 text-primary" />
-                  Behavior Notes
-                </h3>
-                <Button onClick={() => setShowBehaviorDialog(true)} size="sm" className="gap-2">
-                  <Plus className="h-4 w-4" />
-                  Add Note
-                </Button>
-              </div>
-              {behaviorNotes.length === 0 ? (
-                <Card>
-                  <CardContent className="py-8 text-center">
-                    <AlertCircle className="h-12 w-12 mx-auto text-gray-400 mb-2" />
-                    <p className="text-gray-500">No behavior notes yet.</p>
-                    <Button onClick={() => setShowBehaviorDialog(true)} className="mt-4" size="sm">
-                      Add First Note
-                    </Button>
-                  </CardContent>
-                </Card>
-              ) : (
-                <div className="space-y-3">
-                  {behaviorNotes.map((note) => (
-                    <Card key={note.id} className="hover:shadow-md transition-shadow">
-                      <CardContent className="p-4">
-                        <div className="flex items-start justify-between gap-4 mb-2">
-                          <div className="flex-1">
-                            <p className="font-semibold text-lg mb-1">{note.title}</p>
-                            <p className="text-sm text-gray-500 mb-2">
-                              {new Date(note.date).toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}
-                            </p>
-                            <p className="text-sm text-gray-700">{note.description}</p>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Badge
-                              variant={
-                                note.type === 'positive' ? 'default' :
-                                note.type === 'concern' ? 'secondary' :
-                                'destructive'
-                              }
-                              className="shrink-0"
-                            >
-                              {note.type.charAt(0).toUpperCase() + note.type.slice(1)}
-                            </Badge>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleDeleteBehaviorNote(note.id)}
-                              className="text-red-600 hover:text-red-700 hover:bg-red-50 shrink-0"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
                 </div>
               )}
             </TabsContent>

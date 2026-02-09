@@ -1235,10 +1235,6 @@ const ParentPortal: React.FC = () => {
                 <BookOpen className="h-3 w-3 sm:h-4 sm:w-4" />
                 <span className="hidden sm:inline">Homework</span>
               </TabsTrigger>
-              <TabsTrigger value="behavior" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3">
-                <FileText className="h-3 w-3 sm:h-4 sm:w-4" />
-                <span className="hidden sm:inline">Behavior</span>
-              </TabsTrigger>
               <TabsTrigger value="notes" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3">
                 <FileText className="h-3 w-3 sm:h-4 sm:w-4" />
                 <span className="hidden sm:inline">Notes</span>
@@ -1551,52 +1547,6 @@ const ParentPortal: React.FC = () => {
                       </Card>
                     )
                   })}
-                </div>
-              )}
-            </TabsContent>
-
-            <TabsContent value="behavior" className="mt-6 space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold flex items-center gap-2">
-                  <FileText className="h-5 w-5 text-primary" />
-                  Behavior Notes
-                </h3>
-                <Badge variant="outline">{behaviorNotes.length} notes</Badge>
-              </div>
-              {behaviorNotes.length === 0 ? (
-                <Card>
-                  <CardContent className="py-8 text-center">
-                    <FileText className="h-12 w-12 mx-auto text-gray-400 mb-2" />
-                    <p className="text-gray-500">No behavior notes yet.</p>
-                  </CardContent>
-                </Card>
-              ) : (
-                <div className="space-y-3">
-                  {behaviorNotes.map((note) => (
-                    <Card key={note.id} className="hover:shadow-md transition-shadow">
-                      <CardContent className="p-4">
-                        <div className="flex items-start justify-between gap-4 mb-2">
-                          <div className="flex-1">
-                            <p className="font-semibold text-lg mb-1">{note.title}</p>
-                            <p className="text-sm text-gray-500 mb-2">
-                              {new Date(note.date).toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}
-                            </p>
-                            <p className="text-sm text-gray-700">{note.description}</p>
-                          </div>
-                          <Badge
-                            variant={
-                              note.type === 'positive' ? 'default' :
-                              note.type === 'concern' ? 'secondary' :
-                              'destructive'
-                            }
-                            className="shrink-0"
-                          >
-                            {note.type.charAt(0).toUpperCase() + note.type.slice(1)}
-                          </Badge>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
                 </div>
               )}
             </TabsContent>

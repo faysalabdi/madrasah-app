@@ -523,6 +523,15 @@ const AdminPortal: React.FC = () => {
   const handleMarkAttendance = async () => {
     if (!selectedStudentForDetail) return
 
+    if (!currentTermId) {
+      toast({
+        title: 'Error',
+        description: 'No active term found. Please set up the current term first.',
+        variant: 'destructive',
+      })
+      return
+    }
+
     try {
       const { error } = await supabase
         .from('attendance')
@@ -532,6 +541,7 @@ const AdminPortal: React.FC = () => {
           date: attendanceDate,
           status: attendanceStatus,
           notes: attendanceNotes || null,
+          term_id: currentTermId,
         }, {
           onConflict: 'student_id,date'
         })
@@ -560,6 +570,15 @@ const AdminPortal: React.FC = () => {
   const handleAddBehaviorNote = async () => {
     if (!selectedStudentForDetail) return
 
+    if (!currentTermId) {
+      toast({
+        title: 'Error',
+        description: 'No active term found. Please set up the current term first.',
+        variant: 'destructive',
+      })
+      return
+    }
+
     try {
       const { error } = await supabase
         .from('behavior_notes')
@@ -570,6 +589,7 @@ const AdminPortal: React.FC = () => {
           type: behaviorType,
           title: behaviorTitle,
           description: behaviorDescription,
+          term_id: currentTermId,
         })
 
       if (error) throw error
@@ -644,6 +664,15 @@ const AdminPortal: React.FC = () => {
   const handleAddNote = async () => {
     if (!selectedStudentForDetail) return
 
+    if (!currentTermId) {
+      toast({
+        title: 'Error',
+        description: 'No active term found. Please set up the current term first.',
+        variant: 'destructive',
+      })
+      return
+    }
+
     try {
       const { error } = await supabase
         .from('student_notes')
@@ -651,6 +680,7 @@ const AdminPortal: React.FC = () => {
           student_id: selectedStudentForDetail.id,
           teacher_id: null, // Admin-created records have null teacher_id
           note: noteText,
+          term_id: currentTermId,
         })
 
       if (error) throw error
@@ -5123,11 +5153,6 @@ const AdminPortal: React.FC = () => {
                           <span className="hidden sm:inline">Homework</span>
                           <span className="sm:hidden">({studentHomework.length})</span>
                         </TabsTrigger>
-                        <TabsTrigger value="behavior" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3">
-                          <FileText className="h-3 w-3 sm:h-4 sm:w-4" />
-                          <span className="hidden sm:inline">Behavior</span>
-                          <span className="sm:hidden">({studentBehaviorNotes.length})</span>
-                        </TabsTrigger>
                         <TabsTrigger value="notes" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3">
                           <FileText className="h-3 w-3 sm:h-4 sm:w-4" />
                           <span className="hidden sm:inline">Notes</span>
@@ -5273,50 +5298,6 @@ const AdminPortal: React.FC = () => {
                       </TabsContent>
 
                       {/* Behavior Tab */}
-                      <TabsContent value="behavior" className="mt-6">
-                        <div className="flex justify-end mb-4">
-                          <Button onClick={() => setShowBehaviorDialog(true)} size="sm" className="gap-2">
-                            <FileText className="h-4 w-4" />
-                            Add Behavior Note
-                          </Button>
-                        </div>
-                        <div className="space-y-3">
-                          {studentBehaviorNotes.length === 0 ? (
-                            <p className="text-gray-500 text-center py-8">No behavior notes found.</p>
-                          ) : (
-                            studentBehaviorNotes.map((note: any) => {
-                              const teacher = note.teachers
-                              return (
-                                <Card key={note.id} className="hover:shadow-md transition-shadow">
-                                  <CardContent className="p-4">
-                                    <div className="flex items-start justify-between gap-4">
-                                      <div className="flex-1">
-                                        <p className="font-medium mb-1">{note.title}</p>
-                                        <p className="text-sm text-gray-700 mb-2">{note.description}</p>
-                                        <p className="text-xs text-gray-500">
-                                          {new Date(note.date).toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}
-                                          {teacher ? ` • Teacher: ${teacher.first_name} ${teacher.last_name}` : ' • Admin'}
-                                        </p>
-                                      </div>
-                                      <Badge
-                                        variant={
-                                          note.type === 'positive' ? 'default' :
-                                          note.type === 'concern' ? 'secondary' :
-                                          'destructive'
-                                        }
-                                        className="shrink-0"
-                                      >
-                                        {note.type.charAt(0).toUpperCase() + note.type.slice(1)}
-                                      </Badge>
-                                    </div>
-                                  </CardContent>
-                                </Card>
-                              )
-                            })
-                          )}
-                        </div>
-                      </TabsContent>
-
                       {/* Notes Tab */}
                       <TabsContent value="notes" className="mt-6">
                         <div className="flex justify-end mb-4">
