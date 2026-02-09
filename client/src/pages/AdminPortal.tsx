@@ -596,6 +596,16 @@ const AdminPortal: React.FC = () => {
   const handleAddHomework = async () => {
     if (!selectedStudentForDetail) return
 
+    // Ensure we have a current term
+    if (!currentTermId) {
+      toast({
+        title: 'Error',
+        description: 'No active term found. Please set up the current term first.',
+        variant: 'destructive',
+      })
+      return
+    }
+
     try {
       const { error } = await supabase
         .from('homework')

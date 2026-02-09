@@ -1524,6 +1524,12 @@ const TeacherPortal: React.FC = () => {
   const handleAddHomework = async () => {
     if (!selectedStudent || !teacher) return
 
+    // Ensure we have a current term
+    if (!currentTermId) {
+      setError('No active term found. Please contact admin to set up the current term.')
+      return
+    }
+
     try {
       const { error } = await supabase
         .from('homework')
