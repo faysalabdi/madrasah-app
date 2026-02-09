@@ -1,4 +1,5 @@
 import React, { useState, ChangeEvent, FormEvent, useEffect } from 'react';
+import { supabase } from '@/lib/supabase';
 
 interface ChildInfo {
   firstName: string;
@@ -153,6 +154,148 @@ const ApplicationForm: React.FC<ApplicationFormProps> = ({ onSubmitSuccess }) =>
     setChildrenData(newChildren);
   };
 
+  const saveToDatabase = async () => {
+    try {
+      console.log('[ApplicationForm] Saving to database...');
+      
+      // Check if parent already exists
+      const { data: existingParent, error: parentQueryError } = await supabase
+        .from('parents')
+        .select('id')
+        .eq('parent1_email', formData.parent1Email.trim().toLowerCase())
+        .maybeSingle();
+
+      if (parentQueryError) {
+        console.error('[ApplicationForm] Error querying parent:', parentQueryError);
+        throw parentQueryError;
+      }
+
+      let parentId: number;
+
+      if (existingParent) {
+        // Update existing parent
+        console.log('[ApplicationForm] Parent exists, updating...');
+        const { error: updateError } = await supabase
+          .from('parents')
+          .update({
+            parent1_first_name: formData.parent1FirstName || '',
+            parent1_last_name: formData.parent1LastName || '',
+            parent1_mobile: formData.parent1Mobile || '',
+            parent1_address: formData.parent1Address || '',
+            parent1_postcode: formData.parent1Postcode || '',
+            parent1_relationship: formData.parent1Relationship || '',
+            parent2_first_name: formData.parent2FirstName || null,
+            parent2_last_name: formData.parent2LastName || null,
+            parent2_mobile: formData.parent2Mobile || null,
+            parent2_relationship: formData.parent2Relationship || null,
+            parent2_address: formData.parent2Address || null,
+            parent2_postcode: formData.parent2Postcode || null,
+          })
+          .eq('id', existingParent.id);
+
+        if (updateError) {
+          console.error('[ApplicationForm] Error updating parent:', updateError);
+          throw updateError;
+        }
+
+        parentId = existingParent.id;
+      } else {
+        // Create new parent
+        console.log('[ApplicationForm] Creating new parent...');
+        const { data: newParent, error: createError } = await supabase
+          .from('parents')
+          .insert({
+            parent1_email: formData.parent1Email.trim().toLowerCase(),
+            parent1_first_name: formData.parent1FirstName || '',
+            parent1_last_name: formData.parent1LastName || '',
+            parent1_mobile: formData.parent1Mobile || '',
+            parent1_address: formData.parent1Address || '',
+            parent1_postcode: formData.parent1Postcode || '',
+            parent1_relationship: formData.parent1Relationship || '',
+            parent2_first_name: formData.parent2FirstName || null,
+            parent2_last_name: formData.parent2LastName || null,
+            parent2_mobile: formData.parent2Mobile || null,
+            parent2_relationship: formData.parent2Relationship || null,
+            parent2_address: formData.parent2Address || null,
+            parent2_postcode: formData.parent2Postcode || null,
+          })
+          .select('id')
+          .single();
+
+        if (createError) {
+          console.error('[ApplicationForm] Error creating parent:', createError);
+          throw createError;
+        }
+
+        parentId = newParent.id;
+      }
+
+      console.log('[ApplicationForm] Parent saved with ID:', parentId);
+
+      // Create/update students
+      for (const child of childrenData) {
+        const studentData = {
+          parent_id: parentId,
+          first_name: child.firstName || '',
+          last_name: child.lastName || '',
+          date_of_birth: child.dob || null,
+          gender: child.gender || null,
+          grade: child.yearLevel || '',
+          current_school: child.currentSchool || '',
+          program: child.program || 'A',
+          medical_issues: child.medicalIssues === 'yes' ? 'yes' : 'no',
+          medical_details: child.medicalDetails || null,
+          quran_level: 'Not Assessed',
+          behavior_standing: 'good',
+        };
+
+        // Check if student already exists
+        const { data: existingStudent, error: findError } = await supabase
+          .from('students')
+          .select('id')
+          .eq('parent_id', parentId)
+          .eq('first_name', studentData.first_name)
+          .eq('last_name', studentData.last_name)
+          .maybeSingle();
+
+        if (findError) {
+          console.error('[ApplicationForm] Error finding student:', findError);
+        }
+
+        if (existingStudent) {
+          // Update existing student
+          const { error: updateError } = await supabase
+            .from('students')
+            .update(studentData)
+            .eq('id', existingStudent.id);
+
+          if (updateError) {
+            console.error('[ApplicationForm] Error updating student:', updateError);
+          } else {
+            console.log('[ApplicationForm] Student updated:', existingStudent.id);
+          }
+        } else {
+          // Create new student
+          const { error: insertError } = await supabase
+            .from('students')
+            .insert(studentData);
+
+          if (insertError) {
+            console.error('[ApplicationForm] Error creating student:', insertError);
+          } else {
+            console.log('[ApplicationForm] Student created for parent:', parentId);
+          }
+        }
+      }
+
+      console.log('[ApplicationForm] Database save complete');
+    } catch (error) {
+      console.error('[ApplicationForm] Database save error:', error);
+      // Don't throw - we still want to continue to payment even if DB save fails
+      // The payment flow will also save the data as a fallback
+    }
+  };
+
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -187,7 +330,12 @@ const ApplicationForm: React.FC<ApplicationFormProps> = ({ onSubmitSuccess }) =>
       
       if (result.success) {
         setSubmitSuccess(true);
-        console.log('[ApplicationForm] Web3Forms submission successful. Calling onSubmitSuccess.');
+        console.log('[ApplicationForm] Web3Forms submission successful.');
+        
+        // Save to database immediately after form submission
+        await saveToDatabase();
+        
+        console.log('[ApplicationForm] Calling onSubmitSuccess.');
         // Don't clear localStorage yet - keep it until payment is successful
         // This allows users to go back and edit if needed
         onSubmitSuccess({
